@@ -852,7 +852,7 @@ function AuthScreen({ onAuth }) {
   // ── Sign In form ──────────────────────────────────────────────────────────
   if (view === "signin") return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:32,overflowY:"auto" }}>
-      <button onClick={()=>setView("landing")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:12,border:"none",background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28,boxShadow:"0 1px 0 rgba(0,0,0,.06)",border:`1px solid ${C.border}` }}><ChevronLeft size={20} color={C.ink}/></button>
+      <button onClick={()=>setView("landing")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:12,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28,boxShadow:"0 1px 0 rgba(0,0,0,.06)" }}><ChevronLeft size={20} color={C.ink}/></button>
       <Logo/>
       <h2 style={{ fontSize:24,fontWeight:800,color:C.ink,margin:"0 0 6px",textAlign:"center" }}>Welcome back</h2>
       <p style={{ fontSize:14,color:C.sub,margin:"0 0 24px",textAlign:"center" }}>Sign in to your account</p>
