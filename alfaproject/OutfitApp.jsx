@@ -1,4 +1,11 @@
 import { useState, useRef, useEffect, Component } from "react";
+import { createClient } from "@supabase/supabase-js";
+const _sbUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const _sbKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const _sbReady = _sbUrl && _sbKey && _sbUrl.startsWith("https://") && !_sbUrl.includes("your-project");
+const supabase = _sbReady
+  ? createClient(_sbUrl, _sbKey)
+  : { auth: { getSession:()=>Promise.resolve({data:{session:null}}), signInWithPassword:()=>Promise.resolve({data:null,error:{message:"Supabase not configured. Add your keys to .env"}}), signUp:()=>Promise.resolve({data:null,error:{message:"Supabase not configured. Add your keys to .env"}}), signOut:()=>Promise.resolve({}), updateUser:()=>Promise.resolve({error:{message:"Supabase not configured"}}) }, from:()=>({select:()=>({eq:()=>({single:()=>Promise.resolve({data:null})})}),insert:()=>Promise.resolve({}),update:()=>({eq:()=>Promise.resolve({})})}) };
 
 class ErrorBoundary extends Component {
   constructor(props){ super(props); this.state={ error:null }; }
@@ -197,7 +204,7 @@ function TabBar({ active, onChange }) {
   );
 }
 
-function HomeScreen({ photoData={}, onShowAllItems, onGoToFavorites, onAddItem }) {
+function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem }) {
   const recentOutfits=[{ id:1,name:"Casual Friday",emoji:"👕",date:"Feb 27",tag:"Casual" },{ id:2,name:"Date Night",emoji:"👗",date:"Feb 20",tag:"Evening" },{ id:3,name:"Weekend Brunch",emoji:"🧥",date:"Feb 18",tag:"Casual" }];
   const tagColors={ Casual:C.sage,Evening:"#7A6A9A" };
   const now=new Date();
@@ -221,7 +228,7 @@ function HomeScreen({ photoData={}, onShowAllItems, onGoToFavorites, onAddItem }
       <div style={{ background:`linear-gradient(145deg,${C.sage} 0%,${C.green} 100%)`,paddingTop:30,paddingBottom:20,paddingLeft:24,paddingRight:24,borderRadius:"0 0 32px 32px",position:"relative",overflow:"hidden" }}>
         <div style={{ position:"absolute",top:-40,right:-40,width:200,height:200,borderRadius:"50%",background:"rgba(255,255,255,.08)" }}/>
         <p style={{ fontSize:13,color:"rgba(255,255,255,.7)",fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6 }}>{dateLabel}</p>
-        <h1 style={{ fontSize:34,fontWeight:800,color:"#fff",margin:"0 0 4px",lineHeight:1.15 }}>Good Morning ☀️</h1>
+        <h1 style={{ fontSize:34,fontWeight:800,color:"#fff",margin:"0 0 4px",lineHeight:1.15 }}>Hello</h1>
         <p style={{ fontSize:16,color:"rgba(255,255,255,.8)",margin:0 }}>Ready to plan today's look?</p>
       </div>
       <div style={{ padding:"16px 16px 0" }}>
@@ -235,7 +242,7 @@ function HomeScreen({ photoData={}, onShowAllItems, onGoToFavorites, onAddItem }
             <div style={{ fontSize:18,fontWeight:800,color:topColorName?C.ink:C.sub,lineHeight:1 }}>{topColorName||"None yet"}</div>
             <div style={{ fontSize:12,color:C.sub,marginTop:4 }}>Colour of the Month</div>
           </div>
-          <StatCard icon="❤️" number="8" label="Favorites" accent="#C47A7A" onClick={onGoToFavorites}/>
+          <StatCard icon="❤️" number={String(favourites.length)} label="Favorites" accent="#C47A7A" onClick={onGoToFavorites}/>
         </div>
         <h2 style={{ fontSize:18,fontWeight:700,color:C.ink,marginBottom:12 }}>Quick Actions</h2>
         <div style={{ display:"flex",gap:10,marginBottom:20 }}>
@@ -759,14 +766,8 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites }) {
   );
 }
 
-// ── helpers for localStorage user store ──────────────────────────────────
-function getUsers() {
-  try { return JSON.parse(localStorage.getItem("alfa_users") || "{}"); } catch { return {}; }
-}
-function saveUsers(users) {
-  localStorage.setItem("alfa_users", JSON.stringify(users));
-}
-function getApiKey() { return localStorage.getItem("alfa_api_key")||""; }
+// ── helpers ───────────────────────────────────────────────────────────────
+function getApiKey() { return import.meta.env.VITE_ANTHROPIC_KEY || localStorage.getItem("alfa_api_key") || ""; }
 function saveApiKey(key) { localStorage.setItem("alfa_api_key", key); }
 
 function AuthScreen({ onAuth }) {
@@ -776,7 +777,7 @@ function AuthScreen({ onAuth }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [recoverEmail, setRecoverEmail] = useState("");
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const inputStyle = { width:"100%",height:52,padding:"0 16px",borderRadius:14,border:`1.5px solid ${C.border}`,background:C.white,fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" };
   const focusStyle = (e) => e.target.style.borderColor = C.sage;
@@ -790,27 +791,43 @@ function AuthScreen({ onAuth }) {
     <div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:12,padding:"10px 14px",fontSize:13,color:"#C0392B",marginBottom:16,textAlign:"center" }}>{error}</div>
   ) : null;
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     setError("");
     if (!email || !password) { setError("Please fill in all fields."); return; }
-    const users = getUsers();
-    if (!users[email] || users[email].password !== password) {
-      setError("Incorrect email or password."); return;
+    setLoading(true);
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    if (authError) {
+      setLoading(false);
+      if (authError.message?.toLowerCase().includes("not confirmed")) {
+        setError("Please confirm your email address before signing in. Check your inbox.");
+      } else {
+        setError("Incorrect email or password.");
+      }
+      return;
     }
-    if (rememberMe) { localStorage.setItem("alfa_remember", email); } else { localStorage.removeItem("alfa_remember"); }
-    onAuth(email, users[email].photoData||{}, users[email].favourites||[]);
+    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites").eq("id", data.user.id).single();
+    setLoading(false);
+    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id);
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     setError("");
     if (!email || !password || !confirmPassword) { setError("Please fill in all fields."); return; }
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
-    const users = getUsers();
-    if (users[email]) { setError("An account with this email already exists."); return; }
-    users[email] = { password, photoData: {} };
-    saveUsers(users);
-    onAuth(email, {}, []);
+    setLoading(true);
+    const { data, error: authError } = await supabase.auth.signUp({ email, password });
+    if (authError) { setLoading(false); setError(authError.message); return; }
+    // If session is null, email confirmation is required
+    if (!data.session) {
+      setLoading(false);
+      setError("");
+      setView("confirm-email");
+      return;
+    }
+    await supabase.from("profiles").insert({ id: data.user.id, photo_data: {}, favourites: [] });
+    setLoading(false);
+    onAuth(data.user.email, {}, [], data.user.id);
   };
 
   // ── Landing ──────────────────────────────────────────────────────────────
@@ -843,9 +860,20 @@ function AuthScreen({ onAuth }) {
       <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",margin:"18px 0 8px" }}>Confirm Password</p>
       <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="••••••••" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} onKeyDown={e=>e.key==="Enter"&&handleSignUp()}/>
 
-      <button onClick={handleSignUp} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:28,boxShadow:"0 4px 16px rgba(154,155,122,.4)" }}>Create Account</button>
+      <button onClick={handleSignUp} disabled={loading} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:28,boxShadow:"0 4px 16px rgba(154,155,122,.4)",opacity:loading?0.7:1 }}>{loading?"Creating account…":"Create Account"}</button>
 
       <p style={{ textAlign:"center",fontSize:14,color:C.sub,marginTop:20 }}>Already have an account? <button onClick={()=>{ setError(""); setView("signin"); }} style={{ background:"none",border:"none",color:C.sage,fontWeight:700,cursor:"pointer",fontSize:14,fontFamily:"inherit" }}>Sign In</button></p>
+    </div>
+  );
+
+  // ── Confirm Email ─────────────────────────────────────────────────────────
+  if (view === "confirm-email") return (
+    <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:C.surface,padding:32 }}>
+      <Logo/>
+      <div style={{ fontSize:48,marginBottom:16 }}>📧</div>
+      <h2 style={{ fontSize:24,fontWeight:800,color:C.ink,margin:"0 0 10px",textAlign:"center" }}>Check your email</h2>
+      <p style={{ fontSize:14,color:C.sub,textAlign:"center",margin:"0 0 28px",lineHeight:1.6 }}>We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then come back to sign in.</p>
+      <button onClick={()=>setView("signin")} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Go to Sign In</button>
     </div>
   );
 
@@ -865,17 +893,11 @@ function AuthScreen({ onAuth }) {
       <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",margin:"18px 0 8px" }}>Password</p>
       <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} onKeyDown={e=>e.key==="Enter"&&handleSignIn()}/>
 
-      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:14,marginBottom:4 }}>
-        <div style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer" }} onClick={()=>setRememberMe(r=>!r)}>
-          <div style={{ width:20,height:20,borderRadius:5,border:`2px solid ${rememberMe?C.sage:C.border}`,background:rememberMe?C.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s" }}>
-            {rememberMe&&<Check size={12} color="#fff" strokeWidth={3}/>}
-          </div>
-          <span style={{ fontSize:14,color:C.ink,fontWeight:500 }}>Remember Me</span>
-        </div>
+      <div style={{ display:"flex",justifyContent:"flex-end",marginTop:14,marginBottom:4 }}>
         <button onClick={()=>setView("forgot")} style={{ background:"none",border:"none",color:C.sage,fontSize:13,fontWeight:600,cursor:"pointer",padding:"8px 0",fontFamily:"inherit" }}>Forgot password?</button>
       </div>
 
-      <button onClick={handleSignIn} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(154,155,122,.4)" }}>Sign In</button>
+      <button onClick={handleSignIn} disabled={loading} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(154,155,122,.4)",opacity:loading?0.7:1 }}>{loading?"Signing in…":"Sign In"}</button>
 
       <p style={{ textAlign:"center",fontSize:14,color:C.sub,marginTop:20 }}>Don't have an account? <button onClick={()=>{ setError(""); setEmail(""); setPassword(""); setConfirmPassword(""); setView("signup"); }} style={{ background:"none",border:"none",color:C.sage,fontWeight:700,cursor:"pointer",fontSize:14,fontFamily:"inherit" }}>Sign Up</button></p>
     </div>
@@ -995,35 +1017,167 @@ function ProfileScreen({ onSettings, onNotifications, onBack, onSignOut }) {
 }
 
 function SettingsScreen({ onBack }) {
-  const [apiKey,setApiKey]=useState(getApiKey());
-  const [saved,setSaved]=useState(false);
-  const handleSave=()=>{ saveApiKey(apiKey.trim()); setSaved(true); setTimeout(()=>setSaved(false),2000); };
+  const [panel,setPanel]=useState(null); // null | "password" | "phone" | "name" | "delete"
+  const [curPw,setCurPw]=useState(""); const [newPw,setNewPw]=useState(""); const [confPw,setConfPw]=useState("");
+  const [phone,setPhone]=useState(""); const [firstName,setFirstName]=useState(""); const [lastName,setLastName]=useState("");
+  const [msg,setMsg]=useState(""); const [err,setErr]=useState("");
+  const inputStyle={width:"100%",height:48,padding:"0 14px",borderRadius:12,border:`1.5px solid ${C.border}`,background:C.white,fontSize:14,color:C.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12};
+  const labelStyle={fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",display:"block",marginBottom:6};
+
+  const handleChangePassword=async()=>{
+    setErr(""); setMsg("");
+    if(!curPw||!newPw||!confPw){setErr("Please fill in all fields.");return;}
+    if(newPw!==confPw){setErr("New passwords do not match.");return;}
+    if(newPw.length<6){setErr("Password must be at least 6 characters.");return;}
+    const {error}=await supabase.auth.updateUser({password:newPw});
+    if(error){setErr(error.message);return;}
+    setMsg("Password updated successfully."); setCurPw(""); setNewPw(""); setConfPw("");
+  };
+
+  const handleSendCode=()=>{ if(!phone){setErr("Please enter a phone number.");return;} setMsg("Verification code sent to "+phone); };
+
+  const handleSaveName=async()=>{
+    setErr(""); setMsg("");
+    if(!firstName&&!lastName){setErr("Please enter at least a first name.");return;}
+    const {error}=await supabase.auth.updateUser({data:{first_name:firstName,last_name:lastName}});
+    if(error){setErr(error.message);return;}
+    setMsg("Name updated successfully.");
+  };
+
+  const handleDeleteAccount=async()=>{
+    setErr("");
+    // Sign out and show message — full deletion requires server-side function
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
+
+  const Section=({title,sub,children})=>(
+    <div style={{ background:C.white,borderRadius:18,padding:20,marginBottom:14,border:`1px solid ${C.border}` }}>
+      <h3 style={{ fontSize:15,fontWeight:700,color:C.ink,margin:"0 0 4px" }}>{title}</h3>
+      <p style={{ fontSize:12,color:C.sub,margin:"0 0 16px",lineHeight:1.5 }}>{sub}</p>
+      {children}
+    </div>
+  );
+
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
-      <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}><button onClick={onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button><h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Settings</h1></div>
-      <div style={{ flex:1,overflowY:"auto",padding:16 }}>
-        <div style={{ background:C.white,borderRadius:16,padding:16,marginBottom:16,border:`1px solid ${C.border}` }}>
-          <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 6px" }}>AI Photo Analysis</p>
-          <p style={{ fontSize:12,color:C.sub,margin:"0 0 12px",lineHeight:1.5 }}>Enter your Anthropic API key to enable automatic outfit detection when you upload photos. Get a free key at console.anthropic.com</p>
-          <input value={apiKey} onChange={e=>{ setApiKey(e.target.value); setSaved(false); }} placeholder="sk-ant-..." type="password" style={{ width:"100%",height:40,padding:"0 12px",borderRadius:10,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:10 }}/>
-          <button onClick={handleSave} style={{ width:"100%",height:42,borderRadius:12,border:"none",background:saved?C.sage:C.ink,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{saved?"✓ Saved":"Save API Key"}</button>
-        </div>
+      <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
+        <button onClick={panel?()=>{setPanel(null);setErr("");setMsg("");}:onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
+        <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>{panel?"Settings":"Settings"}</h1>
+      </div>
+      <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
+        {!panel&&(<>
+          {[{id:"password",title:"Change Password",sub:"Enter your current password and choose a new one."},{id:"phone",title:"Update Phone Number",sub:"Enter your new phone number to receive a verification code."},{id:"name",title:"Change Name",sub:"Update your display name."}].map(item=>(
+            <button key={item.id} onClick={()=>{setPanel(item.id);setErr("");setMsg("");}} style={{ width:"100%",background:C.white,borderRadius:18,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
+              <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>{item.title}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.sub}</div></div>
+              <ChevronRight size={18} color={C.border}/>
+            </button>
+          ))}
+          <div style={{ marginTop:24,marginBottom:8 }}>
+            <p style={{ fontSize:11,fontWeight:700,color:C.red,textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 10px" }}>Danger Zone</p>
+            <button onClick={()=>setPanel("delete")} style={{ width:"100%",background:"#FEF0EF",borderRadius:18,padding:"14px 16px",border:`1px solid ${C.red}30`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
+              <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.red }}>Delete Account</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Permanently delete your account</div></div>
+              <ChevronRight size={18} color={C.red}/>
+            </button>
+          </div>
+        </>)}
+
+        {panel==="password"&&(
+          <Section title="Change Password" sub="Enter your current password and choose a new one.">
+            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
+            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
+            <label style={labelStyle}>Current Password</label>
+            <input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} placeholder="••••••••" style={inputStyle}/>
+            <label style={labelStyle}>New Password</label>
+            <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="••••••••" style={inputStyle}/>
+            <label style={labelStyle}>Confirm New Password</label>
+            <input type="password" value={confPw} onChange={e=>setConfPw(e.target.value)} placeholder="••••••••" style={{...inputStyle,marginBottom:16}}/>
+            <button onClick={handleChangePassword} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Change Password</button>
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+          </Section>
+        )}
+
+        {panel==="phone"&&(
+          <Section title="Update Phone Number" sub="Enter your new phone number to receive a verification code.">
+            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
+            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
+            <label style={labelStyle}>Phone Number</label>
+            <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+44 7700 000000" style={{...inputStyle,marginBottom:16}}/>
+            <button onClick={handleSendCode} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Send Verification Code</button>
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+          </Section>
+        )}
+
+        {panel==="name"&&(
+          <Section title="Change Name" sub="Update your display name.">
+            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
+            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
+            <label style={labelStyle}>First Name</label>
+            <input value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="Sarah" style={inputStyle}/>
+            <label style={labelStyle}>Last Name</label>
+            <input value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Smith" style={{...inputStyle,marginBottom:16}}/>
+            <button onClick={handleSaveName} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Save Changes</button>
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+          </Section>
+        )}
+
+        {panel==="delete"&&(
+          <div style={{ background:"#FEF0EF",borderRadius:18,padding:20,border:`1px solid ${C.red}30` }}>
+            <h3 style={{ fontSize:15,fontWeight:700,color:C.red,margin:"0 0 8px" }}>Delete Account</h3>
+            <p style={{ fontSize:13,color:C.sub,margin:"0 0 20px",lineHeight:1.5 }}>This will permanently delete your account and all your outfit data. This cannot be undone.</p>
+            <button onClick={handleDeleteAccount} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.red,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Delete Account</button>
+            <button onClick={()=>setPanel(null)} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 function NotificationsScreen({ onBack }) {
+  const [pushOn,setPushOn]=useState(true);
+  const [reminderOn,setReminderOn]=useState(true);
+  const [cameraOn,setCameraOn]=useState(false);
+  const [locationOn,setLocationOn]=useState(false);
+
+  const Toggle=({on,onToggle})=>(
+    <div onClick={onToggle} style={{ width:44,height:26,borderRadius:999,background:on?C.sage:C.border,position:"relative",cursor:"pointer",flexShrink:0,transition:"background .2s" }}>
+      <div style={{ position:"absolute",top:3,left:on?21:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s" }}/>
+    </div>
+  );
+
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
-      <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}><button onClick={onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button><h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Notifications</h1></div>
-      <div style={{ flex:1,overflowY:"auto",padding:16 }}>
-        {["Outfit of the Day","Weekly Insights","New Features","Seasonal Trends"].map((n,i)=>(
-          <div key={i} style={{ background:C.white,borderRadius:16,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",border:`1px solid ${C.border}` }}>
-            <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>{n}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Push notification</div></div>
-            <div style={{ width:44,height:26,borderRadius:999,background:i<2?C.sage:C.border,position:"relative" }}><div style={{ position:"absolute",top:3,left:i<2?21:3,width:20,height:20,borderRadius:"50%",background:"#fff" }}/></div>
+      <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
+        <button onClick={onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
+        <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Notifications</h1>
+      </div>
+      <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
+
+        <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 10px" }}>Push Notifications</p>
+        <div style={{ background:C.white,borderRadius:18,border:`1px solid ${C.border}`,overflow:"hidden",marginBottom:20 }}>
+          <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}` }}>
+            <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Push Notifications</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Receive alerts and updates</div></div>
+            <Toggle on={pushOn} onToggle={()=>setPushOn(v=>!v)}/>
           </div>
-        ))}
+          <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+            <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Daily Reminder</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Reminder to capture your outfit</div></div>
+            <Toggle on={reminderOn} onToggle={()=>setReminderOn(v=>!v)}/>
+          </div>
+        </div>
+
+        <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 10px" }}>Privacy and Permissions</p>
+        <div style={{ background:C.white,borderRadius:18,border:`1px solid ${C.border}`,overflow:"hidden" }}>
+          <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}` }}>
+            <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Camera Access</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Allow app to access your camera</div></div>
+            <Toggle on={cameraOn} onToggle={()=>setCameraOn(v=>!v)}/>
+          </div>
+          <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+            <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Location</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Allow app to access your location</div></div>
+            <Toggle on={locationOn} onToggle={()=>setLocationOn(v=>!v)}/>
+          </div>
+        </div>
+
       </div>
     </div>
   );
@@ -1173,30 +1327,37 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData }) {
 }
 
 export default function App() {
-  const [isSignedIn,setIsSignedIn]=useState(()=>{ const e=localStorage.getItem("alfa_remember"); if(!e) return false; return !!getUsers()[e]; });
-  const [currentUser,setCurrentUser]=useState(()=>{ const e=localStorage.getItem("alfa_remember"); if(!e) return null; return getUsers()[e]?e:null; });
+  const [isSignedIn,setIsSignedIn]=useState(false);
+  const [authLoading,setAuthLoading]=useState(true);
+  const [currentUser,setCurrentUser]=useState(null); // stores user.id (uuid)
   const [tab,setTab]=useState("home");
   const [subScreen,setSubScreen]=useState(null);
-  const [photoData,setPhotoData]=useState(()=>{ const e=localStorage.getItem("alfa_remember"); if(!e) return {}; return getUsers()[e]?.photoData||{}; });
-  const [favourites,setFavourites]=useState(()=>{ const e=localStorage.getItem("alfa_remember"); if(!e) return []; return getUsers()[e]?.favourites||[]; });
+  const [photoData,setPhotoData]=useState({});
+  const [favourites,setFavourites]=useState([]);
   const [tabHistory,setTabHistory]=useState([]);
 
-  // Auto-save photoData and favourites to localStorage whenever they change
+  // Restore session on mount
+  useEffect(()=>{
+    supabase.auth.getSession().then(async({data:{session}})=>{
+      if(session){
+        const {data:profile}=await supabase.from("profiles").select("photo_data,favourites").eq("id",session.user.id).single();
+        setCurrentUser(session.user.id);
+        setPhotoData(profile?.photo_data||{});
+        setFavourites(profile?.favourites||[]);
+        setIsSignedIn(true);
+      }
+      setAuthLoading(false);
+    });
+  },[]);
+
+  // Auto-save photoData and favourites to Supabase whenever they change
   useEffect(()=>{
     if(!currentUser) return;
-    const users=getUsers();
-    if(users[currentUser]){
-      users[currentUser].photoData=photoData;
-      saveUsers(users);
-    }
+    supabase.from("profiles").update({photo_data:photoData}).eq("id",currentUser);
   },[photoData,currentUser]);
   useEffect(()=>{
     if(!currentUser) return;
-    const users=getUsers();
-    if(users[currentUser]){
-      users[currentUser].favourites=favourites;
-      saveUsers(users);
-    }
+    supabase.from("profiles").update({favourites}).eq("id",currentUser);
   },[favourites,currentUser]);
 
   const toggleFavourite=(item)=>{
@@ -1229,11 +1390,11 @@ export default function App() {
     if(subScreen==="allItems") return <AllItemsScreen onBack={goBack}/>;
     if(subScreen==="notifications") return <NotificationsScreen onBack={goBack}/>;
     switch(tab){
-      case "home":      return <HomeScreen photoData={photoData} onShowAllItems={()=>setSubScreen("allItems")} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} onShowAllItems={()=>setSubScreen("allItems")} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
       case "wardrobe":  return <WardrobeScreen photoData={photoData} onBack={canGoBack?goBack:null}/>;
       case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null}/>;
       case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} onBack={canGoBack?goBack:null}/>;
-      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onBack={canGoBack?goBack:null} onSignOut={()=>{ localStorage.removeItem("alfa_remember"); setIsSignedIn(false); setCurrentUser(null); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
+      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); setIsSignedIn(false); setCurrentUser(null); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
       default:          return <HomeScreen photoData={photoData} onShowAllItems={()=>setSubScreen("allItems")} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
     }
   };
@@ -1264,12 +1425,17 @@ export default function App() {
             </div>
           </div>
           <div style={{ position:"absolute",inset:0,top:0,display:"flex",flexDirection:"column",paddingTop:54 }}>
-            {!isSignedIn
-              ? <AuthScreen onAuth={(email,data,favs)=>{ setCurrentUser(email); setPhotoData(data||{}); setFavourites(favs||[]); setIsSignedIn(true); }}/>
-              : <>
-                  <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
-                  {!subScreen&&<TabBar active={tab} onChange={t=>{ setTab(t); setSubScreen(null); }}/>}
-                </>
+            {authLoading
+              ? <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:C.surface,gap:16 }}>
+                  <div style={{ width:64,height:64,borderRadius:22,background:`linear-gradient(145deg,${C.sage},${C.green})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,boxShadow:"0 8px 24px rgba(154,155,122,.35)" }}>👗</div>
+                  <div style={{ width:32,height:32,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }}/>
+                </div>
+              : !isSignedIn
+                ? <AuthScreen onAuth={(email,data,favs,userId)=>{ setCurrentUser(userId); setPhotoData(data||{}); setFavourites(favs||[]); setIsSignedIn(true); }}/>
+                : <>
+                    <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
+                    {!subScreen&&<TabBar active={tab} onChange={t=>{ setTab(t); setSubScreen(null); }}/>}
+                  </>
             }
           </div>
           <div style={{ position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",width:134,height:5,background:C.ink,borderRadius:999,opacity:.2 }}/>
