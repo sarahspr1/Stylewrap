@@ -1,0 +1,31 @@
+{
+  "_instructions": "Edit the prompts and models below to customise how outfit photos are analysed. The placeholders {schema} and {knownList} are filled in automatically at runtime — do not remove them.",
+
+  "groq": {
+    "model": "meta-llama/llama-4-scout-17b-16e-instruct"
+  },
+
+  "gemini": {
+    "model": "gemini-2.0-flash"
+  },
+
+  "prompt": {
+    "base": "You are a professional fashion stylist and outfit analyst.\n\nAnalyse the outfit in this photo and identify every visible clothing item. For each item provide: the garment category, a short descriptive name, and its dominant colour.\n\nAlso determine the overall outfit style, formality level, best season to wear it, and the 2 most dominant colours in the full look.\n\nReturn ONLY valid JSON with no markdown fences, matching exactly this structure:\n{schema}",
+
+    "withKnownItems": "You are a professional fashion stylist and outfit analyst.\n\nAnalyse the outfit in this photo and identify every visible clothing item. For each item provide: the garment category, a short descriptive name, and its dominant colour.\n\nAlso determine the overall outfit style, formality level, best season to wear it, and the 2 most dominant colours in the full look.\n\nIMPORTANT — the user has previously logged these items. If any item in the photo is clearly the same piece, use the EXACT name from the list below (this is critical for tracking how many times each item is worn):\n{knownList}\n\nReturn ONLY valid JSON with no markdown fences, matching exactly this structure:\n{schema}"
+  },
+
+  "schema": {
+    "style_category": "Everyday | Going Out | Activewear | Professional",
+    "formality_level": "Casual | Smart Casual | Formal | Sporty",
+    "season": "Spring | Summer | Autumn | Winter | All Season",
+    "color_palette": ["dominant colour", "secondary colour"],
+    "clothing_items": [
+      {
+        "category": "Top | Bottom | Outerwear | Shoes | Accessories | Dresses | Swimwear",
+        "name": "descriptive item name",
+        "color": "Black | White | Blue | Gray | Brown | Green | Red | Yellow | Pink | Purple"
+      }
+    ]
+  }
+}
