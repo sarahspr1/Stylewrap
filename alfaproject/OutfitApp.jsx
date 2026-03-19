@@ -899,6 +899,19 @@ function AuthScreen({ onAuth }) {
     <div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:12,padding:"10px 14px",fontSize:13,color:"#C0392B",marginBottom:16,textAlign:"center" }}>{error}</div>
   ) : null;
 
+  const friendlyAuthError = (msg="") => {
+    const m = msg.toLowerCase();
+    if (m.includes("user already registered") || m.includes("already been registered")) return "An account with this email already exists. Try signing in instead.";
+    if (m.includes("invalid login credentials") || m.includes("invalid credentials")) return "Incorrect email or password.";
+    if (m.includes("email not confirmed")) return "Please confirm your email address before signing in. Check your inbox.";
+    if (m.includes("invalid email") || m.includes("unable to validate email") || m.includes("valid email")) return "Please enter a valid email address.";
+    if (m.includes("password should be at least") || m.includes("password must be")) return "Password must be at least 6 characters.";
+    if (m.includes("weak password") || m.includes("should be stronger")) return "Password is too weak. Try adding numbers or symbols.";
+    if (m.includes("rate limit") || m.includes("too many requests") || m.includes("email rate")) return "Too many attempts. Please wait a moment and try again.";
+    if (m.includes("network") || m.includes("fetch")) return "Network error. Please check your connection and try again.";
+    return msg || "Something went wrong. Please try again.";
+  };
+
   const handleSignIn = async () => {
     setError("");
     if (!email || !password) { setError("Please fill in all fields."); return; }
@@ -906,7 +919,7 @@ function AuthScreen({ onAuth }) {
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) {
       setLoading(false);
-      setError("Incorrect email or password.");
+      setError(friendlyAuthError(authError.message));
       return;
     }
     const { data: profile } = await supabase.from("profiles").select("photo_data,favourites").eq("id", data.user.id).single();
@@ -920,8 +933,8 @@ function AuthScreen({ onAuth }) {
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    const { data, error: authError } = await supabase.auth.signUp({ email, password });
-    if (authError) { setLoading(false); setError(authError.message); return; }
+    const { data, error: authError } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: window.location.origin } });
+    if (authError) { setLoading(false); setError(friendlyAuthError(authError.message)); return; }
     if (!data.session) { setLoading(false); setView("confirm-email"); return; }
     await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[] });
     setLoading(false);
