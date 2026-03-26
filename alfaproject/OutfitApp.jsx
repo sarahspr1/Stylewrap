@@ -51,7 +51,7 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { Home, ShoppingBag, Calendar, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, X, Bell, Shield, Phone, LogOut, Check } from "lucide-react";
+import { Home, ShoppingBag, Calendar, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 const C = {
@@ -257,7 +257,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
 const initialCPWPrices = {};
 
-function WardrobeScreen({ photoData, onBack, initialView="main" }) {
+function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) {
   const [view,setView]=useState(initialView);
   const [selectedPiece,setSelectedPiece]=useState(null);
   const [cpwPrices,setCpwPrices]=useState(initialCPWPrices);
@@ -278,7 +278,11 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
   const allLoggedObjs=loggedOutfits.flatMap(e=>(e.items||[]).map(item=>typeof item==="object"?item:{ name:String(item||""),category:"Other" }).filter(item=>item&&item.name&&typeof item.name==="string"));
   const wearCounts={};
   allLoggedObjs.forEach(item=>{ const k=(item.name||"").toLowerCase().trim(); if(!k) return; if(!wearCounts[k]) wearCounts[k]={ name:item.name,category:item.category||"Other",count:0 }; wearCounts[k].count+=1; });
-  const wearArr=Object.values(wearCounts).sort((a,b)=>b.count-a.count);
+  // Map each item name → { photo, dateKey } from its most recent logged outfit
+  const itemLastInfo={};
+  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; (entry.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(k&&!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey }; }); });
+  const getItemPhoto=(key)=>{ const info=itemLastInfo[key]; if(!info) return null; if(info.photo) return info.photo; if(currentUser&&info.dateKey) return supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${info.dateKey}.jpg`).data.publicUrl; return null; };
+  const wearArr=Object.values(wearCounts).map(w=>({...w,lastPhoto:getItemPhoto(w.name.toLowerCase().trim())})).sort((a,b)=>b.count-a.count);
   const totalWears=wearArr.reduce((s,p)=>s+p.count,0);
   const catEmoji=cat=>cat==="Top"?"👕":cat==="Bottom"?"👖":cat==="Shoes"?"👟":cat==="Outerwear"?"🧥":cat==="Accessories"?"💍":cat==="Dresses"?"👗":cat==="Swimwear"?"👙":"👔";
   const computedMostWorn=wearArr.slice(0,5).map(p=>({ name:p.name,wears:p.count,category:p.category,image:catEmoji(p.category) }));
@@ -292,12 +296,20 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
   const getStyle=items=>{ try { const names=(items||[]).map(i=>((typeof i==="object"?i.name:i)||"").toString().toLowerCase()).join(" "); const cats=(items||[]).map(i=>((typeof i==="object"?i.category:i)||"").toString().toLowerCase()).join(" "); if(cats.includes("activewear")||/gym|sport|athletic|yoga|running|workout|leggings|jogger/.test(names)) return "Activewear"; if(/blazer|suit|dress shirt|slacks|oxford|loafer|trousers|button-up|button up|formal|professional/.test(names)) return "Professional"; if(/dress|heels|jumpsuit|going out|club|evening|sequin|satin/.test(names)) return "Going Out"; return "Everyday"; } catch { return "Everyday"; } };
   const styleCounts={ Everyday:0,"Going Out":0,Activewear:0,Professional:0 };
   Object.values(photoData).forEach(entry=>{ if(entry?.logged){ const s=entry.style&&styleCounts.hasOwnProperty(entry.style)?entry.style:getStyle(entry.items); styleCounts[s]+=1; } });
+  const styleColors={ "Everyday":C.sage,"Going Out":"#C47A8A","Activewear":"#5A85C4","Professional":"#C4A05A" };
+  const totalStyleOutfits=Object.values(styleCounts).reduce((s,v)=>s+v,0)||1;
+  const computedStyleData=Object.entries(styleCounts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({ name,value:Math.round(count/totalStyleOutfits*100),color:styleColors[name]||"#B0B0A8" }));
 
   // Build item stats (wears + price) in a single pass over all logged outfits
+  // Key = name+color so two items with the same name but different colours are tracked separately
+  const cpwKey=(name,color)=>`${(name||"").trim().toLowerCase()}|${(color||"").toLowerCase()}`;
   const itemStatsMap={};
-  loggedOutfits.forEach(e=>{ (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim(); if(!name) return; const key=name.toLowerCase(); if(!itemStatsMap[key]) itemStatsMap[key]={name,category:item.category||"Other",wears:0,price:null}; itemStatsMap[key].wears+=1; if(item.category&&item.category!=="Other") itemStatsMap[key].category=item.category; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) itemStatsMap[key].price=p; }); });
+  loggedOutfits.forEach(e=>{ (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim(); if(!name) return; const key=cpwKey(name,item.color); if(!itemStatsMap[key]) itemStatsMap[key]={name,color:item.color||null,category:item.category||"Other",wears:0,price:null}; itemStatsMap[key].wears+=1; if(item.category&&item.category!=="Other") itemStatsMap[key].category=item.category; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) itemStatsMap[key].price=p; }); });
+  // Build display labels — append (Color) when two entries share the same name
+  const nameCounts={};
+  Object.values(itemStatsMap).forEach(s=>{ nameCounts[s.name.toLowerCase()]=(nameCounts[s.name.toLowerCase()]||0)+1; });
   // cpwPrices (set directly in wardrobe CPW section) override calendar prices
-  const cpwList=Object.values(itemStatsMap).map(s=>{ const key=s.name.toLowerCase(); const price=cpwPrices[key]!=null?cpwPrices[key]:s.price; const cpw=price!=null&&s.wears>0?price/s.wears:null; return {name:s.name,category:s.category,wears:s.wears,price,cpw}; }).sort((a,b)=>b.wears-a.wears);
+  const cpwList=Object.values(itemStatsMap).map(s=>{ const key=cpwKey(s.name,s.color); const price=cpwPrices[key]!=null?cpwPrices[key]:s.price; const cpw=price!=null&&s.wears>0?price/s.wears:null; const label=nameCounts[s.name.toLowerCase()]>1&&s.color?`${s.name} (${s.color})`:s.name; return {name:s.name,color:s.color,label,category:s.category,wears:s.wears,price,cpw,key}; }).sort((a,b)=>b.wears-a.wears);
   const pricedItems=cpwList.filter(i=>i.price!==null);
   const avgCPW=pricedItems.length>0?(pricedItems.reduce((s,i)=>s+i.cpw,0)/pricedItems.length).toFixed(2):"—";
 
@@ -350,7 +362,7 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
               ? <div style={{ textAlign:"center",padding:"40px 24px" }}><div style={{ fontSize:32,marginBottom:10 }}>🔍</div><div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>No items match</div><div style={{ fontSize:13,color:C.sub }}>Try a different search or category</div></div>
               : sortedItems.map((item,idx)=>(
                   <button key={idx} onClick={()=>setSelectedWearItem(item)} style={{ width:"100%",background:C.white,borderRadius:16,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
-                    <div style={{ width:44,height:44,borderRadius:12,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{catEmoji(item.category)}</div>
+                    <div style={{ width:44,height:44,borderRadius:12,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{item.lastPhoto?<img src={item.lastPhoto} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:catEmoji(item.category)}</div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{item.name}</div>
                       <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.count} {item.count===1?"wear":"wears"}</div>
@@ -366,7 +378,7 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
             <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",padding:"8px 20px 44px",maxHeight:"70vh",display:"flex",flexDirection:"column" }}>
               <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 16px",flexShrink:0 }}/>
               <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:20,flexShrink:0 }}>
-                <div style={{ width:52,height:52,borderRadius:15,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0 }}>{catEmoji(selectedWearItem.category)}</div>
+                <div style={{ width:52,height:52,borderRadius:15,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,overflow:"hidden" }}>{selectedWearItem.lastPhoto?<img src={selectedWearItem.lastPhoto} alt={selectedWearItem.name} style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:catEmoji(selectedWearItem.category)}</div>
                 <div><div style={{ fontSize:18,fontWeight:800,color:C.ink }}>{selectedWearItem.name}</div><div style={{ fontSize:13,color:C.sub }}>{selectedWearItem.category} · {selectedWearItem.count} {selectedWearItem.count===1?"wear":"wears"}</div></div>
               </div>
               <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 10px",flexShrink:0 }}>Worn on</p>
@@ -431,13 +443,13 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
                 <div key={i} style={{ background:C.white,borderRadius:18,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}` }}>
                   <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:10 }}>
                     <div style={{ width:42,height:42,borderRadius:13,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{catEmoji(item.category)}</div>
-                    <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:700,color:C.ink }}>{item.name}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>${item.price.toFixed(2)} · {item.wears} wear{item.wears!==1?"s":""}</div></div>
+                    <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:700,color:C.ink }}>{item.label}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>${item.price.toFixed(2)} · {item.wears} wear{item.wears!==1?"s":""}</div></div>
                     <div style={{ textAlign:"right" }}><div style={{ fontSize:20,fontWeight:800,color:C.sage }}>${item.cpw.toFixed(2)}</div><div style={{ fontSize:10,color:C.sub }}>per wear</div></div>
                   </div>
                   <div style={{ height:4,borderRadius:99,background:C.border,marginBottom:10,overflow:"hidden" }}><div style={{ height:"100%",width:`${Math.min((item.wears/maxWears)*100,100)}%`,background:C.sage,borderRadius:99 }}/></div>
                   <div style={{ display:"flex",gap:8 }}>
                     <button onClick={()=>{ setCpwEditItem(item); setCpwPriceInput(item.price.toString()); }} style={{ flex:1,height:34,borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.sage,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Pencil size={13}/> Edit Price</button>
-                    <button onClick={()=>setCpwDeleteItem(item.name)} style={{ flex:1,height:34,borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.red,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Trash2 size={13}/> Remove</button>
+                    <button onClick={()=>setCpwDeleteItem(item.key)} style={{ flex:1,height:34,borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.red,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Trash2 size={13}/> Remove</button>
                   </div>
                 </div>
               ))}
@@ -449,7 +461,7 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
               {unpriced.map((item,i)=>(
                 <button key={i} onClick={()=>{ setCpwAddModal(item); setCpwPriceInput(""); }} style={{ width:"100%",background:C.white,borderRadius:18,padding:"14px 16px",marginBottom:10,border:`1.5px dashed ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",display:"flex",alignItems:"center",gap:12 }}>
                   <div style={{ width:42,height:42,borderRadius:13,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{catEmoji(item.category)}</div>
-                  <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{item.name}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.wears} wear{item.wears!==1?"s":""} · tap to add price</div></div>
+                  <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{item.label}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.wears} wear{item.wears!==1?"s":""} · tap to add price</div></div>
                   <div style={{ width:28,height:28,borderRadius:"50%",background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><Plus size={15} color={C.sage}/></div>
                 </button>
               ))}
@@ -463,12 +475,12 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
               <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
               <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:20 }}>
                 <div style={{ width:46,height:46,borderRadius:14,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22 }}>{catEmoji(cpwAddModal.category)}</div>
-                <div><div style={{ fontSize:16,fontWeight:700,color:C.ink }}>{cpwAddModal.name}</div><div style={{ fontSize:13,color:C.sub }}>{cpwAddModal.wears} wears logged</div></div>
+                <div><div style={{ fontSize:16,fontWeight:700,color:C.ink }}>{cpwAddModal.label}</div><div style={{ fontSize:13,color:C.sub }}>{cpwAddModal.wears} wears logged</div></div>
               </div>
               <label style={{ display:"block",fontSize:13,fontWeight:700,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em" }}>Item Price ($)</label>
               <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} placeholder="0.00" style={{ width:"100%",height:52,padding:"0 16px",borderRadius:14,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
               {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:14,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>Cost per wear</span><span style={{ fontSize:22,fontWeight:800,color:C.sage }}>${(parseFloat(cpwPriceInput)/cpwAddModal.wears).toFixed(2)}</span></div>}
-              <button onClick={()=>{ if(!cpwPriceInput||parseFloat(cpwPriceInput)<=0) return; setCpwPrices(p=>({...p,[cpwAddModal.name.toLowerCase().trim()]:parseFloat(cpwPriceInput)})); setCpwAddModal(null); }} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:!cpwPriceInput||parseFloat(cpwPriceInput)<=0?C.border:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Save Price</button>
+              <button onClick={()=>{ if(!cpwPriceInput||parseFloat(cpwPriceInput)<=0) return; setCpwPrices(p=>({...p,[cpwAddModal.key]:parseFloat(cpwPriceInput)})); setCpwAddModal(null); }} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:!cpwPriceInput||parseFloat(cpwPriceInput)<=0?C.border:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Save Price</button>
             </div>
           </div>
         )}
@@ -477,10 +489,10 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
             <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",width:"100%",padding:"8px 20px 44px" }}>
               <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
               <h2 style={{ fontSize:20,fontWeight:800,color:C.ink,marginBottom:6 }}>Edit Price</h2>
-              <p style={{ fontSize:14,color:C.sub,marginBottom:20 }}>{cpwEditItem.name}</p>
+              <p style={{ fontSize:14,color:C.sub,marginBottom:20 }}>{cpwEditItem.label}</p>
               <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} style={{ width:"100%",height:52,padding:"0 16px",borderRadius:14,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
               {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:14,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>New cost per wear</span><span style={{ fontSize:22,fontWeight:800,color:C.sage }}>${(parseFloat(cpwPriceInput)/cpwEditItem.wears).toFixed(2)}</span></div>}
-              <button onClick={()=>{ setCpwPrices(p=>({...p,[cpwEditItem.name.toLowerCase().trim()]:parseFloat(cpwPriceInput)})); setCpwEditItem(null); }} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Update Price</button>
+              <button onClick={()=>{ setCpwPrices(p=>({...p,[cpwEditItem.key]:parseFloat(cpwPriceInput)})); setCpwEditItem(null); }} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Update Price</button>
             </div>
           </div>
         )}
@@ -490,7 +502,7 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
               <div style={{ fontSize:36,textAlign:"center",marginBottom:12 }}>🗑️</div>
               <h2 style={{ fontSize:18,fontWeight:800,color:C.ink,textAlign:"center",margin:"0 0 8px" }}>Remove price?</h2>
               <p style={{ fontSize:14,color:C.sub,textAlign:"center",margin:"0 0 24px" }}>Item stays in wardrobe but won't be cost-tracked.</p>
-              <button onClick={()=>{ setCpwPrices(p=>{ const n={...p}; delete n[cpwDeleteItem.toLowerCase().trim()]; return n; }); setCpwDeleteItem(null); }} style={{ width:"100%",height:50,borderRadius:14,border:"none",background:C.red,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Remove</button>
+              <button onClick={()=>{ setCpwPrices(p=>{ const n={...p}; delete n[cpwDeleteItem]; return n; }); setCpwDeleteItem(null); }} style={{ width:"100%",height:50,borderRadius:14,border:"none",background:C.red,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Remove</button>
               <button onClick={()=>setCpwDeleteItem(null)} style={{ width:"100%",height:50,borderRadius:14,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
             </div>
           </div>
@@ -569,11 +581,142 @@ function WardrobeScreen({ photoData, onBack, initialView="main" }) {
           ):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
         </div>
 
+        <div style={{ background:C.white,borderRadius:20,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
+          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
+            <div style={{ width:36,height:36,borderRadius:12,background:"#5A85C418",display:"flex",alignItems:"center",justifyContent:"center" }}><Layers size={18} color="#5A85C4"/></div>
+            <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Style Distribution</span>
+          </div>
+          {computedStyleData.length>0?(
+            <div style={{ display:"flex",alignItems:"flex-end",gap:10,marginTop:8 }}>
+              {computedStyleData.map((e,i)=>(
+                <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
+                  <span style={{ fontSize:12,fontWeight:700,color:C.ink }}>{e.value}%</span>
+                  <div style={{ width:"100%",height:130,display:"flex",alignItems:"flex-end" }}>
+                    <div style={{ width:"100%",height:`${Math.max(e.value,4)}%`,background:e.color,borderRadius:"6px 6px 0 0" }}/>
+                  </div>
+                  <span style={{ fontSize:11,fontWeight:600,color:C.sub,textAlign:"center",lineHeight:1.3 }}>{e.name}</span>
+                </div>
+              ))}
+            </div>
+          ):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
+        </div>
+
       </div>
     </div>
   );
 }
 
+
+const BRANDS = [
+  // High street
+  "& Other Stories","Arket","ASOS","Bershka","COS","H&M","Mango","Marks & Spencer",
+  "Massimo Dutti","Monki","New Look","Next","Primark","Pull&Bear","River Island",
+  "Stradivarius","Topshop","Uniqlo","Weekday","Zara",
+  // Luxury
+  "Alexander McQueen","Balenciaga","Bottega Veneta","Burberry","Celine","Chanel",
+  "Fendi","Givenchy","Gucci","Jacquemus","Loewe","Louis Vuitton","Prada",
+  "Saint Laurent","Stella McCartney","Valentino","Versace",
+  // Contemporary / mid-market
+  "APC","ba&sh","Frame","Ganni","Isabel Marant","Maje","Reformation","Rouje",
+  "Rotate","Sandro","Self-Portrait","Sézane","Staud",
+  // Denim
+  "7 For All Mankind","AG Jeans","Agolde","Citizens of Humanity","Levi's","Madewell","Paige",
+  // Sportswear
+  "Adidas","Fabletics","Gymshark","HOKA","Lululemon","New Balance","Nike",
+  "On Running","Reebok","Sweaty Betty","Under Armour",
+  // American / preppy
+  "Anthropologie","Calvin Klein","Coach","Free People","J.Crew","Kate Spade",
+  "Michael Kors","Ralph Lauren","Tommy Hilfiger","Tory Burch",
+].sort((a,b)=>a.localeCompare(b));
+
+// Module-level brand cache — loaded once per session, shared across all BrandPicker instances
+let _brandsCache=null;
+
+const loadBrands=async()=>{
+  if(_brandsCache!==null) return _brandsCache;
+  const {data}=await supabase.from("brands").select("name").order("name");
+  const custom=(data||[]).map(r=>r.name);
+  _brandsCache=[...new Set([...BRANDS,...custom])].sort((a,b)=>a.localeCompare(b));
+  return _brandsCache;
+};
+
+const saveCustomBrand=async(name)=>{
+  // Skip if already in the predefined list
+  if(BRANDS.some(b=>b.replace(/\s+/g," ").toLowerCase()===name.replace(/\s+/g," ").toLowerCase())) return;
+  await supabase.from("brands").upsert({name},{onConflict:"name"});
+  // Update cache immediately so other pickers see it in this session
+  if(_brandsCache&&!_brandsCache.includes(name)){
+    _brandsCache=[..._brandsCache,name].sort((a,b)=>a.localeCompare(b));
+  }
+};
+
+function BrandPicker({ value, onChange }) {
+  const [query,setQuery]=useState(value||"");
+  const [open,setOpen]=useState(false);
+  const [allBrands,setAllBrands]=useState(BRANDS);
+  const ref=useRef(null);
+
+  useEffect(()=>{ loadBrands().then(setAllBrands); },[]);
+  useEffect(()=>{ setQuery(value||""); },[value]);
+
+  useEffect(()=>{
+    if(!open) return;
+    const handler=e=>{ if(ref.current&&!ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown",handler);
+    return ()=>document.removeEventListener("mousedown",handler);
+  },[open]);
+
+  const normalize=val=>{
+    const trimmed=val.trim().replace(/\s+/g," ");
+    if(!trimmed) return "";
+    const canonical=allBrands.find(b=>b.replace(/\s+/g," ").toLowerCase()===trimmed.toLowerCase());
+    if(canonical) return canonical;
+    return trimmed.replace(/\b\w/g,c=>c.toUpperCase());
+  };
+
+  const q=query.trim().replace(/\s+/g," ").toLowerCase();
+  const matches=q.length===0
+    ? allBrands.slice(0,8)
+    : allBrands.filter(b=>b.replace(/\s+/g," ").toLowerCase().includes(q)).slice(0,8);
+  const exactMatch=allBrands.some(b=>b.replace(/\s+/g," ").toLowerCase()===q);
+  const showAdd=query.trim().length>0&&!exactMatch;
+
+  const commit=raw=>{
+    const normalized=normalize(raw);
+    setQuery(normalized);
+    onChange(normalized);
+    setOpen(false);
+    if(normalized) saveCustomBrand(normalized).then(()=>loadBrands().then(setAllBrands));
+  };
+  const select=brand=>commit(brand);
+
+  return (
+    <div ref={ref} style={{ position:"relative",flex:1,height:"100%" }}>
+      <input
+        value={query}
+        onChange={e=>{ setQuery(e.target.value); setOpen(true); }}
+        onFocus={()=>setOpen(true)}
+        onBlur={()=>{ if(!open) commit(query); }}
+        placeholder="e.g. Zara"
+        style={{ width:"100%",height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box" }}
+      />
+      {open&&(matches.length>0||showAdd)&&(
+        <div style={{ position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:C.white,border:`1.5px solid ${C.border}`,borderRadius:12,boxShadow:"0 4px 16px rgba(0,0,0,.1)",zIndex:1000,overflow:"hidden" }}>
+          {matches.map((b,idx)=>(
+            <button key={idx} onMouseDown={()=>select(b)} style={{ display:"block",width:"100%",padding:"10px 12px",textAlign:"left",background:"none",border:"none",borderBottom:idx<matches.length-1||showAdd?`1px solid ${C.border}`:"none",fontSize:13,color:C.ink,cursor:"pointer",fontFamily:"inherit" }}>
+              {b}
+            </button>
+          ))}
+          {showAdd&&(
+            <button onMouseDown={()=>commit(query)} style={{ display:"block",width:"100%",padding:"10px 12px",textAlign:"left",background:C.sage+"12",border:"none",fontSize:13,color:C.sage,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>
+              + Add "{normalize(query)}"
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavourite, onBack, initialDate=null, onClearInitialDate, cameraEnabled=false }) {
   const [selectedDate,setSelectedDate]=useState(null);
@@ -601,7 +744,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   // Build lookup of all previously logged items by name (latest entry wins for each field)
   const knownItems={};
-  Object.values(photoData).forEach(e=>{ if(!e?.logged) return; (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim().toLowerCase(); if(!name) return; if(!knownItems[name]) knownItems[name]={category:item.category||"Top",color:item.color||"Black",price:null}; if(item.category&&item.category!=="Other") knownItems[name].category=item.category; if(item.color) knownItems[name].color=item.color; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) knownItems[name].price=String(p); }); });
+  Object.values(photoData).forEach(e=>{ if(!e?.logged) return; (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim().toLowerCase(); if(!name) return; if(!knownItems[name]) knownItems[name]={category:item.category||"Top",color:item.color||"Black",price:null,count:0}; knownItems[name].count+=1; if(item.category&&item.category!=="Other") knownItems[name].category=item.category; if(item.color) knownItems[name].color=item.color; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) knownItems[name].price=String(p); }); });
 
   const handleCameraCapture=async(dataUrl)=>{
     setShowCamera(false);
@@ -636,7 +779,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       const finalPhoto=photoUrl||compressed; // fall back to compressed base64 if upload fails
       if(parsed){
         const rawItems=parsed.clothing_items||[];
-        const items=rawItems.map(item=>{const key=(item.name||"").trim().toLowerCase();const known=knownItems[key];return known&&known.price?{...item,price:known.price}:item;});
+        const items=rawItems.map(item=>{const key=(item.name||"").trim().toLowerCase();const known=knownItems[key];if(known){return {...item,price:known.price??item.price,_recognized:true,_wearCount:known.count};}return item;});
         const style=parsed.style_category||null;
         const formalityLevel=parsed.formality_level||null;
         const season=parsed.season||null;
@@ -713,8 +856,8 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
               const updateItem=(i,key,val)=>setEditEntry(e=>{ const items=[...e.items]; items[i]={...items[i],[key]:val}; return {...e,items}; });
               const removeItem=(i)=>setEditEntry(e=>({...e,items:e.items.filter((_,idx)=>idx!==i)}));
               const addItem=()=>setEditEntry(e=>({...e,items:[...e.items,{category:"Top",name:"",color:"Black",_isNew:true}]}));
-              const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true}; return {...prev,items}; }); };
-              const saveEdit=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,...rest})=>rest); setPhotoData(p=>({...p,[toKey(selectedDate)]:{...p[toKey(selectedDate)],style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season,notes:editEntry.notes||"",items:cleanItems}})); setEditMode(false); setEditEntry(null); };
+              const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
+              const saveEdit=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,...rest})=>rest); setPhotoData(p=>({...p,[toKey(selectedDate)]:{...p[toKey(selectedDate)],style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season,notes:editEntry.notes||"",items:cleanItems}})); setEditMode(false); setEditEntry(null); };
               return (<>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10 }}>Style</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:16 }}>
@@ -735,18 +878,24 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                       <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:10,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                       <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:10,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
                     </div>
-                    {item._recognized&&<div style={{ display:"flex",alignItems:"center",gap:4,marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised — details filled from previous log</span></div>}
+                    {item._recognized&&<div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised</span><span style={{ fontSize:11,fontWeight:600,color:C.white,background:C.sage,borderRadius:999,padding:"1px 8px" }}>worn {item._wearCount} time{item._wearCount!==1?"s":""} before</span></div>}
                     <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>
                       {CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:999,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{catEmojis[c]} {c}</button>)}
                     </div>
                     <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:8 }}>
                       {COLORS.map(col=><button key={col} onClick={()=>updateItem(i,"color",col)} title={col} style={{ width:22,height:22,borderRadius:"50%",border:item.color===col?`2.5px solid ${C.sage}`:col==="White"?`1.5px solid ${C.border}`:"none",background:colorHex[col],cursor:"pointer",padding:0,flexShrink:0 }}/>)}
                     </div>
-                    <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
                       <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Price</span>
                       <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:10,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
                         <span style={{ padding:"0 8px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>£</span>
                         <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                      <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Brand</span>
+                      <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:10,border:`1.5px solid ${C.border}`,background:C.white,overflow:"visible" }}>
+                        <BrandPicker value={item.brand||""} onChange={v=>updateItem(i,"brand",v)}/>
                       </div>
                     </div>
                   </div>
@@ -774,7 +923,8 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                   <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",margin:0 }}>What I wore</p>
                   {selectedItemIdxs.size>0&&<button onClick={removeSelected} style={{ fontSize:12,fontWeight:700,color:C.red,background:"#FEF0EF",border:"none",borderRadius:999,padding:"4px 12px",cursor:"pointer",fontFamily:"inherit" }}>Remove {selectedItemIdxs.size} selected</button>}
                 </div>
-                {entry.analysing?(<div style={{background:C.surface,borderRadius:14,padding:20,display:"flex",flexDirection:"column",alignItems:"center",gap:10,border:`1px solid ${C.border}`}}><div style={{width:24,height:24,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style><span style={{fontSize:13,color:C.sub,fontWeight:600}}>Analysing outfit with AI…</span></div>):cats.length>0?<div style={{ display:"flex",flexDirection:"column",gap:12 }}>{cats.map(cat=>(<div key={cat}><div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}><span style={{ fontSize:14 }}>{catEmojis[cat]||"👔"}</span><span style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em" }}>{cat}</span></div>{grouped[cat].map((item,i)=>{ const hex=item.color&&colorHex[item.color]?colorHex[item.color]:null; const isSel=selectedItemIdxs.has(item._idx); const isFav=favourites.some(f=>(f.name||"").trim().toLowerCase()===(item.name||"").trim().toLowerCase()); return <div key={i} style={{ width:"100%",background:isSel?C.sage+"14":C.surface,borderRadius:12,padding:"9px 12px",marginBottom:4,border:isSel?`1.5px solid ${C.sage}`:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8 }}><div onClick={()=>toggleItem(item._idx)} style={{ width:18,height:18,borderRadius:"50%",border:isSel?"none":`1.5px solid ${C.border}`,background:isSel?C.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer" }}>{isSel&&<span style={{ color:"#fff",fontSize:11,lineHeight:1 }}>✓</span>}</div>{hex&&<div style={{ width:12,height:12,borderRadius:"50%",background:hex,flexShrink:0,border:item.color==="White"?`1px solid ${C.border}`:"none" }}/>}<span onClick={()=>toggleItem(item._idx)} style={{ fontSize:13,color:C.ink,fontWeight:500,flex:1,cursor:"pointer" }}>{item.name||String(item)}</span>{item.color&&<span style={{ fontSize:11,color:C.sub }}>{item.color}</span>}<button onClick={e=>{ e.stopPropagation(); onToggleFavourite&&onToggleFavourite(item); }} style={{ background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,display:"flex",alignItems:"center" }}><Heart size={16} color={isFav?C.red:"#ccc"} fill={isFav?C.red:"none"}/></button></div>; })}</div>))}</div>:<div style={{ background:C.surface,borderRadius:12,padding:"10px 14px",border:`1px solid ${C.border}` }}><span style={{ fontSize:13,color:C.sub }}>No items added yet — tap Edit Outfit to add what you wore</span></div>}
+                {entry.analysing?(<div style={{background:C.surface,borderRadius:14,padding:20,display:"flex",flexDirection:"column",alignItems:"center",gap:10,border:`1px solid ${C.border}`}}><div style={{width:24,height:24,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style><span style={{fontSize:13,color:C.sub,fontWeight:600}}>Analysing outfit with AI…</span></div>):cats.length>0?<div style={{ display:"flex",flexDirection:"column",gap:12 }}>{cats.map(cat=>(<div key={cat}><div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}><span style={{ fontSize:14 }}>{catEmojis[cat]||"👔"}</span><span style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em" }}>{cat}</span></div>{grouped[cat].map((item,i)=>{ const hex=item.color&&colorHex[item.color]?colorHex[item.color]:null; const isSel=selectedItemIdxs.has(item._idx); const isFav=favourites.some(f=>(f.name||"").trim().toLowerCase()===(item.name||"").trim().toLowerCase()); const wearCount=knownItems[(item.name||"").trim().toLowerCase()]?.count;
+return <div key={i} style={{ width:"100%",background:isSel?C.sage+"14":C.surface,borderRadius:12,padding:"9px 12px",marginBottom:4,border:isSel?`1.5px solid ${C.sage}`:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8 }}><div onClick={()=>toggleItem(item._idx)} style={{ width:18,height:18,borderRadius:"50%",border:isSel?"none":`1.5px solid ${C.border}`,background:isSel?C.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer" }}>{isSel&&<span style={{ color:"#fff",fontSize:11,lineHeight:1 }}>✓</span>}</div>{hex&&<div style={{ width:12,height:12,borderRadius:"50%",background:hex,flexShrink:0,border:item.color==="White"?`1px solid ${C.border}`:"none" }}/>}<span onClick={()=>toggleItem(item._idx)} style={{ fontSize:13,color:C.ink,fontWeight:500,flex:1,cursor:"pointer" }}>{item.name||String(item)}</span>{wearCount>1&&<span style={{ fontSize:10,fontWeight:700,color:C.sage,background:C.sage+"18",borderRadius:999,padding:"2px 7px",flexShrink:0 }}>{wearCount}x</span>}{item.color&&<span style={{ fontSize:11,color:C.sub }}>{item.color}</span>}<button onClick={e=>{ e.stopPropagation(); onToggleFavourite&&onToggleFavourite(item); }} style={{ background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,display:"flex",alignItems:"center" }}><Heart size={16} color={isFav?C.red:"#ccc"} fill={isFav?C.red:"none"}/></button></div>; })}</div>))}</div>:<div style={{ background:C.surface,borderRadius:12,padding:"10px 14px",border:`1px solid ${C.border}` }}><span style={{ fontSize:13,color:C.sub }}>No items added yet — tap Edit Outfit to add what you wore</span></div>}
               </div>
               <button onClick={()=>{ setEditEntry({ style:entry.style||null, formalityLevel:entry.formalityLevel||null, season:entry.season||null, notes:entry.notes||"", items:(entry.items||[]).map(item=>typeof item==="object"&&item?{...item}:{ name:String(item||""),category:"Other",color:null }) }); setEditMode(true); setSelectedItemIdxs(new Set()); }} style={{ width:"100%",height:50,borderRadius:16,border:`1.5px solid ${C.border}`,background:C.white,color:C.ink,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10 }}><Pencil size={16} color={C.sage}/>Edit Outfit</button>
               <DangerBtn onClick={()=>{ setPhotoData(p=>{ const n={...p}; delete n[toKey(selectedDate)]; return n; }); setShowModal(false); }}>Remove Outfit Log</DangerBtn>
@@ -1105,10 +1255,6 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
             ? <img src={profileImage} alt="Profile" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>
             : <span>👤</span>
           }
-          {/* Camera badge */}
-          <div style={{ position:"absolute",bottom:0,right:0,width:24,height:24,borderRadius:"50%",background:C.white,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 4px rgba(0,0,0,.2)" }}>
-            <Camera size={12} color={C.sage}/>
-          </div>
         </button>
         <h1 style={{ fontSize:22,fontWeight:800,color:"#fff",margin:"0 0 4px" }}>{userEmail?(userEmail.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase())):"My Wardrobe"}</h1>
         <p style={{ fontSize:14,color:"rgba(255,255,255,.8)",margin:0 }}>{userEmail||"Style enthusiast"}</p>
@@ -1128,10 +1274,40 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
 }
 
 function SettingsScreen({ onBack }) {
-  const [panel,setPanel]=useState(null); // null | "password" | "phone" | "name" | "delete"
+  const [panel,setPanel]=useState(null); // null | "password" | "phone" | "name" | "dob" | "delete"
   const [curPw,setCurPw]=useState(""); const [newPw,setNewPw]=useState(""); const [confPw,setConfPw]=useState("");
   const [phone,setPhone]=useState(""); const [firstName,setFirstName]=useState(""); const [lastName,setLastName]=useState("");
+  const [dob,setDob]=useState("");
   const [msg,setMsg]=useState(""); const [err,setErr]=useState("");
+
+  const handleDobChange=(val)=>{
+    const digits=val.replace(/\D/g,"").slice(0,8);
+    let formatted=digits;
+    if(digits.length>2) formatted=digits.slice(0,2)+"/"+digits.slice(2);
+    if(digits.length>4) formatted=digits.slice(0,2)+"/"+digits.slice(2,4)+"/"+digits.slice(4);
+    setDob(formatted);
+  };
+
+  const validateDob=(val)=>{
+    if(!/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return "Please enter a date in DD/MM/YYYY format.";
+    const [d,m,y]=val.split("/").map(Number);
+    if(m<1||m>12) return "Month must be between 01 and 12.";
+    const daysInMonth=new Date(y,m,0).getDate();
+    if(d<1||d>daysInMonth) return `Day must be between 01 and ${daysInMonth} for this month.`;
+    if(y<1900) return "Please enter a valid year.";
+    if(new Date(y,m-1,d)>new Date()) return "Date of birth cannot be in the future.";
+    if(new Date().getFullYear()-y>120) return "Please enter a valid date of birth.";
+    return null;
+  };
+
+  const handleSaveDob=async()=>{
+    setErr(""); setMsg("");
+    const validationErr=validateDob(dob);
+    if(validationErr){setErr(validationErr);return;}
+    const {error}=await supabase.auth.updateUser({data:{date_of_birth:dob}});
+    if(error){setErr(error.message);return;}
+    setMsg("Date of birth saved successfully.");
+  };
   const inputStyle={width:"100%",height:48,padding:"0 14px",borderRadius:12,border:`1.5px solid ${C.border}`,background:C.white,fontSize:14,color:C.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12};
   const labelStyle={fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.07em",display:"block",marginBottom:6};
 
@@ -1145,7 +1321,31 @@ function SettingsScreen({ onBack }) {
     setMsg("Password updated successfully."); setCurPw(""); setNewPw(""); setConfPw("");
   };
 
-  const handleSendCode=()=>{ if(!phone){setErr("Please enter a phone number.");return;} setMsg("Verification code sent to "+phone); };
+  const [phoneStep,setPhoneStep]=useState("enter"); // "enter" | "verify"
+  const [otp,setOtp]=useState("");
+  const [phoneSending,setPhoneSending]=useState(false);
+
+  const handleSendCode=async()=>{
+    setErr(""); setMsg("");
+    if(!phone){setErr("Please enter a phone number.");return;}
+    const formatted=phone.trim().startsWith("+")?phone.trim():"+"+phone.trim();
+    setPhoneSending(true);
+    const {error}=await supabase.auth.updateUser({ phone: formatted });
+    setPhoneSending(false);
+    if(error){setErr(error.message);return;}
+    setPhone(formatted);
+    setPhoneStep("verify");
+    setMsg("Verification code sent to "+formatted);
+  };
+
+  const handleVerifyCode=async()=>{
+    setErr(""); setMsg("");
+    if(!otp||otp.length<6){setErr("Please enter the 6-digit code.");return;}
+    const {error}=await supabase.auth.verifyOtp({ phone, token:otp, type:"phone_change" });
+    if(error){setErr(error.message);return;}
+    setMsg("Phone number updated successfully.");
+    setPhoneStep("enter"); setPhone(""); setOtp("");
+  };
 
   const handleSaveName=async()=>{
     setErr(""); setMsg("");
@@ -1177,7 +1377,7 @@ function SettingsScreen({ onBack }) {
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         {!panel&&(<>
-          {[{id:"password",title:"Change Password",sub:"Enter your current password and choose a new one."},{id:"phone",title:"Update Phone Number",sub:"Enter your new phone number to receive a verification code."},{id:"name",title:"Change Name",sub:"Update your display name."}].map(item=>(
+          {[{id:"password",title:"Change Password",sub:"Enter your current password and choose a new one."},{id:"phone",title:"Update Phone Number",sub:"Enter your new phone number to receive a verification code."},{id:"name",title:"Change Name",sub:"Update your display name."},{id:"dob",title:"Date of Birth",sub:"Update your date of birth."}].map(item=>(
             <button key={item.id} onClick={()=>{setPanel(item.id);setErr("");setMsg("");}} style={{ width:"100%",background:C.white,borderRadius:18,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
               <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>{item.title}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.sub}</div></div>
               <ChevronRight size={18} color={C.border}/>
@@ -1208,13 +1408,24 @@ function SettingsScreen({ onBack }) {
         )}
 
         {panel==="phone"&&(
-          <Section title="Update Phone Number" sub="Enter your new phone number to receive a verification code.">
+          <Section title="Update Phone Number" sub={phoneStep==="enter"?"Enter your new phone number including country code (e.g. +44 7700 000000).":"Enter the 6-digit code sent to "+phone+"."}>
             {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
             {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
-            <label style={labelStyle}>Phone Number</label>
-            <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+44 7700 000000" style={{...inputStyle,marginBottom:16}}/>
-            <button onClick={handleSendCode} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Send Verification Code</button>
-            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            {phoneStep==="enter"?(
+              <>
+                <label style={labelStyle}>Phone Number</label>
+                <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+44 7700 000000" style={{...inputStyle,marginBottom:16}}/>
+                <button onClick={handleSendCode} disabled={phoneSending} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:phoneSending?C.border:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:phoneSending?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:10 }}>{phoneSending?"Sending…":"Send Verification Code"}</button>
+              </>
+            ):(
+              <>
+                <label style={labelStyle}>Verification Code</label>
+                <input type="text" inputMode="numeric" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,""))} placeholder="000000" style={{...inputStyle,letterSpacing:"0.3em",fontSize:22,fontWeight:700,textAlign:"center",marginBottom:16}}/>
+                <button onClick={handleVerifyCode} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Verify & Save</button>
+                <button onClick={()=>{setPhoneStep("enter");setOtp("");setErr("");setMsg("");}} style={{ width:"100%",height:40,borderRadius:14,border:"none",background:"transparent",color:C.sage,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Resend code</button>
+              </>
+            )}
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");setPhoneStep("enter");setPhone("");setOtp("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </Section>
         )}
 
@@ -1227,6 +1438,17 @@ function SettingsScreen({ onBack }) {
             <label style={labelStyle}>Last Name</label>
             <input value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Smith" style={{...inputStyle,marginBottom:16}}/>
             <button onClick={handleSaveName} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Save Changes</button>
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+          </Section>
+        )}
+
+        {panel==="dob"&&(
+          <Section title="Date of Birth" sub="Enter your date of birth in DD/MM/YYYY format.">
+            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
+            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
+            <label style={labelStyle}>Date of Birth</label>
+            <input value={dob} onChange={e=>handleDobChange(e.target.value)} placeholder="DD/MM/YYYY" maxLength={10} inputMode="numeric" style={{...inputStyle,marginBottom:16}}/>
+            <button onClick={handleSaveDob} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Save</button>
             <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </Section>
         )}
@@ -1279,25 +1501,59 @@ function NotificationsScreen({ onBack }) {
 
 function PrivacyScreen({ onBack, cameraEnabled, onCameraToggle }) {
   const [locationOn,setLocationOn]=useState(false);
-  const [permissionError,setPermissionError]=useState("");
+  const [locationSaving,setLocationSaving]=useState(false);
+  const [cameraError,setCameraError]=useState("");
+  const [locationError,setLocationError]=useState("");
 
-  const Toggle=({on,onToggle})=>(
-    <div onClick={onToggle} style={{ width:44,height:26,borderRadius:999,background:on?C.sage:C.border,position:"relative",cursor:"pointer",flexShrink:0,transition:"background .2s" }}>
+  // Load persisted location preference on mount
+  useEffect(()=>{
+    supabase.auth.getUser().then(({data:{user}})=>{
+      if(user?.user_metadata?.location) setLocationOn(true);
+    });
+  },[]);
+
+  const Toggle=({on,onToggle,disabled})=>(
+    <div onClick={disabled?undefined:onToggle} style={{ width:44,height:26,borderRadius:999,background:on?C.sage:C.border,position:"relative",cursor:disabled?"not-allowed":"pointer",flexShrink:0,transition:"background .2s",opacity:disabled?0.6:1 }}>
       <div style={{ position:"absolute",top:3,left:on?21:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s" }}/>
     </div>
   );
 
   const handleCameraToggle=async()=>{
-    setPermissionError("");
+    setCameraError("");
     if(cameraEnabled){ onCameraToggle(false); return; }
     try{
       const stream=await navigator.mediaDevices.getUserMedia({ video:true });
       stream.getTracks().forEach(t=>t.stop());
       onCameraToggle(true);
     }catch(e){
-      setPermissionError("Camera access was denied. Please allow camera access in your browser settings, then try again.");
+      setCameraError("Camera access was denied. Please allow camera access in your browser settings, then try again.");
       onCameraToggle(false);
     }
+  };
+
+  const handleLocationToggle=async()=>{
+    setLocationError("");
+    if(locationOn){
+      await supabase.auth.updateUser({ data:{ location:null } });
+      setLocationOn(false);
+      return;
+    }
+    if(!navigator.geolocation){ setLocationError("Geolocation is not supported by your browser."); return; }
+    setLocationSaving(true);
+    navigator.geolocation.getCurrentPosition(
+      async(pos)=>{
+        const { latitude:lat, longitude:lng }=pos.coords;
+        const { error }=await supabase.auth.updateUser({ data:{ location:{ lat, lng } } });
+        setLocationSaving(false);
+        if(error){ setLocationError("Could not save location. Please try again."); return; }
+        setLocationOn(true);
+      },
+      ()=>{
+        setLocationSaving(false);
+        setLocationError("Location access was denied. Please allow location access in your browser settings, then try again.");
+      },
+      { enableHighAccuracy:false, timeout:10000 }
+    );
   };
 
   return (
@@ -1313,13 +1569,17 @@ function PrivacyScreen({ onBack, cameraEnabled, onCameraToggle }) {
             <div style={{ flex:1,marginRight:12 }}>
               <div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Camera Access</div>
               <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Allow app to use your camera for outfit photos</div>
-              {permissionError&&<div style={{ fontSize:11,color:C.red,marginTop:6,lineHeight:1.5 }}>{permissionError}</div>}
+              {cameraError&&<div style={{ fontSize:11,color:C.red,marginTop:6,lineHeight:1.5 }}>{cameraError}</div>}
             </div>
             <Toggle on={cameraEnabled} onToggle={handleCameraToggle}/>
           </div>
           <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-            <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Location</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Allow app to access your location</div></div>
-            <Toggle on={locationOn} onToggle={()=>setLocationOn(v=>!v)}/>
+            <div style={{ flex:1,marginRight:12 }}>
+              <div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Location</div>
+              <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{locationSaving?"Retrieving your location…":"Allow app to access your location"}</div>
+              {locationError&&<div style={{ fontSize:11,color:C.red,marginTop:6,lineHeight:1.5 }}>{locationError}</div>}
+            </div>
+            <Toggle on={locationOn} onToggle={handleLocationToggle} disabled={locationSaving}/>
           </div>
         </div>
       </div>
@@ -1346,7 +1606,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
 
   // Build known items from all previously logged outfits
   const knownItems={};
-  Object.values(photoData).forEach(e=>{ if(!e?.logged) return; (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim().toLowerCase(); if(!name) return; if(!knownItems[name]) knownItems[name]={category:item.category||"Top",color:item.color||"Black",price:null}; if(item.category&&item.category!=="Other") knownItems[name].category=item.category; if(item.color) knownItems[name].color=item.color; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) knownItems[name].price=String(p); }); });
+  Object.values(photoData).forEach(e=>{ if(!e?.logged) return; (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim().toLowerCase(); if(!name) return; if(!knownItems[name]) knownItems[name]={category:item.category||"Top",color:item.color||"Black",price:null,count:0}; knownItems[name].count+=1; if(item.category&&item.category!=="Other") knownItems[name].category=item.category; if(item.color) knownItems[name].color=item.color; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) knownItems[name].price=String(p); }); });
 
   const handleFile=(file)=>{
     if(!file) return;
@@ -1365,7 +1625,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
       if(url) setPhotoUrl(url);
       if(parsed){
         const rawItems=parsed.clothing_items||[];
-        const items=rawItems.map(item=>{ const key=(item.name||"").trim().toLowerCase(); const known=knownItems[key]; return known&&known.price?{...item,price:known.price}:item; });
+        const items=rawItems.map(item=>{ const key=(item.name||"").trim().toLowerCase(); const known=knownItems[key]; if(known){return {...item,price:known.price??item.price,_recognized:true,_wearCount:known.count};} return item; });
         const style=parsed.style_category||null;
         const formalityLevel=parsed.formality_level||null;
         const season=parsed.season||null;
@@ -1379,8 +1639,8 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
   const updateItem=(i,key,val)=>setEditEntry(e=>{ const items=[...e.items]; items[i]={...items[i],[key]:val}; return {...e,items}; });
   const removeItem=(i)=>setEditEntry(e=>({...e,items:e.items.filter((_,idx)=>idx!==i)}));
   const addItem=()=>setEditEntry(e=>({...e,items:[...e.items,{category:"Top",name:"",color:"Black",_isNew:true}]}));
-  const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true}; return {...prev,items}; }); };
-  const handleSave=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,...rest})=>rest); setPhotoData(p=>({...p,[todayKey]:{logged:true,photo:photoUrl||photo,items:cleanItems,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season}})); setStep("done"); };
+  const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
+  const handleSave=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,...rest})=>rest); setPhotoData(p=>({...p,[todayKey]:{logged:true,photo:photoUrl||photo,items:cleanItems,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season}})); setStep("done"); };
 
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
@@ -1548,7 +1808,7 @@ export default function App() {
     if(subScreen==="privacy") return <PrivacyScreen onBack={goBack} cameraEnabled={cameraEnabled} onCameraToggle={setCameraEnabled}/>;
     switch(tab){
       case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
-      case "wardrobe":  return <WardrobeScreen photoData={photoData} onBack={canGoBack?goBack:null} initialView={wardrobeInitialView}/>;
+      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} onBack={canGoBack?goBack:null} initialView={wardrobeInitialView}/>;
       case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null} initialDate={calendarOpenDate} onClearInitialDate={()=>setCalendarOpenDate(null)} cameraEnabled={cameraEnabled}/>;
       case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} photoData={photoData} onGoToDate={dateKey=>{ setCalendarOpenDate(dateKey); navigateTo("calendar"); }} onBack={canGoBack?goBack:null}/>;
       case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
