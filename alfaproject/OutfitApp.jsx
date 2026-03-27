@@ -772,10 +772,12 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       // Convert compressed data-URL to a Blob for storage upload
       const blob=await fetch(compressed).then(r=>r.blob());
       // Upload photo and run AI analysis in parallel
+      let _analysisErr=null;
       const [photoUrl,parsed]=await Promise.all([
         uploadPhoto(blob,dateKey),
-        analyseOutfit(base64,file.type,knownItemsList).catch(()=>null),
+        analyseOutfit(base64,file.type,knownItemsList).catch(e=>{ _analysisErr=e; return null; }),
       ]);
+      if(_analysisErr){ setToast("AI error: "+_analysisErr.message); setTimeout(()=>setToast(null),8000); }
       const finalPhoto=photoUrl||compressed; // fall back to compressed base64 if upload fails
       if(parsed){
         const rawItems=parsed.clothing_items||[];
