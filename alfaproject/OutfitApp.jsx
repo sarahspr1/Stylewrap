@@ -777,7 +777,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         uploadPhoto(blob,dateKey),
         analyseOutfit(base64,file.type,knownItemsList).catch(e=>{ _analysisErr=e; return null; }),
       ]);
-      if(_analysisErr){ setToast("AI error: "+_analysisErr.message); setTimeout(()=>setToast(null),8000); }
+      if(_analysisErr){ setToast("AI error: "+(_analysisErr.message||String(_analysisErr))); setTimeout(()=>setToast(null),30000); }
       const finalPhoto=photoUrl||compressed; // fall back to compressed base64 if upload fails
       if(parsed){
         const rawItems=parsed.clothing_items||[];
@@ -818,7 +818,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
 
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface,position:"relative" }}>
-      {toast&&<div style={{ position:"absolute",top:10,left:12,right:12,zIndex:200,background:C.sage,color:"#fff",borderRadius:14,padding:"10px 14px",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 16px rgba(0,0,0,.18)",animation:"slideUp .25s ease" }}><Check size={15} color="#fff"/>{toast}</div>}
+      {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:toast.startsWith("AI error")?"#E5635A":C.sage,color:"#fff",borderRadius:14,padding:"10px 14px",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 16px rgba(0,0,0,.18)" }}><Check size={15} color="#fff"/>{toast}</div>}
       <div style={{ background:`linear-gradient(145deg,${C.sage},${C.green})`,padding:"20px 20px 20px",flexShrink:0,borderRadius:"0 0 28px 28px",position:"relative" }}>
         {onBack&&<button onClick={onBack} style={{ position:"absolute",top:20,left:16,width:36,height:36,borderRadius:12,border:"none",background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color="#fff"/></button>}
         <h1 style={{ fontSize:28,fontWeight:800,color:"#fff",margin:"0 0 4px",paddingLeft:onBack?44:0 }}>Outfit Calendar</h1>
