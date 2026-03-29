@@ -12,8 +12,9 @@
 
 import PROMPTS from "./outfitPrompts.json";
 
-const GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions";
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const GROQ_URL       = "https://api.groq.com/openai/v1/chat/completions";
+const GEMINI_URL     = "https://generativelanguage.googleapis.com/v1beta/models";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // ── Prompt builder ────────────────────────────────────────────────────────────
 
@@ -85,6 +86,39 @@ async function analyseWithGroq(base64, mediaType, knownItems) {
   return parseResponse(text);
 }
 
+// ── OpenRouter ────────────────────────────────────────────────────────────────
+
+async function analyseWithOpenRouter(base64, mediaType, knownItems) {
+  const key = import.meta.env.VITE_OPENROUTER_KEY;
+  if (!key) throw new Error("NO_KEY");
+
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type":  "application/json",
+      "Authorization": `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model:      "meta-llama/llama-4-scout:free",
+      max_tokens: 1024,
+      messages: [{
+        role:    "user",
+        content: [
+          { type: "image_url", image_url: { url: `data:${mediaType};base64,${base64}` } },
+          { type: "text",      text: buildPrompt(knownItems) },
+        ],
+      }],
+    }),
+  });
+
+  if (res.status === 429) throw new Error("RATE_LIMIT");
+  if (!res.ok)            throw new Error(`OPENROUTER_${res.status}`);
+
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content || "{}";
+  return parseResponse(text);
+}
+
 // ── Gemini ────────────────────────────────────────────────────────────────────
 
 async function analyseWithGemini(base64, mediaType, knownItems) {
@@ -126,18 +160,17 @@ async function analyseWithGemini(base64, mediaType, knownItems) {
  *                                   color_palette, clothing_items }
  */
 export async function analyseOutfit(base64, mediaType, knownItems = []) {
-  let groqError;
-  try {
-    return await analyseWithGroq(base64, mediaType, knownItems);
-  } catch (e) {
-    groqError = e;
-  }
+  let firstError;
 
-  // Groq failed for any reason — try Gemini before giving up
-  try {
-    return await analyseWithGemini(base64, mediaType, knownItems);
-  } catch (geminiError) {
-    // Both failed — throw the original Groq error so the toast shows it
-    throw groqError;
-  }
+  try { return await analyseWithGroq(base64, mediaType, knownItems); }
+  catch (e) { firstError = e; }
+
+  try { return await analyseWithGemini(base64, mediaType, knownItems); }
+  catch (e) {}
+
+  try { return await analyseWithOpenRouter(base64, mediaType, knownItems); }
+  catch (e) {}
+
+  // All three failed
+  throw firstError;
 }
