@@ -45,7 +45,7 @@ class ErrorBoundary extends Component {
         <div style={{ fontSize:40,marginBottom:16 }}>⚠️</div>
         <div style={{ fontSize:16,fontWeight:700,color:"#1C1C1E",marginBottom:8,textAlign:"center" }}>Something went wrong</div>
         <div style={{ fontSize:13,color:"#8E8E93",textAlign:"center",marginBottom:24 }}>{""+this.state.error}</div>
-        <button onClick={()=>this.setState({error:null})} style={{ padding:"10px 24px",borderRadius:14,border:"none",background:"#9A9B7A",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Try Again</button>
+        <button onClick={()=>this.setState({error:null})} style={{ padding:"10px 24px",borderRadius:0,border:"none",background:"#9A9B7A",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Try Again</button>
       </div>
     );
     return this.props.children;
@@ -99,7 +99,7 @@ function CameraCapture({ onCapture, onClose }) {
         <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32 }}>
           <div style={{ fontSize:48,marginBottom:16 }}>📷</div>
           <p style={{ color:"#fff",textAlign:"center",fontSize:15,lineHeight:1.6,marginBottom:28 }}>{error}</p>
-          <button onClick={onClose} style={{ padding:"12px 32px",borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Go Back</button>
+          <button onClick={onClose} style={{ padding:"12px 32px",borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Go Back</button>
         </div>
       ):(
         <>
@@ -121,7 +121,7 @@ function Modal({ isOpen, onClose, title, children }) {
   if (!isOpen) return null;
   return (
     <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",width:"100%",maxHeight:"92vh",overflow:"auto",padding:"8px 20px 44px",animation:"slideUp .28s cubic-bezier(.32,.72,0,1)" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",maxHeight:"92vh",overflow:"auto",padding:"8px 20px 44px",animation:"slideUp .28s cubic-bezier(.32,.72,0,1)" }}>
         <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 16px" }} />
         <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
           <h2 style={{ fontSize:22,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.02em" }}>{title}</h2>
@@ -135,7 +135,7 @@ function Modal({ isOpen, onClose, title, children }) {
 
 function PrimaryBtn({ children, onClick, disabled, style:s={} }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:disabled?C.border:C.sage,color:disabled?C.sub:"#fff",fontSize:16,fontWeight:700,cursor:disabled?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",...s }}>
+    <button onClick={onClick} disabled={disabled} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:disabled?C.border:C.ink,color:disabled?C.sub:"#fff",fontSize:16,fontWeight:700,cursor:disabled?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",...s }}>
       {children}
     </button>
   );
@@ -143,7 +143,7 @@ function PrimaryBtn({ children, onClick, disabled, style:s={} }) {
 
 function DangerBtn({ children, onClick }) {
   return (
-    <button onClick={onClick} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:"#FEF0EF",color:C.red,fontSize:16,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit" }}>
+    <button onClick={onClick} style={{ width:"100%",height:52,borderRadius:0,border:`2px solid ${C.red}`,background:"transparent",color:C.red,fontSize:16,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit" }}>
       {children}
     </button>
   );
@@ -152,8 +152,8 @@ function DangerBtn({ children, onClick }) {
 function StatCard({ icon, number, label, accent=C.sage, onClick }) {
   const El = onClick ? "button" : "div";
   return (
-    <El onClick={onClick} style={{ flex:1,background:C.white,borderRadius:20,padding:16,boxShadow:"0 1px 0 rgba(0,0,0,.06)",border:`1px solid ${C.border}`,cursor:onClick?"pointer":"default",textAlign:"left",fontFamily:"inherit" }}>
-      <div style={{ width:38,height:38,borderRadius:12,background:accent+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,marginBottom:10 }}>{icon}</div>
+    <El onClick={onClick} style={{ flex:1,background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,cursor:onClick?"pointer":"default",textAlign:"left",fontFamily:"inherit" }}>
+      <div style={{ width:38,height:38,borderRadius:0,background:accent+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,marginBottom:10 }}>{icon}</div>
       <div style={{ fontSize:26,fontWeight:900,color:C.ink,lineHeight:1,letterSpacing:"-0.02em" }}>{number}</div>
       <div style={{ fontSize:12,color:C.sub,marginTop:4 }}>{label}</div>
     </El>
@@ -167,8 +167,8 @@ function TabBar({ active, onChange }) {
     <div style={{ height:83,background:C.white,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-around",paddingBottom:20,flexShrink:0 }}>
       {tabs.map(({ id,label,icon:Icon })=>{
         const a=active===id;
-        return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:56,border:"none",background:"transparent",cursor:"pointer",padding:6,borderRadius:12 }}>
-          <div style={{ width:32,height:32,borderRadius:10,background:a?C.sage+"18":"transparent",display:"flex",alignItems:"center",justifyContent:"center" }}><Icon size={20} color={a?C.sage:"#ABABAB"} strokeWidth={a?2.5:2}/></div>
+        return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:56,border:"none",background:"transparent",cursor:"pointer",padding:6,borderRadius:0 }}>
+          <div style={{ width:32,height:32,borderRadius:0,background:a?C.sage+"18":"transparent",display:"flex",alignItems:"center",justifyContent:"center" }}><Icon size={20} color={a?C.sage:"#ABABAB"} strokeWidth={a?2.5:2}/></div>
           <span style={{ fontSize:10,fontWeight:700,color:a?C.sage:"#ABABAB",letterSpacing:"0.06em",textTransform:"uppercase" }}>{label}</span>
         </button>;
       })}
@@ -212,12 +212,12 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
   return (
     <div style={{ flex:1,overflowY:"auto",background:C.surface }}>
-      <div style={{ background:`linear-gradient(145deg,${C.sage} 0%,${C.green} 100%)`,paddingTop:30,paddingBottom:20,paddingLeft:24,paddingRight:24,borderRadius:"0 0 32px 32px",position:"relative",overflow:"hidden" }}>
+      <div style={{ background:`linear-gradient(145deg,${C.sage} 0%,${C.green} 100%)`,paddingTop:30,paddingBottom:20,paddingLeft:24,paddingRight:24,borderRadius:0,position:"relative",overflow:"hidden" }}>
         <div style={{ position:"absolute",top:-40,right:-40,width:200,height:200,borderRadius:"50%",background:"rgba(255,255,255,.08)" }}/>
         <p style={{ fontSize:13,color:"rgba(255,255,255,.7)",fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6 }}>{dateLabel}</p>
         <h1 style={{ fontSize:34,fontWeight:900,color:"#fff",margin:"0 0 4px",lineHeight:1.1,letterSpacing:"-0.03em" }}>Hello{firstName?`, ${firstName}`:""}!</h1>
         {streakLabel
-          ? <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,.18)",borderRadius:999,padding:"4px 12px",marginTop:2 }}>
+          ? <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,.18)",borderRadius:0,padding:"4px 12px",marginTop:2 }}>
               <span style={{ fontSize:13 }}>{loggedToday?"✅":"🕐"}</span>
               <span style={{ fontSize:13,fontWeight:600,color:"#fff" }}>{streakLabel}</span>
             </div>
@@ -225,16 +225,16 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       </div>
       <div style={{ padding:"16px 16px 0" }}>
         {!hasAnyOutfits?(
-          <div style={{ background:C.white,borderRadius:20,padding:20,marginBottom:20,border:`1px solid ${C.border}`,textAlign:"center" }}>
+          <div style={{ background:C.white,borderRadius:0,padding:20,marginBottom:20,border:`1px solid ${C.border}`,textAlign:"center" }}>
             <div style={{ fontSize:44,marginBottom:12 }}>👗</div>
             <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,margin:"0 0 6px",letterSpacing:"-0.02em" }}>Start tracking your style</h2>
             <p style={{ fontSize:13,color:C.sub,margin:"0 0 16px",lineHeight:1.6 }}>Log your first outfit to unlock wardrobe stats, colour trends, and cost-per-wear tracking.</p>
-            <button onClick={onAddItem} style={{ height:48,padding:"0 24px",borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Log First Outfit</button>
+            <button onClick={onAddItem} style={{ height:48,padding:"0 24px",borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Log First Outfit</button>
           </div>
         ):(
           <div style={{ display:"flex",gap:10,marginBottom:20 }}>
-            <div style={{ flex:1,background:C.white,borderRadius:20,padding:16,boxShadow:"0 1px 0 rgba(0,0,0,.06)",border:`1px solid ${C.border}` }}>
-              <div style={{ width:38,height:38,borderRadius:12,background:topColorHex?(topColorHex+"28"):C.surface,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10 }}>
+            <div style={{ flex:1,background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}>
+              <div style={{ width:38,height:38,borderRadius:0,background:topColorHex?(topColorHex+"28"):C.surface,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10 }}>
                 {topColorHex
                   ? <div style={{ width:22,height:22,borderRadius:"50%",background:topColorHex,border:topColorName==="White"?`1.5px solid ${C.border}`:"none" }}/>
                   : <Palette size={18} color={C.sub}/>}
@@ -247,8 +247,8 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
         )}
         <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,marginBottom:12,letterSpacing:"-0.02em" }}>Quick Actions</h2>
         <div style={{ display:"flex",gap:10,marginBottom:20 }}>
-          <button onClick={onAddItem} style={{ flex:1,height:56,borderRadius:16,border:"none",background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><span style={{ fontSize:20 }}>📸</span><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Log Outfit</span></button>
-          <button onClick={onShowAllItems} style={{ flex:1,height:56,borderRadius:16,border:"none",background:C.green+"14",display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><span style={{ fontSize:20 }}>✨</span><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>All Items</span></button>
+          <button onClick={onAddItem} style={{ flex:1,height:56,borderRadius:0,border:`2px solid ${C.ink}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><span style={{ fontSize:20 }}>📸</span><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Log Outfit</span></button>
+          <button onClick={onShowAllItems} style={{ flex:1,height:56,borderRadius:0,border:`2px solid ${C.ink}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><span style={{ fontSize:20 }}>✨</span><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>All Items</span></button>
         </div>
       </div>
     </div>
@@ -315,7 +315,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
 
   const SectionHeader=({ title,back })=>(
     <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-      {back&&<button onClick={back} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>}
+      {back&&<button onClick={back} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>}
       <h1 style={{ fontSize:22,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.02em" }}>{title}</h1>
     </div>
   );
@@ -339,19 +339,19 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
       <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
         <div style={{ background:C.white,padding:"16px 16px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:12 }}>
-            <button onClick={()=>setView("main")} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><ChevronLeft size={20} color={C.sage}/></button>
+            <button onClick={()=>setView("main")} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><ChevronLeft size={20} color={C.sage}/></button>
             <div style={{ flex:1 }}><h1 style={{ fontSize:22,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.02em" }}>All Items</h1><p style={{ fontSize:12,color:C.sub,margin:0 }}>{sortedItems.length} of {wearArr.length}</p></div>
           </div>
           <div style={{ position:"relative",marginBottom:10 }}>
             <Search size={16} color={C.sub} style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)" }}/>
-            <input value={itemSearch} onChange={e=>setItemSearch(e.target.value)} placeholder="Search items…" style={{ width:"100%",height:38,paddingLeft:36,paddingRight:12,borderRadius:12,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:14,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
+            <input value={itemSearch} onChange={e=>setItemSearch(e.target.value)} placeholder="Search items…" style={{ width:"100%",height:38,paddingLeft:36,paddingRight:12,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:14,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
           </div>
           <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:8,scrollbarWidth:"none" }}>
-            {allCategories.map(c=><button key={c} onClick={()=>setItemCatFilter(c)} style={{ flexShrink:0,height:30,padding:"0 12px",borderRadius:999,border:itemCatFilter===c?"none":`1.5px solid ${C.border}`,background:itemCatFilter===c?C.sage:C.white,color:itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{c}</button>)}
+            {allCategories.map(c=><button key={c} onClick={()=>setItemCatFilter(c)} style={{ flexShrink:0,height:30,padding:"0 12px",borderRadius:0,border:itemCatFilter===c?"none":`1.5px solid ${C.border}`,background:itemCatFilter===c?C.sage:C.white,color:itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{c}</button>)}
           </div>
           <div style={{ display:"flex",gap:6,paddingBottom:12 }}>
             {[{id:"most",label:"Most Worn"},{id:"least",label:"Least Worn"},{id:"az",label:"A–Z"}].map(s=>(
-              <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ height:26,padding:"0 10px",borderRadius:999,border:itemSort===s.id?"none":`1px solid ${C.border}`,background:itemSort===s.id?"#5A85C4":"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{s.label}</button>
+              <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ height:26,padding:"0 10px",borderRadius:0,border:itemSort===s.id?"none":`1px solid ${C.border}`,background:itemSort===s.id?"#5A85C4":"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{s.label}</button>
             ))}
           </div>
         </div>
@@ -361,13 +361,13 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
             : sortedItems.length===0
               ? <div style={{ textAlign:"center",padding:"40px 24px" }}><div style={{ fontSize:32,marginBottom:10 }}>🔍</div><div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>No items match</div><div style={{ fontSize:13,color:C.sub }}>Try a different search or category</div></div>
               : sortedItems.map((item,idx)=>(
-                  <button key={idx} onClick={()=>setSelectedWearItem(item)} style={{ width:"100%",background:C.white,borderRadius:16,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
-                    <div style={{ width:44,height:44,borderRadius:12,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{item.lastPhoto?<img src={item.lastPhoto} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:catEmoji(item.category)}</div>
+                  <button key={idx} onClick={()=>setSelectedWearItem(item)} style={{ width:"100%",background:C.white,borderRadius:0,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
+                    <div style={{ width:44,height:44,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{item.lastPhoto?<img src={item.lastPhoto} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:catEmoji(item.category)}</div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{item.name}</div>
                       <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.count} {item.count===1?"wear":"wears"}</div>
                     </div>
-                    <span style={{ fontSize:11,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"3px 10px",borderRadius:999 }}>{item.category}</span>
+                    <span style={{ fontSize:11,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"3px 10px",borderRadius:0 }}>{item.category}</span>
                     <ChevronRight size={14} color={C.border}/>
                   </button>
                 ))
@@ -375,10 +375,10 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
         </div>
         {selectedWearItem&&(
           <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",flexDirection:"column",justifyContent:"flex-end" }} onClick={()=>setSelectedWearItem(null)}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",padding:"8px 20px 44px",maxHeight:"70vh",display:"flex",flexDirection:"column" }}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,padding:"8px 20px 44px",maxHeight:"70vh",display:"flex",flexDirection:"column" }}>
               <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 16px",flexShrink:0 }}/>
               <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:20,flexShrink:0 }}>
-                <div style={{ width:52,height:52,borderRadius:15,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,overflow:"hidden" }}>{selectedWearItem.lastPhoto?<img src={selectedWearItem.lastPhoto} alt={selectedWearItem.name} style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:catEmoji(selectedWearItem.category)}</div>
+                <div style={{ width:52,height:52,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,overflow:"hidden" }}>{selectedWearItem.lastPhoto?<img src={selectedWearItem.lastPhoto} alt={selectedWearItem.name} style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:catEmoji(selectedWearItem.category)}</div>
                 <div><div style={{ fontSize:18,fontWeight:900,color:C.ink,letterSpacing:"-0.02em" }}>{selectedWearItem.name}</div><div style={{ fontSize:13,color:C.sub }}>{selectedWearItem.category} · {selectedWearItem.count} {selectedWearItem.count===1?"wear":"wears"}</div></div>
               </div>
               <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px",flexShrink:0 }}>Worn on</p>
@@ -405,13 +405,13 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
       <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
         <SectionHeader title={selectedPiece.name} back={()=>setView("main")}/>
         <div style={{ flex:1,overflowY:"auto",padding:16 }}>
-          <div style={{ background:C.white,borderRadius:20,padding:20,marginBottom:12,display:"flex",alignItems:"center",gap:16 }}>
+          <div style={{ background:C.white,borderRadius:0,padding:20,marginBottom:12,display:"flex",alignItems:"center",gap:16 }}>
             <div style={{ fontSize:44 }}>{selectedPiece.image}</div>
             <div><div style={{ fontSize:26,fontWeight:900,color:C.ink,letterSpacing:"-0.03em" }}>{selectedPiece.wears} wears</div><div style={{ fontSize:13,color:C.sub }}>{pct}% of outfit appearances</div></div>
           </div>
-          <div style={{ background:C.white,borderRadius:20,padding:16,border:`1px solid ${C.border}` }}>
+          <div style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}>
             <div style={{ fontSize:13,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8 }}>Category</div>
-            <span style={{ fontSize:14,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"6px 14px",borderRadius:999 }}>{selectedPiece.category}</span>
+            <span style={{ fontSize:14,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"6px 14px",borderRadius:0 }}>{selectedPiece.category}</span>
           </div>
         </div>
       </div>
@@ -427,7 +427,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
         <SectionHeader title="Cost Per Wear" back={()=>setView("main")}/>
         <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:40 }}>
           {pricedItems.length>0&&(
-            <div style={{ background:`linear-gradient(135deg,${C.sage},${C.green})`,borderRadius:20,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+            <div style={{ background:C.ink,borderRadius:0,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:12,color:"rgba(255,255,255,.8)",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em" }}>Average Cost / Wear</div>
                 <div style={{ fontSize:36,fontWeight:900,color:"#fff",lineHeight:1.1,marginTop:4,letterSpacing:"-0.03em" }}>${avgCPW}</div>
@@ -440,16 +440,16 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
             <div style={{ marginBottom:16 }}>
               <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Tracked Items</p>
               {priced.map((item,i)=>(
-                <div key={i} style={{ background:C.white,borderRadius:18,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}` }}>
+                <div key={i} style={{ background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}` }}>
                   <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:10 }}>
-                    <div style={{ width:42,height:42,borderRadius:13,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{catEmoji(item.category)}</div>
+                    <div style={{ width:42,height:42,borderRadius:0,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{catEmoji(item.category)}</div>
                     <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:700,color:C.ink }}>{item.label}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>${item.price.toFixed(2)} · {item.wears} wear{item.wears!==1?"s":""}</div></div>
                     <div style={{ textAlign:"right" }}><div style={{ fontSize:20,fontWeight:900,color:C.sage,letterSpacing:"-0.02em" }}>${item.cpw.toFixed(2)}</div><div style={{ fontSize:10,color:C.sub }}>per wear</div></div>
                   </div>
                   <div style={{ height:4,borderRadius:99,background:C.border,marginBottom:10,overflow:"hidden" }}><div style={{ height:"100%",width:`${Math.min((item.wears/maxWears)*100,100)}%`,background:C.sage,borderRadius:99 }}/></div>
                   <div style={{ display:"flex",gap:8 }}>
-                    <button onClick={()=>{ setCpwEditItem(item); setCpwPriceInput(item.price.toString()); }} style={{ flex:1,height:34,borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.sage,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Pencil size={13}/> Edit Price</button>
-                    <button onClick={()=>setCpwDeleteItem(item.key)} style={{ flex:1,height:34,borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.red,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Trash2 size={13}/> Remove</button>
+                    <button onClick={()=>{ setCpwEditItem(item); setCpwPriceInput(item.price.toString()); }} style={{ flex:1,height:34,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.sage,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Pencil size={13}/> Edit Price</button>
+                    <button onClick={()=>setCpwDeleteItem(item.key)} style={{ flex:1,height:34,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.red,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Trash2 size={13}/> Remove</button>
                   </div>
                 </div>
               ))}
@@ -459,8 +459,8 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
             <div>
               <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Add Price to Track ({unpriced.length} items)</p>
               {unpriced.map((item,i)=>(
-                <button key={i} onClick={()=>{ setCpwAddModal(item); setCpwPriceInput(""); }} style={{ width:"100%",background:C.white,borderRadius:18,padding:"14px 16px",marginBottom:10,border:`1.5px dashed ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",display:"flex",alignItems:"center",gap:12 }}>
-                  <div style={{ width:42,height:42,borderRadius:13,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{catEmoji(item.category)}</div>
+                <button key={i} onClick={()=>{ setCpwAddModal(item); setCpwPriceInput(""); }} style={{ width:"100%",background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1.5px dashed ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",display:"flex",alignItems:"center",gap:12 }}>
+                  <div style={{ width:42,height:42,borderRadius:0,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{catEmoji(item.category)}</div>
                   <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{item.label}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.wears} wear{item.wears!==1?"s":""} · tap to add price</div></div>
                   <div style={{ width:28,height:28,borderRadius:"50%",background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><Plus size={15} color={C.sage}/></div>
                 </button>
@@ -471,39 +471,39 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
         </div>
         {cpwAddModal&&(
           <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={()=>setCpwAddModal(null)}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",width:"100%",padding:"8px 20px 44px" }}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",padding:"8px 20px 44px" }}>
               <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
               <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:20 }}>
-                <div style={{ width:46,height:46,borderRadius:14,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22 }}>{catEmoji(cpwAddModal.category)}</div>
+                <div style={{ width:46,height:46,borderRadius:0,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22 }}>{catEmoji(cpwAddModal.category)}</div>
                 <div><div style={{ fontSize:16,fontWeight:700,color:C.ink }}>{cpwAddModal.label}</div><div style={{ fontSize:13,color:C.sub }}>{cpwAddModal.wears} wears logged</div></div>
               </div>
               <label style={{ display:"block",fontSize:13,fontWeight:700,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em" }}>Item Price ($)</label>
-              <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} placeholder="0.00" style={{ width:"100%",height:52,padding:"0 16px",borderRadius:14,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
-              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:14,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>Cost per wear</span><span style={{ fontSize:22,fontWeight:800,color:C.sage }}>${(parseFloat(cpwPriceInput)/cpwAddModal.wears).toFixed(2)}</span></div>}
-              <button onClick={()=>{ if(!cpwPriceInput||parseFloat(cpwPriceInput)<=0) return; setCpwPrices(p=>({...p,[cpwAddModal.key]:parseFloat(cpwPriceInput)})); setCpwAddModal(null); }} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:!cpwPriceInput||parseFloat(cpwPriceInput)<=0?C.border:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Save Price</button>
+              <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} placeholder="0.00" style={{ width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
+              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:0,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>Cost per wear</span><span style={{ fontSize:22,fontWeight:800,color:C.sage }}>${(parseFloat(cpwPriceInput)/cpwAddModal.wears).toFixed(2)}</span></div>}
+              <button onClick={()=>{ if(!cpwPriceInput||parseFloat(cpwPriceInput)<=0) return; setCpwPrices(p=>({...p,[cpwAddModal.key]:parseFloat(cpwPriceInput)})); setCpwAddModal(null); }} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:!cpwPriceInput||parseFloat(cpwPriceInput)<=0?C.border:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Save Price</button>
             </div>
           </div>
         )}
         {cpwEditItem&&(
           <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={()=>setCpwEditItem(null)}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",width:"100%",padding:"8px 20px 44px" }}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",padding:"8px 20px 44px" }}>
               <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
               <h2 style={{ fontSize:20,fontWeight:800,color:C.ink,marginBottom:6 }}>Edit Price</h2>
               <p style={{ fontSize:14,color:C.sub,marginBottom:20 }}>{cpwEditItem.label}</p>
-              <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} style={{ width:"100%",height:52,padding:"0 16px",borderRadius:14,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
-              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:14,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>New cost per wear</span><span style={{ fontSize:22,fontWeight:800,color:C.sage }}>${(parseFloat(cpwPriceInput)/cpwEditItem.wears).toFixed(2)}</span></div>}
-              <button onClick={()=>{ setCpwPrices(p=>({...p,[cpwEditItem.key]:parseFloat(cpwPriceInput)})); setCpwEditItem(null); }} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Update Price</button>
+              <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} style={{ width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
+              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:0,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>New cost per wear</span><span style={{ fontSize:22,fontWeight:800,color:C.sage }}>${(parseFloat(cpwPriceInput)/cpwEditItem.wears).toFixed(2)}</span></div>}
+              <button onClick={()=>{ setCpwPrices(p=>({...p,[cpwEditItem.key]:parseFloat(cpwPriceInput)})); setCpwEditItem(null); }} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Update Price</button>
             </div>
           </div>
         )}
         {cpwDeleteItem&&(
           <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:24 }} onClick={()=>setCpwDeleteItem(null)}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:28,padding:28,width:"100%",maxWidth:340 }}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,padding:28,width:"100%",maxWidth:340 }}>
               <div style={{ fontSize:36,textAlign:"center",marginBottom:12 }}>🗑️</div>
               <h2 style={{ fontSize:18,fontWeight:800,color:C.ink,textAlign:"center",margin:"0 0 8px" }}>Remove price?</h2>
               <p style={{ fontSize:14,color:C.sub,textAlign:"center",margin:"0 0 24px" }}>Item stays in wardrobe but won't be cost-tracked.</p>
-              <button onClick={()=>{ setCpwPrices(p=>{ const n={...p}; delete n[cpwDeleteItem]; return n; }); setCpwDeleteItem(null); }} style={{ width:"100%",height:50,borderRadius:14,border:"none",background:C.red,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Remove</button>
-              <button onClick={()=>setCpwDeleteItem(null)} style={{ width:"100%",height:50,borderRadius:14,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+              <button onClick={()=>{ setCpwPrices(p=>{ const n={...p}; delete n[cpwDeleteItem]; return n; }); setCpwDeleteItem(null); }} style={{ width:"100%",height:50,borderRadius:0,border:"none",background:C.red,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Remove</button>
+              <button onClick={()=>setCpwDeleteItem(null)} style={{ width:"100%",height:50,borderRadius:0,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
             </div>
           </div>
         )}
@@ -520,9 +520,9 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16 }}>
-          <div style={{ background:C.white,borderRadius:20,padding:16,border:`1px solid ${C.border}` }}><div style={{ fontSize:22 }}>🗓️</div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalOutfits)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Outfits</div></div>
-          <button onClick={()=>setView("items")} style={{ background:C.white,borderRadius:20,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}><div style={{ fontSize:22 }}>👔</div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalItemsCount)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Items</div><div style={{ fontSize:10,color:C.sage,marginTop:4,fontWeight:600 }}>Tap to view →</div></button>
-          <button onClick={()=>setView("cpw")} style={{ background:C.white,borderRadius:20,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}>
+          <div style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}><div style={{ fontSize:22 }}>🗓️</div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalOutfits)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Outfits</div></div>
+          <button onClick={()=>setView("items")} style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}><div style={{ fontSize:22 }}>👔</div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalItemsCount)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Items</div><div style={{ fontSize:10,color:C.sage,marginTop:4,fontWeight:600 }}>Tap to view →</div></button>
+          <button onClick={()=>setView("cpw")} style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}>
             <div style={{ fontSize:22 }}>💰</div>
             <div style={{ fontSize:24,fontWeight:800,color:C.sage,marginTop:8 }}>{avgCPW==="—"?"—":`$${avgCPW}`}</div>
             <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Avg Cost/Wear</div>
@@ -530,37 +530,37 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
           </button>
         </div>
 
-        <div style={{ background:C.white,borderRadius:20,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
+        <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
-            <div style={{ width:36,height:36,borderRadius:12,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><TrendingUp size={18} color={C.sage}/></div>
+            <div style={{ width:36,height:36,borderRadius:0,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><TrendingUp size={18} color={C.sage}/></div>
             <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Most Worn Pieces</span>
           </div>
           {computedMostWorn.length>0?computedMostWorn.map((p,i)=>(
-            <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:C.surface,borderRadius:14,padding:"10px 12px",display:"flex",alignItems:"center",gap:12,marginBottom:8,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left" }}>
-              <div style={{ width:44,height:44,borderRadius:12,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{p.image}</div>
+            <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:C.surface,borderRadius:0,padding:"10px 12px",display:"flex",alignItems:"center",gap:12,marginBottom:8,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left" }}>
+              <div style={{ width:44,height:44,borderRadius:0,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{p.image}</div>
               <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{p.name}</div><div style={{ display:"flex",alignItems:"center",gap:8,marginTop:3 }}><span style={{ fontSize:12,color:C.sub }}>{p.wears} wear{p.wears!==1?"s":""}</span>{totalWears>0&&<span style={{ fontSize:12,fontWeight:700,color:C.sage }}>{((p.wears/totalWears)*100).toFixed(0)}%</span>}</div></div>
               <ChevronRight size={16} color={C.border}/>
             </button>
           )):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
         </div>
 
-        <div style={{ background:C.white,borderRadius:20,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
+        <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
-            <div style={{ width:36,height:36,borderRadius:12,background:"#E5635A18",display:"flex",alignItems:"center",justifyContent:"center" }}><TrendingUp size={18} color="#E5635A" style={{ transform:"rotate(180deg)" }}/></div>
+            <div style={{ width:36,height:36,borderRadius:0,background:"#E5635A18",display:"flex",alignItems:"center",justifyContent:"center" }}><TrendingUp size={18} color="#E5635A" style={{ transform:"rotate(180deg)" }}/></div>
             <div style={{ flex:1 }}><span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Least Worn Pieces</span><p style={{ fontSize:12,color:C.sub,margin:0 }}>Items that need more love</p></div>
           </div>
           {computedLeastWorn.length>0?computedLeastWorn.map((p,i)=>(
-            <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:C.surface,borderRadius:14,padding:"10px 12px",display:"flex",alignItems:"center",gap:12,marginBottom:8,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left" }}>
-              <div style={{ width:44,height:44,borderRadius:12,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{p.image}</div>
+            <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:C.surface,borderRadius:0,padding:"10px 12px",display:"flex",alignItems:"center",gap:12,marginBottom:8,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left" }}>
+              <div style={{ width:44,height:44,borderRadius:0,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{p.image}</div>
               <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{p.name}</div><div style={{ display:"flex",alignItems:"center",gap:8,marginTop:3 }}><span style={{ fontSize:12,color:C.sub }}>{p.wears} wear{p.wears!==1?"s":""}</span>{totalWears>0&&<span style={{ fontSize:12,fontWeight:700,color:C.sage }}>{((p.wears/totalWears)*100).toFixed(0)}%</span>}</div></div>
               <ChevronRight size={16} color={C.border}/>
             </button>
           )):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
         </div>
 
-        <div style={{ background:C.white,borderRadius:20,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
+        <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
-            <div style={{ width:36,height:36,borderRadius:12,background:C.blush+"40",display:"flex",alignItems:"center",justifyContent:"center" }}><Palette size={18} color={C.sage}/></div>
+            <div style={{ width:36,height:36,borderRadius:0,background:C.blush+"40",display:"flex",alignItems:"center",justifyContent:"center" }}><Palette size={18} color={C.sage}/></div>
             <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Color Distribution</span>
           </div>
           {computedColorData.length>0?(
@@ -581,9 +581,9 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
           ):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
         </div>
 
-        <div style={{ background:C.white,borderRadius:20,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
+        <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
-            <div style={{ width:36,height:36,borderRadius:12,background:"#5A85C418",display:"flex",alignItems:"center",justifyContent:"center" }}><Layers size={18} color="#5A85C4"/></div>
+            <div style={{ width:36,height:36,borderRadius:0,background:"#5A85C418",display:"flex",alignItems:"center",justifyContent:"center" }}><Layers size={18} color="#5A85C4"/></div>
             <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Style Distribution</span>
           </div>
           {computedStyleData.length>0?(
@@ -592,7 +592,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
                 <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
                   <span style={{ fontSize:12,fontWeight:700,color:C.ink }}>{e.value}%</span>
                   <div style={{ width:"100%",height:130,display:"flex",alignItems:"flex-end" }}>
-                    <div style={{ width:"100%",height:`${Math.max(e.value,4)}%`,background:e.color,borderRadius:"6px 6px 0 0" }}/>
+                    <div style={{ width:"100%",height:`${Math.max(e.value,4)}%`,background:e.color,borderRadius:0 }}/>
                   </div>
                   <span style={{ fontSize:11,fontWeight:600,color:C.sub,textAlign:"center",lineHeight:1.3 }}>{e.name}</span>
                 </div>
@@ -701,7 +701,7 @@ function BrandPicker({ value, onChange }) {
         style={{ width:"100%",height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box" }}
       />
       {open&&(matches.length>0||showAdd)&&(
-        <div style={{ position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:C.white,border:`1.5px solid ${C.border}`,borderRadius:12,boxShadow:"0 4px 16px rgba(0,0,0,.1)",zIndex:1000,overflow:"hidden" }}>
+        <div style={{ position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:C.white,border:`1.5px solid ${C.border}`,borderRadius:0,boxShadow:"0 4px 16px rgba(0,0,0,.1)",zIndex:1000,overflow:"hidden" }}>
           {matches.map((b,idx)=>(
             <button key={idx} onMouseDown={()=>select(b)} style={{ display:"block",width:"100%",padding:"10px 12px",textAlign:"left",background:"none",border:"none",borderBottom:idx<matches.length-1||showAdd?`1px solid ${C.border}`:"none",fontSize:13,color:C.ink,cursor:"pointer",fontFamily:"inherit" }}>
               {b}
@@ -818,21 +818,21 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
 
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface,position:"relative" }}>
-      {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:toast.startsWith("AI error")?"#E5635A":C.sage,color:"#fff",borderRadius:14,padding:"10px 14px",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 16px rgba(0,0,0,.18)" }}><Check size={15} color="#fff"/>{toast}</div>}
-      <div style={{ background:`linear-gradient(145deg,${C.sage},${C.green})`,padding:"20px 20px 20px",flexShrink:0,borderRadius:"0 0 28px 28px",position:"relative" }}>
-        {onBack&&<button onClick={onBack} style={{ position:"absolute",top:20,left:16,width:36,height:36,borderRadius:12,border:"none",background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color="#fff"/></button>}
+      {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:toast.startsWith("AI error")?"#E5635A":C.sage,color:"#fff",borderRadius:0,padding:"10px 14px",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 16px rgba(0,0,0,.18)" }}><Check size={15} color="#fff"/>{toast}</div>}
+      <div style={{ background:C.sage,padding:"20px 20px 20px",flexShrink:0,borderRadius:0,position:"relative" }}>
+        {onBack&&<button onClick={onBack} style={{ position:"absolute",top:20,left:16,width:36,height:36,borderRadius:0,border:"none",background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color="#fff"/></button>}
         <h1 style={{ fontSize:28,fontWeight:800,color:"#fff",margin:"0 0 4px",paddingLeft:onBack?44:0 }}>Outfit Calendar</h1>
         <p style={{ fontSize:14,color:"rgba(255,255,255,.8)",margin:0 }}>Track your daily outfits</p>
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
-        <div style={{ background:C.white,borderRadius:20,padding:16,border:`1px solid ${C.border}` }}>
+        <div style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}>
           <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14 }}>
-            <button onClick={()=>{ if(calMonth===0){ setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }} style={{ width:36,height:36,borderRadius:12,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={18} color={C.sage}/></button>
+            <button onClick={()=>{ if(calMonth===0){ setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }} style={{ width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={18} color={C.sage}/></button>
             <div style={{ textAlign:"center" }}>
               <h2 style={{ fontSize:17,fontWeight:700,color:C.ink,margin:0 }}>{months[calMonth]} {calYear}</h2>
               {(calMonth!==today.getMonth()||calYear!==today.getFullYear())&&<button onClick={()=>{ setCalMonth(today.getMonth()); setCalYear(today.getFullYear()); }} style={{ fontSize:11,color:C.sage,background:"none",border:"none",cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"2px 0" }}>Today</button>}
             </div>
-            <button onClick={()=>{ if(calMonth===11){ setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }} style={{ width:36,height:36,borderRadius:12,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronRight size={18} color={C.sage}/></button>
+            <button onClick={()=>{ if(calMonth===11){ setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }} style={{ width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronRight size={18} color={C.sage}/></button>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4 }}>
             {["S","M","T","W","T","F","S"].map((d,i)=><div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.sub,height:24 }}>{d}</div>)}
@@ -863,50 +863,50 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
               return (<>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Style</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:16 }}>
-                  {STYLES.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,style:s}))} style={{ padding:"6px 14px",borderRadius:999,border:editEntry.style===s?"none":`1.5px solid ${C.border}`,background:editEntry.style===s?C.sage:C.white,color:editEntry.style===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
+                  {STYLES.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,style:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.style===s?"none":`1.5px solid ${C.border}`,background:editEntry.style===s?C.sage:C.white,color:editEntry.style===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
                 </div>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Formality</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:16 }}>
-                  {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:999,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#7A6A9A":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
+                  {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#7A6A9A":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
                 </div>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Season</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-                  {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:999,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5A85C4":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
+                  {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5A85C4":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
                 </div>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Items</p>
                 {editEntry.items.map((item,i)=>(
-                  <div key={i} style={{ background:C.surface,borderRadius:14,padding:12,marginBottom:10,border:`1px solid ${C.border}` }}>
+                  <div key={i} style={{ background:C.surface,borderRadius:0,padding:12,marginBottom:10,border:`1px solid ${C.border}` }}>
                     <div style={{ display:"flex",alignItems:"center",marginBottom:8,gap:8 }}>
-                      <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:10,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
-                      <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:10,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
+                      <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:0,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
+                      <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:0,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
                     </div>
-                    {item._recognized&&<div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised</span><span style={{ fontSize:11,fontWeight:600,color:C.white,background:C.sage,borderRadius:999,padding:"1px 8px" }}>worn {item._wearCount} time{item._wearCount!==1?"s":""} before</span></div>}
+                    {item._recognized&&<div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised</span><span style={{ fontSize:11,fontWeight:600,color:C.white,background:C.sage,borderRadius:0,padding:"1px 8px" }}>worn {item._wearCount} time{item._wearCount!==1?"s":""} before</span></div>}
                     <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>
-                      {CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:999,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{catEmojis[c]} {c}</button>)}
+                      {CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:0,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{catEmojis[c]} {c}</button>)}
                     </div>
                     <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:8 }}>
                       {COLORS.map(col=><button key={col} onClick={()=>updateItem(i,"color",col)} title={col} style={{ width:22,height:22,borderRadius:"50%",border:item.color===col?`2.5px solid ${C.sage}`:col==="White"?`1.5px solid ${C.border}`:"none",background:colorHex[col],cursor:"pointer",padding:0,flexShrink:0 }}/>)}
                     </div>
                     <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
                       <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Price</span>
-                      <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:10,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
+                      <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
                         <span style={{ padding:"0 8px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>£</span>
                         <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                       </div>
                     </div>
                     <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                       <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Brand</span>
-                      <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:10,border:`1.5px solid ${C.border}`,background:C.white,overflow:"visible" }}>
+                      <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,overflow:"visible" }}>
                         <BrandPicker value={item.brand||""} onChange={v=>updateItem(i,"brand",v)}/>
                       </div>
                     </div>
                   </div>
                 ))}
-                <button onClick={addItem} style={{ width:"100%",height:44,borderRadius:14,border:`1.5px dashed ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:16 }}><Plus size={16}/>Add Item</button>
+                <button onClick={addItem} style={{ width:"100%",height:44,borderRadius:0,border:`1.5px dashed ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:16 }}><Plus size={16}/>Add Item</button>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8 }}>Notes</p>
-                <textarea value={editEntry.notes||""} onChange={e=>setEditEntry(prev=>({...prev,notes:e.target.value}))} placeholder="Any notes about this outfit…" style={{ width:"100%",minHeight:72,padding:"10px 14px",borderRadius:14,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:14,color:C.ink,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
+                <textarea value={editEntry.notes||""} onChange={e=>setEditEntry(prev=>({...prev,notes:e.target.value}))} placeholder="Any notes about this outfit…" style={{ width:"100%",minHeight:72,padding:"10px 14px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:14,color:C.ink,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
                 <PrimaryBtn onClick={saveEdit} style={{ marginBottom:10 }}>Save Changes</PrimaryBtn>
-                <button onClick={()=>{ setEditMode(false); setEditEntry(null); }} style={{ width:"100%",height:48,borderRadius:16,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+                <button onClick={()=>{ setEditMode(false); setEditEntry(null); }} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
               </>);
             }
 
@@ -917,34 +917,34 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
             const toggleItem=(idx)=>setSelectedItemIdxs(prev=>{ const next=new Set(prev); if(next.has(idx)) next.delete(idx); else next.add(idx); return next; });
             const removeSelected=()=>{ const newItems=(entry.items||[]).filter((_,i)=>!selectedItemIdxs.has(i)); setPhotoData(p=>({...p,[toKey(selectedDate)]:{...p[toKey(selectedDate)],items:newItems}})); setSelectedItemIdxs(new Set()); };
             return (<>
-              {entry.photo?<div style={{ width:"100%",borderRadius:18,overflow:"hidden",marginBottom:entry.style?10:14,aspectRatio:"9/16" }}><img src={entry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>:<div style={{ background:C.sage+"14",borderRadius:16,padding:16,textAlign:"center",marginBottom:entry.style?10:14 }}><div style={{ fontSize:32 }}>👔</div><div style={{ fontSize:13,fontWeight:600,color:C.sage,marginTop:4 }}>Outfit logged</div></div>}
-              {(entry.style||entry.formalityLevel||entry.season)&&<div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:14 }}>{entry.style&&<span style={{ fontSize:12,fontWeight:700,color:C.sage,background:C.sage+"18",padding:"5px 14px",borderRadius:999,border:`1px solid ${C.sage}30` }}>{entry.style}</span>}{entry.formalityLevel&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#7A6A9A",padding:"5px 14px",borderRadius:999 }}>{entry.formalityLevel}</span>}{entry.season&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#5A85C4",padding:"5px 14px",borderRadius:999 }}>{entry.season}</span>}</div>}
-              {entry.notes&&<div style={{ background:C.surface,borderRadius:12,padding:"10px 14px",border:`1px solid ${C.border}`,marginBottom:14 }}><p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 4px" }}>Notes</p><p style={{ fontSize:13,color:C.ink,margin:0,lineHeight:1.5 }}>{entry.notes}</p></div>}
+              {entry.photo?<div style={{ width:"100%",borderRadius:0,overflow:"hidden",marginBottom:entry.style?10:14,aspectRatio:"9/16" }}><img src={entry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>:<div style={{ background:C.sage+"14",borderRadius:0,padding:16,textAlign:"center",marginBottom:entry.style?10:14 }}><div style={{ fontSize:32 }}>👔</div><div style={{ fontSize:13,fontWeight:600,color:C.sage,marginTop:4 }}>Outfit logged</div></div>}
+              {(entry.style||entry.formalityLevel||entry.season)&&<div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:14 }}>{entry.style&&<span style={{ fontSize:12,fontWeight:700,color:C.sage,background:C.sage+"18",padding:"5px 14px",borderRadius:0,border:`1px solid ${C.sage}30` }}>{entry.style}</span>}{entry.formalityLevel&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#7A6A9A",padding:"5px 14px",borderRadius:0 }}>{entry.formalityLevel}</span>}{entry.season&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#5A85C4",padding:"5px 14px",borderRadius:0 }}>{entry.season}</span>}</div>}
+              {entry.notes&&<div style={{ background:C.surface,borderRadius:0,padding:"10px 14px",border:`1px solid ${C.border}`,marginBottom:14 }}><p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 4px" }}>Notes</p><p style={{ fontSize:13,color:C.ink,margin:0,lineHeight:1.5 }}>{entry.notes}</p></div>}
               <div style={{ marginBottom:16 }}>
                 <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
                   <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:0 }}>What I wore</p>
-                  {selectedItemIdxs.size>0&&<button onClick={removeSelected} style={{ fontSize:12,fontWeight:700,color:C.red,background:"#FEF0EF",border:"none",borderRadius:999,padding:"4px 12px",cursor:"pointer",fontFamily:"inherit" }}>Remove {selectedItemIdxs.size} selected</button>}
+                  {selectedItemIdxs.size>0&&<button onClick={removeSelected} style={{ fontSize:12,fontWeight:700,color:C.red,background:"#FEF0EF",border:"none",borderRadius:0,padding:"4px 12px",cursor:"pointer",fontFamily:"inherit" }}>Remove {selectedItemIdxs.size} selected</button>}
                 </div>
-                {entry.analysing?(<div style={{background:C.surface,borderRadius:14,padding:20,display:"flex",flexDirection:"column",alignItems:"center",gap:10,border:`1px solid ${C.border}`}}><div style={{width:24,height:24,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style><span style={{fontSize:13,color:C.sub,fontWeight:600}}>Analysing outfit with AI…</span></div>):cats.length>0?<div style={{ display:"flex",flexDirection:"column",gap:12 }}>{cats.map(cat=>(<div key={cat}><div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}><span style={{ fontSize:14 }}>{catEmojis[cat]||"👔"}</span><span style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em" }}>{cat}</span></div>{grouped[cat].map((item,i)=>{ const hex=item.color&&colorHex[item.color]?colorHex[item.color]:null; const isSel=selectedItemIdxs.has(item._idx); const isFav=favourites.some(f=>(f.name||"").trim().toLowerCase()===(item.name||"").trim().toLowerCase()); const wearCount=knownItems[(item.name||"").trim().toLowerCase()]?.count;
-return <div key={i} style={{ width:"100%",background:isSel?C.sage+"14":C.surface,borderRadius:12,padding:"9px 12px",marginBottom:4,border:isSel?`1.5px solid ${C.sage}`:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8 }}><div onClick={()=>toggleItem(item._idx)} style={{ width:18,height:18,borderRadius:"50%",border:isSel?"none":`1.5px solid ${C.border}`,background:isSel?C.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer" }}>{isSel&&<span style={{ color:"#fff",fontSize:11,lineHeight:1 }}>✓</span>}</div>{hex&&<div style={{ width:12,height:12,borderRadius:"50%",background:hex,flexShrink:0,border:item.color==="White"?`1px solid ${C.border}`:"none" }}/>}<span onClick={()=>toggleItem(item._idx)} style={{ fontSize:13,color:C.ink,fontWeight:500,flex:1,cursor:"pointer" }}>{item.name||String(item)}</span>{wearCount>1&&<span style={{ fontSize:10,fontWeight:700,color:C.sage,background:C.sage+"18",borderRadius:999,padding:"2px 7px",flexShrink:0 }}>{wearCount}x</span>}{item.color&&<span style={{ fontSize:11,color:C.sub }}>{item.color}</span>}<button onClick={e=>{ e.stopPropagation(); onToggleFavourite&&onToggleFavourite(item); }} style={{ background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,display:"flex",alignItems:"center" }}><Heart size={16} color={isFav?C.red:"#ccc"} fill={isFav?C.red:"none"}/></button></div>; })}</div>))}</div>:<div style={{ background:C.surface,borderRadius:12,padding:"10px 14px",border:`1px solid ${C.border}` }}><span style={{ fontSize:13,color:C.sub }}>No items added yet — tap Edit Outfit to add what you wore</span></div>}
+                {entry.analysing?(<div style={{background:C.surface,borderRadius:0,padding:20,display:"flex",flexDirection:"column",alignItems:"center",gap:10,border:`1px solid ${C.border}`}}><div style={{width:24,height:24,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style><span style={{fontSize:13,color:C.sub,fontWeight:600}}>Analysing outfit with AI…</span></div>):cats.length>0?<div style={{ display:"flex",flexDirection:"column",gap:12 }}>{cats.map(cat=>(<div key={cat}><div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}><span style={{ fontSize:14 }}>{catEmojis[cat]||"👔"}</span><span style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em" }}>{cat}</span></div>{grouped[cat].map((item,i)=>{ const hex=item.color&&colorHex[item.color]?colorHex[item.color]:null; const isSel=selectedItemIdxs.has(item._idx); const isFav=favourites.some(f=>(f.name||"").trim().toLowerCase()===(item.name||"").trim().toLowerCase()); const wearCount=knownItems[(item.name||"").trim().toLowerCase()]?.count;
+return <div key={i} style={{ width:"100%",background:isSel?C.sage+"14":C.surface,borderRadius:0,padding:"9px 12px",marginBottom:4,border:isSel?`1.5px solid ${C.sage}`:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8 }}><div onClick={()=>toggleItem(item._idx)} style={{ width:18,height:18,borderRadius:"50%",border:isSel?"none":`1.5px solid ${C.border}`,background:isSel?C.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer" }}>{isSel&&<span style={{ color:"#fff",fontSize:11,lineHeight:1 }}>✓</span>}</div>{hex&&<div style={{ width:12,height:12,borderRadius:"50%",background:hex,flexShrink:0,border:item.color==="White"?`1px solid ${C.border}`:"none" }}/>}<span onClick={()=>toggleItem(item._idx)} style={{ fontSize:13,color:C.ink,fontWeight:500,flex:1,cursor:"pointer" }}>{item.name||String(item)}</span>{wearCount>1&&<span style={{ fontSize:10,fontWeight:700,color:C.sage,background:C.sage+"18",borderRadius:0,padding:"2px 7px",flexShrink:0 }}>{wearCount}x</span>}{item.color&&<span style={{ fontSize:11,color:C.sub }}>{item.color}</span>}<button onClick={e=>{ e.stopPropagation(); onToggleFavourite&&onToggleFavourite(item); }} style={{ background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,display:"flex",alignItems:"center" }}><Heart size={16} color={isFav?C.red:"#ccc"} fill={isFav?C.red:"none"}/></button></div>; })}</div>))}</div>:<div style={{ background:C.surface,borderRadius:0,padding:"10px 14px",border:`1px solid ${C.border}` }}><span style={{ fontSize:13,color:C.sub }}>No items added yet — tap Edit Outfit to add what you wore</span></div>}
               </div>
-              <button onClick={()=>{ setEditEntry({ style:entry.style||null, formalityLevel:entry.formalityLevel||null, season:entry.season||null, notes:entry.notes||"", items:(entry.items||[]).map(item=>typeof item==="object"&&item?{...item}:{ name:String(item||""),category:"Other",color:null }) }); setEditMode(true); setSelectedItemIdxs(new Set()); }} style={{ width:"100%",height:50,borderRadius:16,border:`1.5px solid ${C.border}`,background:C.white,color:C.ink,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10 }}><Pencil size={16} color={C.sage}/>Edit Outfit</button>
+              <button onClick={()=>{ setEditEntry({ style:entry.style||null, formalityLevel:entry.formalityLevel||null, season:entry.season||null, notes:entry.notes||"", items:(entry.items||[]).map(item=>typeof item==="object"&&item?{...item}:{ name:String(item||""),category:"Other",color:null }) }); setEditMode(true); setSelectedItemIdxs(new Set()); }} style={{ width:"100%",height:50,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,color:C.ink,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10 }}><Pencil size={16} color={C.sage}/>Edit Outfit</button>
               <DangerBtn onClick={()=>{ setPhotoData(p=>{ const n={...p}; delete n[toKey(selectedDate)]; return n; }); setShowModal(false); }}>Remove Outfit Log</DangerBtn>
             </>);
           }
           return (<>
-            <div style={{ background:C.surface,borderRadius:16,padding:20,textAlign:"center",marginBottom:16 }}><Camera size={32} color={C.sub}/><div style={{ fontSize:14,color:C.sub,marginTop:8 }}>No outfit logged for this day</div></div>
+            <div style={{ background:C.surface,borderRadius:0,padding:20,textAlign:"center",marginBottom:16 }}><Camera size={32} color={C.sub}/><div style={{ fontSize:14,color:C.sub,marginTop:8 }}>No outfit logged for this day</div></div>
             <PrimaryBtn onClick={()=>{ if(!photoUploading) setShowSourcePicker(true); }}>{photoUploading?"Processing…":<><Camera size={16}/> Log Outfit</>}</PrimaryBtn>
             {showSourcePicker&&<div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",flexDirection:"column",justifyContent:"flex-end" }} onClick={()=>setShowSourcePicker(false)}>
-              <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",padding:"8px 16px 40px" }}>
+              <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,padding:"8px 16px 40px" }}>
                 <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
                 <p style={{ fontSize:13,fontWeight:700,color:C.sub,textAlign:"center",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:16 }}>Add Outfit Photo</p>
                 {cameraEnabled
-                  ? <button onClick={()=>{ setShowSourcePicker(false); setShowCamera(true); }} style={{ width:"100%",height:56,borderRadius:16,border:"none",background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:10,cursor:"pointer",fontFamily:"inherit" }}><Camera size={20} color={C.sage}/><span style={{ fontSize:16,fontWeight:700,color:C.sage }}>Camera</span></button>
-                  : <div style={{ width:"100%",height:48,borderRadius:16,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,opacity:.5 }}><Camera size={18} color={C.sub}/><span style={{ fontSize:14,fontWeight:600,color:C.sub }}>Camera (enable in Privacy)</span></div>
+                  ? <button onClick={()=>{ setShowSourcePicker(false); setShowCamera(true); }} style={{ width:"100%",height:56,borderRadius:0,border:"none",background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:10,cursor:"pointer",fontFamily:"inherit" }}><Camera size={20} color={C.sage}/><span style={{ fontSize:16,fontWeight:700,color:C.sage }}>Camera</span></button>
+                  : <div style={{ width:"100%",height:48,borderRadius:0,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,opacity:.5 }}><Camera size={18} color={C.sub}/><span style={{ fontSize:14,fontWeight:600,color:C.sub }}>Camera (enable in Privacy)</span></div>
                 }
-                <label style={{ display:"block",cursor:"pointer" }}><input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handlePhotoUpload(e.target.files[0])}/><div style={{ width:"100%",height:56,borderRadius:16,background:C.surface,border:`1.5px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:10 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span style={{ fontSize:16,fontWeight:700,color:C.ink }}>Camera Roll</span></div></label>
-                <button onClick={()=>setShowSourcePicker(false)} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:C.surface,color:C.sub,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+                <label style={{ display:"block",cursor:"pointer" }}><input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handlePhotoUpload(e.target.files[0])}/><div style={{ width:"100%",height:56,borderRadius:0,background:C.surface,border:`1.5px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:10 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span style={{ fontSize:16,fontWeight:700,color:C.ink }}>Camera Roll</span></div></label>
+                <button onClick={()=>setShowSourcePicker(false)} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.surface,color:C.sub,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
               </div>
             </div>}
           </>);
@@ -974,7 +974,7 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
   if(favourites.length===0) return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface }}>
       <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        {onBack&&<button onClick={onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>}
+        {onBack&&<button onClick={onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>}
         <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Favourites</h1>
       </div>
       <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24 }}>
@@ -987,28 +987,28 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
       <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        {onBack&&<button onClick={onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>}
+        {onBack&&<button onClick={onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>}
         <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Favourites</h1>
-        <span style={{ marginLeft:"auto",fontSize:13,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"3px 10px",borderRadius:999 }}>{favourites.length} item{favourites.length!==1?"s":""}</span>
+        <span style={{ marginLeft:"auto",fontSize:13,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"3px 10px",borderRadius:0 }}>{favourites.length} item{favourites.length!==1?"s":""}</span>
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         {favourites.map((fav,i)=>{
           const hex=fav.color&&colorHex[fav.color]?colorHex[fav.color]:null;
           const worn=lastWornDate(fav.name);
           return (
-            <div key={i} style={{ position:"relative",overflow:"hidden",borderRadius:16,marginBottom:10 }}>
-              <button onClick={()=>{ removeFav(fav.name); setSwipedFav(null); }} style={{ position:"absolute",right:0,top:0,bottom:0,width:80,background:C.red,display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",borderRadius:"0 16px 16px 0" }}><Trash2 size={20} color="#fff"/></button>
+            <div key={i} style={{ position:"relative",overflow:"hidden",borderRadius:0,marginBottom:10 }}>
+              <button onClick={()=>{ removeFav(fav.name); setSwipedFav(null); }} style={{ position:"absolute",right:0,top:0,bottom:0,width:80,background:C.red,display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",borderRadius:0 }}><Trash2 size={20} color="#fff"/></button>
               <div
                 onTouchStart={e=>{ touchStartX.current=e.touches[0].clientX; }}
                 onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(touchStartX.current||0); if(dx<-50) setSwipedFav(fav.name); else if(dx>20) setSwipedFav(null); }}
-                style={{ background:C.white,borderRadius:16,padding:"14px 16px",border:`1px solid ${C.border}`,transform:swipedFav===fav.name?"translateX(-80px)":"translateX(0)",transition:"transform .2s ease",position:"relative" }}
+                style={{ background:C.white,borderRadius:0,padding:"14px 16px",border:`1px solid ${C.border}`,transform:swipedFav===fav.name?"translateX(-80px)":"translateX(0)",transition:"transform .2s ease",position:"relative" }}
               >
               <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-                <div style={{ width:46,height:46,borderRadius:13,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{catEmoji(fav.category)}</div>
+                <div style={{ width:46,height:46,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{catEmoji(fav.category)}</div>
                 <div style={{ flex:1,minWidth:0 }}>
                   <div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:3 }}>{fav.name}</div>
                   <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
-                    <span style={{ fontSize:11,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"2px 8px",borderRadius:999 }}>{fav.category}</span>
+                    <span style={{ fontSize:11,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"2px 8px",borderRadius:0 }}>{fav.category}</span>
                     {hex&&<div style={{ display:"flex",alignItems:"center",gap:4 }}><div style={{ width:10,height:10,borderRadius:"50%",background:hex,border:fav.color==="White"?`1px solid ${C.border}`:"none" }}/><span style={{ fontSize:11,color:C.sub }}>{fav.color}</span></div>}
                     {fav.price&&<span style={{ fontSize:11,color:C.sub }}>£{fav.price}</span>}
                   </div>
@@ -1016,7 +1016,7 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
                 <button onClick={()=>removeFav(fav.name)} style={{ background:"none",border:"none",cursor:"pointer",padding:6,flexShrink:0 }}><Heart size={20} color={C.red} fill={C.red}/></button>
               </div>
               {worn&&onGoToDate&&(
-                <button onClick={()=>onGoToDate(worn.key)} style={{ marginTop:10,width:"100%",height:32,borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
+                <button onClick={()=>onGoToDate(worn.key)} style={{ marginTop:10,width:"100%",height:32,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
                   <Calendar size={12} color={C.sub}/>Last worn {worn.label} — tap to view
                 </button>
               )}
@@ -1039,16 +1039,16 @@ function AuthScreen({ onAuth }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const inputStyle = { width:"100%",height:52,padding:"0 16px",borderRadius:14,border:`1.5px solid ${C.border}`,background:C.white,fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" };
+  const inputStyle = { width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" };
   const focusStyle = (e) => e.target.style.borderColor = C.sage;
   const blurStyle  = (e) => e.target.style.borderColor = C.border;
 
   const Logo = () => (
-    <div style={{ width:72,height:72,borderRadius:24,background:`linear-gradient(145deg,${C.sage},${C.green})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px",boxShadow:"0 8px 24px rgba(154,155,122,.35)" }}>👗</div>
+    <div style={{ width:72,height:72,borderRadius:0,background:C.sage,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px", }}>👗</div>
   );
 
   const ErrorMsg = () => error ? (
-    <div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:12,padding:"10px 14px",fontSize:13,color:"#C0392B",marginBottom:16,textAlign:"center" }}>{error}</div>
+    <div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:0,padding:"10px 14px",fontSize:13,color:"#C0392B",marginBottom:16,textAlign:"center" }}>{error}</div>
   ) : null;
 
   const friendlyAuthError = (msg="") => {
@@ -1099,15 +1099,15 @@ function AuthScreen({ onAuth }) {
       <Logo/>
       <h1 style={{ fontSize:32,fontWeight:900,color:C.ink,margin:"0 0 8px",textAlign:"center",letterSpacing:"-0.03em" }}>Stylewrap</h1>
       <p style={{ fontSize:15,color:C.sub,margin:"0 0 40px",textAlign:"center" }}>Your personal style companion</p>
-      <button onClick={()=>{ setError(""); setEmail(""); setPassword(""); setView("signin"); }} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12,boxShadow:"0 4px 16px rgba(154,155,122,.4)" }}>Sign In</button>
-      <button onClick={()=>{ setError(""); setEmail(""); setPassword(""); setConfirmPassword(""); setView("signup"); }} style={{ width:"100%",height:54,borderRadius:16,border:`2px solid ${C.sage}`,background:"transparent",color:C.sage,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Sign Up</button>
+      <button onClick={()=>{ setError(""); setEmail(""); setPassword(""); setView("signin"); }} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12 }}>Sign In</button>
+      <button onClick={()=>{ setError(""); setEmail(""); setPassword(""); setConfirmPassword(""); setView("signup"); }} style={{ width:"100%",height:54,borderRadius:0,border:`2px solid ${C.ink}`,background:"transparent",color:C.ink,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Sign Up</button>
     </div>
   );
 
   // ── Sign Up form ──────────────────────────────────────────────────────────
   if (view === "signup") return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:32,overflowY:"auto" }}>
-      <button onClick={()=>setView("landing")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:12,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28 }}><ChevronLeft size={20} color={C.ink}/></button>
+      <button onClick={()=>setView("landing")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28 }}><ChevronLeft size={20} color={C.ink}/></button>
       <Logo/>
       <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>Create account</h2>
       <p style={{ fontSize:14,color:C.sub,margin:"0 0 24px",textAlign:"center" }}>Start tracking your outfits</p>
@@ -1123,7 +1123,7 @@ function AuthScreen({ onAuth }) {
       <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"18px 0 8px" }}>Confirm Password</p>
       <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="••••••••" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} onKeyDown={e=>e.key==="Enter"&&handleSignUp()}/>
 
-      <button onClick={handleSignUp} disabled={loading} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:28,boxShadow:"0 4px 16px rgba(154,155,122,.4)",opacity:loading?0.7:1 }}>{loading?"Creating account…":"Create Account"}</button>
+      <button onClick={handleSignUp} disabled={loading} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:28,opacity:loading?0.7:1 }}>{loading?"Creating account…":"Create Account"}</button>
 
       <p style={{ textAlign:"center",fontSize:14,color:C.sub,marginTop:20 }}>Already have an account? <button onClick={()=>{ setError(""); setView("signin"); }} style={{ background:"none",border:"none",color:C.sage,fontWeight:700,cursor:"pointer",fontSize:14,fontFamily:"inherit" }}>Sign In</button></p>
     </div>
@@ -1136,14 +1136,14 @@ function AuthScreen({ onAuth }) {
       <div style={{ fontSize:48,marginBottom:16 }}>📧</div>
       <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 10px",textAlign:"center",letterSpacing:"-0.03em" }}>Check your email</h2>
       <p style={{ fontSize:14,color:C.sub,textAlign:"center",margin:"0 0 28px",lineHeight:1.6 }}>We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then come back to sign in.</p>
-      <button onClick={()=>setView("signin")} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Go to Sign In</button>
+      <button onClick={()=>setView("signin")} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Go to Sign In</button>
     </div>
   );
 
   // ── Sign In form ──────────────────────────────────────────────────────────
   if (view === "signin") return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:32,overflowY:"auto" }}>
-      <button onClick={()=>setView("landing")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:12,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28,boxShadow:"0 1px 0 rgba(0,0,0,.06)" }}><ChevronLeft size={20} color={C.ink}/></button>
+      <button onClick={()=>setView("landing")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28 }}><ChevronLeft size={20} color={C.ink}/></button>
       <Logo/>
       <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>Welcome back</h2>
       <p style={{ fontSize:14,color:C.sub,margin:"0 0 24px",textAlign:"center" }}>Sign in to your account</p>
@@ -1160,7 +1160,7 @@ function AuthScreen({ onAuth }) {
         <button onClick={()=>setView("forgot")} style={{ background:"none",border:"none",color:C.sage,fontSize:13,fontWeight:600,cursor:"pointer",padding:"8px 0",fontFamily:"inherit" }}>Forgot password?</button>
       </div>
 
-      <button onClick={handleSignIn} disabled={loading} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(154,155,122,.4)",opacity:loading?0.7:1 }}>{loading?"Signing in…":"Sign In"}</button>
+      <button onClick={handleSignIn} disabled={loading} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:loading?0.7:1 }}>{loading?"Signing in…":"Sign In"}</button>
 
       <p style={{ textAlign:"center",fontSize:14,color:C.sub,marginTop:20 }}>Don't have an account? <button onClick={()=>{ setError(""); setEmail(""); setPassword(""); setConfirmPassword(""); setView("signup"); }} style={{ background:"none",border:"none",color:C.sage,fontWeight:700,cursor:"pointer",fontSize:14,fontFamily:"inherit" }}>Sign Up</button></p>
     </div>
@@ -1169,26 +1169,26 @@ function AuthScreen({ onAuth }) {
   // ── Forgot password ───────────────────────────────────────────────────────
   if (view === "forgot") return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:32,overflowY:"auto" }}>
-      <button onClick={()=>setView("signin")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:12,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28 }}><ChevronLeft size={20} color={C.ink}/></button>
-      <div style={{ width:72,height:72,borderRadius:24,background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 20px" }}>🔑</div>
+      <button onClick={()=>setView("signin")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28 }}><ChevronLeft size={20} color={C.ink}/></button>
+      <div style={{ width:72,height:72,borderRadius:0,background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 20px" }}>🔑</div>
       <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>Forgot Password?</h2>
       <p style={{ fontSize:14,color:C.sub,margin:"0 0 28px",textAlign:"center" }}>Enter your email and we'll send you a link to reset your password.</p>
 
       <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Email Address</p>
       <input type="email" value={recoverEmail} onChange={e=>setRecoverEmail(e.target.value)} placeholder="you@example.com" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
 
-      <button onClick={()=>{ if(recoverEmail) setView("forgot-sent"); }} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:recoverEmail?`linear-gradient(135deg,${C.sage},${C.green})`:C.border,color:recoverEmail?"#fff":C.sub,fontSize:16,fontWeight:700,cursor:recoverEmail?"pointer":"not-allowed",fontFamily:"inherit",marginTop:24,boxShadow:recoverEmail?"0 4px 16px rgba(154,155,122,.4)":"none" }}>Recover Password</button>
+      <button onClick={()=>{ if(recoverEmail) setView("forgot-sent"); }} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:recoverEmail?C.ink:C.border,color:recoverEmail?"#fff":C.sub,fontSize:16,fontWeight:700,cursor:recoverEmail?"pointer":"not-allowed",fontFamily:"inherit",marginTop:24, }}>Recover Password</button>
     </div>
   );
 
   // ── Forgot password — sent confirmation ───────────────────────────────────
   if (view === "forgot-sent") return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:C.surface,padding:32 }}>
-      <div style={{ width:80,height:80,borderRadius:28,background:`${C.sage}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:24 }}>📬</div>
+      <div style={{ width:80,height:80,borderRadius:0,background:`${C.sage}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:24 }}>📬</div>
       <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 10px",textAlign:"center",letterSpacing:"-0.03em" }}>Check your email</h2>
       <p style={{ fontSize:15,color:C.sub,margin:"0 0 8px",textAlign:"center" }}>We sent a password reset link to</p>
       <p style={{ fontSize:15,fontWeight:700,color:C.ink,margin:"0 0 36px",textAlign:"center" }}>{recoverEmail}</p>
-      <button onClick={()=>setView("signin")} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:`linear-gradient(135deg,${C.sage},${C.green})`,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(154,155,122,.4)" }}>Back to Sign In</button>
+      <button onClick={()=>setView("signin")} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Back to Sign In</button>
     </div>
   );
 }
@@ -1217,15 +1217,15 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
       {/* Sign out confirmation bottom sheet */}
       {showSignOutConfirm && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={()=>setShowSignOutConfirm(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",width:"100%",padding:"8px 20px 44px" }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",padding:"8px 20px 44px" }}>
             <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
             <div style={{ textAlign:"center",marginBottom:24 }}>
-              <div style={{ width:56,height:56,borderRadius:20,background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px" }}><LogOut size={24} color={C.red}/></div>
+              <div style={{ width:56,height:56,borderRadius:0,background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px" }}><LogOut size={24} color={C.red}/></div>
               <h2 style={{ fontSize:20,fontWeight:900,color:C.ink,margin:"0 0 6px",letterSpacing:"-0.02em" }}>Are you sure?</h2>
               <p style={{ fontSize:14,color:C.sub,margin:0 }}>You will be signed out of your account.</p>
             </div>
-            <button onClick={onSignOut} style={{ width:"100%",height:54,borderRadius:16,border:"none",background:C.red,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><LogOut size={18}/>Sign Out</button>
-            <button onClick={()=>setShowSignOutConfirm(false)} style={{ width:"100%",height:54,borderRadius:16,border:`1.5px solid ${C.border}`,background:"transparent",color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={onSignOut} style={{ width:"100%",height:54,borderRadius:0,border:`2px solid ${C.red}`,background:"transparent",color:C.red,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><LogOut size={18}/>Sign Out</button>
+            <button onClick={()=>setShowSignOutConfirm(false)} style={{ width:"100%",height:54,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </div>
         </div>
       )}
@@ -1233,24 +1233,24 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
       {/* Image source picker bottom sheet */}
       {showPicker && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={()=>setShowPicker(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:"28px 28px 0 0",width:"100%",padding:"8px 20px 44px" }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",padding:"8px 20px 44px" }}>
             <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
             <h2 style={{ fontSize:20,fontWeight:800,color:C.ink,margin:"0 0 20px" }}>Change Profile Photo</h2>
-            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>galleryRef.current?.click(),100); }} style={{ width:"100%",height:56,borderRadius:16,border:`1px solid ${C.border}`,background:C.surface,color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:12 }}>
-              <div style={{ width:40,height:40,borderRadius:12,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><Camera size={20} color={C.sage}/></div>
+            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>galleryRef.current?.click(),100); }} style={{ width:"100%",height:56,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:12 }}>
+              <div style={{ width:40,height:40,borderRadius:0,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><Camera size={20} color={C.sage}/></div>
               Camera Roll
             </button>
-            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>cameraRef.current?.click(),100); }} style={{ width:"100%",height:56,borderRadius:16,border:`1px solid ${C.border}`,background:C.surface,color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:12 }}>
-              <div style={{ width:40,height:40,borderRadius:12,background:C.green+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><Camera size={20} color={C.green}/></div>
+            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>cameraRef.current?.click(),100); }} style={{ width:"100%",height:56,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:12 }}>
+              <div style={{ width:40,height:40,borderRadius:0,background:C.green+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><Camera size={20} color={C.green}/></div>
               Camera
             </button>
-            <button onClick={()=>setShowPicker(false)} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:C.border,color:C.sub,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={()=>setShowPicker(false)} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.border,color:C.sub,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </div>
         </div>
       )}
 
-      <div style={{ background:`linear-gradient(145deg,${C.sage},${C.green})`,padding:"20px 20px 24px",flexShrink:0,borderRadius:"0 0 28px 28px",textAlign:"center",position:"relative" }}>
-        {onBack&&<button onClick={onBack} style={{ position:"absolute",top:20,left:16,width:36,height:36,borderRadius:12,border:"none",background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color="#fff"/></button>}
+      <div style={{ background:C.sage,padding:"20px 20px 24px",flexShrink:0,borderRadius:0,textAlign:"center",position:"relative" }}>
+        {onBack&&<button onClick={onBack} style={{ position:"absolute",top:20,left:16,width:36,height:36,borderRadius:0,border:"none",background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color="#fff"/></button>}
         {/* Tappable profile photo */}
         <button onClick={()=>setShowPicker(true)} style={{ width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.2)",margin:"0 auto 12px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,border:"3px solid rgba(255,255,255,.5)",cursor:"pointer",padding:0,overflow:"hidden",position:"relative" }}>
           {profileImage
@@ -1263,13 +1263,13 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         {[{ icon:<Bell size={18} color={C.sage}/>,label:"Notifications",sub:"Push alerts",action:onNotifications },{ icon:<Shield size={18} color={C.sage}/>,label:"Privacy",sub:"Data & permissions",action:onPrivacy },{ icon:<Phone size={18} color={C.sage}/>,label:"Settings",sub:"App preferences",action:onSettings }].map((item,i)=>(
-          <button key={i} onClick={item.action} style={{ width:"100%",background:C.white,borderRadius:18,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
-            <div style={{ width:40,height:40,borderRadius:12,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{item.icon}</div>
+          <button key={i} onClick={item.action} style={{ width:"100%",background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
+            <div style={{ width:40,height:40,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{item.icon}</div>
             <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>{item.label}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.sub}</div></div>
             <ChevronRight size={18} color={C.border}/>
           </button>
         ))}
-        <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:"#FEF0EF",color:C.red,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",marginTop:8 }}><LogOut size={18}/> Sign Out</button>
+        <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:"#FEF0EF",color:C.red,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",marginTop:8 }}><LogOut size={18}/> Sign Out</button>
       </div>
     </div>
   );
@@ -1310,7 +1310,7 @@ function SettingsScreen({ onBack }) {
     if(error){setErr(error.message);return;}
     setMsg("Date of birth saved successfully.");
   };
-  const inputStyle={width:"100%",height:48,padding:"0 14px",borderRadius:12,border:`1.5px solid ${C.border}`,background:C.white,fontSize:14,color:C.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12};
+  const inputStyle={width:"100%",height:48,padding:"0 14px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,fontSize:14,color:C.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12};
   const labelStyle={fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",display:"block",marginBottom:6};
 
   const handleChangePassword=async()=>{
@@ -1364,7 +1364,7 @@ function SettingsScreen({ onBack }) {
   };
 
   const Section=({title,sub,children})=>(
-    <div style={{ background:C.white,borderRadius:18,padding:20,marginBottom:14,border:`1px solid ${C.border}` }}>
+    <div style={{ background:C.white,borderRadius:0,padding:20,marginBottom:14,border:`1px solid ${C.border}` }}>
       <h3 style={{ fontSize:15,fontWeight:700,color:C.ink,margin:"0 0 4px" }}>{title}</h3>
       <p style={{ fontSize:12,color:C.sub,margin:"0 0 16px",lineHeight:1.5 }}>{sub}</p>
       {children}
@@ -1374,20 +1374,20 @@ function SettingsScreen({ onBack }) {
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
       <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        <button onClick={panel?()=>{setPanel(null);setErr("");setMsg("");}:onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
+        <button onClick={panel?()=>{setPanel(null);setErr("");setMsg("");}:onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
         <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>{panel?"Settings":"Settings"}</h1>
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         {!panel&&(<>
           {[{id:"password",title:"Change Password",sub:"Enter your current password and choose a new one."},{id:"phone",title:"Update Phone Number",sub:"Enter your new phone number to receive a verification code."},{id:"name",title:"Change Name",sub:"Update your display name."},{id:"dob",title:"Date of Birth",sub:"Update your date of birth."}].map(item=>(
-            <button key={item.id} onClick={()=>{setPanel(item.id);setErr("");setMsg("");}} style={{ width:"100%",background:C.white,borderRadius:18,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
+            <button key={item.id} onClick={()=>{setPanel(item.id);setErr("");setMsg("");}} style={{ width:"100%",background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
               <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>{item.title}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.sub}</div></div>
               <ChevronRight size={18} color={C.border}/>
             </button>
           ))}
           <div style={{ marginTop:24,marginBottom:8 }}>
             <p style={{ fontSize:11,fontWeight:700,color:C.red,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px" }}>Danger Zone</p>
-            <button onClick={()=>setPanel("delete")} style={{ width:"100%",background:"#FEF0EF",borderRadius:18,padding:"14px 16px",border:`1px solid ${C.red}30`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
+            <button onClick={()=>setPanel("delete")} style={{ width:"100%",background:"#FEF0EF",borderRadius:0,padding:"14px 16px",border:`1px solid ${C.red}30`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
               <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.red }}>Delete Account</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Permanently delete your account</div></div>
               <ChevronRight size={18} color={C.red}/>
             </button>
@@ -1396,71 +1396,71 @@ function SettingsScreen({ onBack }) {
 
         {panel==="password"&&(
           <Section title="Change Password" sub="Enter your current password and choose a new one.">
-            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
-            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
+            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:0,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
+            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:0,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
             <label style={labelStyle}>Current Password</label>
             <input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} placeholder="••••••••" style={inputStyle}/>
             <label style={labelStyle}>New Password</label>
             <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="••••••••" style={inputStyle}/>
             <label style={labelStyle}>Confirm New Password</label>
             <input type="password" value={confPw} onChange={e=>setConfPw(e.target.value)} placeholder="••••••••" style={{...inputStyle,marginBottom:16}}/>
-            <button onClick={handleChangePassword} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Change Password</button>
-            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={handleChangePassword} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Change Password</button>
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </Section>
         )}
 
         {panel==="phone"&&(
           <Section title="Update Phone Number" sub={phoneStep==="enter"?"Enter your new phone number including country code (e.g. +44 7700 000000).":"Enter the 6-digit code sent to "+phone+"."}>
-            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
-            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
+            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:0,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
+            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:0,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
             {phoneStep==="enter"?(
               <>
                 <label style={labelStyle}>Phone Number</label>
                 <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+44 7700 000000" style={{...inputStyle,marginBottom:16}}/>
-                <button onClick={handleSendCode} disabled={phoneSending} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:phoneSending?C.border:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:phoneSending?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:10 }}>{phoneSending?"Sending…":"Send Verification Code"}</button>
+                <button onClick={handleSendCode} disabled={phoneSending} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:phoneSending?C.border:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:phoneSending?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:10 }}>{phoneSending?"Sending…":"Send Verification Code"}</button>
               </>
             ):(
               <>
                 <label style={labelStyle}>Verification Code</label>
                 <input type="text" inputMode="numeric" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,""))} placeholder="000000" style={{...inputStyle,letterSpacing:"0.3em",fontSize:22,fontWeight:700,textAlign:"center",marginBottom:16}}/>
-                <button onClick={handleVerifyCode} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Verify & Save</button>
-                <button onClick={()=>{setPhoneStep("enter");setOtp("");setErr("");setMsg("");}} style={{ width:"100%",height:40,borderRadius:14,border:"none",background:"transparent",color:C.sage,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Resend code</button>
+                <button onClick={handleVerifyCode} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Verify & Save</button>
+                <button onClick={()=>{setPhoneStep("enter");setOtp("");setErr("");setMsg("");}} style={{ width:"100%",height:40,borderRadius:0,border:"none",background:"transparent",color:C.sage,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Resend code</button>
               </>
             )}
-            <button onClick={()=>{setPanel(null);setErr("");setMsg("");setPhoneStep("enter");setPhone("");setOtp("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");setPhoneStep("enter");setPhone("");setOtp("");}} style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </Section>
         )}
 
         {panel==="name"&&(
           <Section title="Change Name" sub="Update your display name.">
-            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
-            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
+            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:0,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
+            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:0,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
             <label style={labelStyle}>First Name</label>
             <input value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="Sarah" style={inputStyle}/>
             <label style={labelStyle}>Last Name</label>
             <input value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Smith" style={{...inputStyle,marginBottom:16}}/>
-            <button onClick={handleSaveName} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Save Changes</button>
-            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={handleSaveName} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Save Changes</button>
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </Section>
         )}
 
         {panel==="dob"&&(
           <Section title="Date of Birth" sub="Enter your date of birth in DD/MM/YYYY format.">
-            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:10,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
-            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:10,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
+            {err&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:0,padding:"8px 12px",fontSize:13,color:C.red,marginBottom:12 }}>{err}</div>}
+            {msg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,borderRadius:0,padding:"8px 12px",fontSize:13,color:C.sage,marginBottom:12 }}>{msg}</div>}
             <label style={labelStyle}>Date of Birth</label>
             <input value={dob} onChange={e=>handleDobChange(e.target.value)} placeholder="DD/MM/YYYY" maxLength={10} inputMode="numeric" style={{...inputStyle,marginBottom:16}}/>
-            <button onClick={handleSaveDob} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Save</button>
-            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={handleSaveDob} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Save</button>
+            <button onClick={()=>{setPanel(null);setErr("");setMsg("");}} style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </Section>
         )}
 
         {panel==="delete"&&(
-          <div style={{ background:"#FEF0EF",borderRadius:18,padding:20,border:`1px solid ${C.red}30` }}>
+          <div style={{ background:"#FEF0EF",borderRadius:0,padding:20,border:`1px solid ${C.red}30` }}>
             <h3 style={{ fontSize:15,fontWeight:700,color:C.red,margin:"0 0 8px" }}>Delete Account</h3>
             <p style={{ fontSize:13,color:C.sub,margin:"0 0 20px",lineHeight:1.5 }}>This will permanently delete your account and all your outfit data. This cannot be undone.</p>
-            <button onClick={handleDeleteAccount} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.red,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Delete Account</button>
-            <button onClick={()=>setPanel(null)} style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={handleDeleteAccount} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.red,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Delete Account</button>
+            <button onClick={()=>setPanel(null)} style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </div>
         )}
       </div>
@@ -1473,7 +1473,7 @@ function NotificationsScreen({ onBack }) {
   const [reminderOn,setReminderOn]=useState(true);
 
   const Toggle=({on,onToggle})=>(
-    <div onClick={onToggle} style={{ width:44,height:26,borderRadius:999,background:on?C.sage:C.border,position:"relative",cursor:"pointer",flexShrink:0,transition:"background .2s" }}>
+    <div onClick={onToggle} style={{ width:44,height:26,borderRadius:0,background:on?C.sage:C.border,position:"relative",cursor:"pointer",flexShrink:0,transition:"background .2s" }}>
       <div style={{ position:"absolute",top:3,left:on?21:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s" }}/>
     </div>
   );
@@ -1481,12 +1481,12 @@ function NotificationsScreen({ onBack }) {
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
       <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        <button onClick={onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
+        <button onClick={onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
         <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Notifications</h1>
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px" }}>Push Notifications</p>
-        <div style={{ background:C.white,borderRadius:18,border:`1px solid ${C.border}`,overflow:"hidden" }}>
+        <div style={{ background:C.white,borderRadius:0,border:`1px solid ${C.border}`,overflow:"hidden" }}>
           <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}` }}>
             <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Push Notifications</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Receive alerts and updates</div></div>
             <Toggle on={pushOn} onToggle={()=>setPushOn(v=>!v)}/>
@@ -1515,7 +1515,7 @@ function PrivacyScreen({ onBack, cameraEnabled, onCameraToggle }) {
   },[]);
 
   const Toggle=({on,onToggle,disabled})=>(
-    <div onClick={disabled?undefined:onToggle} style={{ width:44,height:26,borderRadius:999,background:on?C.sage:C.border,position:"relative",cursor:disabled?"not-allowed":"pointer",flexShrink:0,transition:"background .2s",opacity:disabled?0.6:1 }}>
+    <div onClick={disabled?undefined:onToggle} style={{ width:44,height:26,borderRadius:0,background:on?C.sage:C.border,position:"relative",cursor:disabled?"not-allowed":"pointer",flexShrink:0,transition:"background .2s",opacity:disabled?0.6:1 }}>
       <div style={{ position:"absolute",top:3,left:on?21:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s" }}/>
     </div>
   );
@@ -1561,12 +1561,12 @@ function PrivacyScreen({ onBack, cameraEnabled, onCameraToggle }) {
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
       <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        <button onClick={onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
+        <button onClick={onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
         <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Privacy</h1>
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px" }}>Privacy and Permissions</p>
-        <div style={{ background:C.white,borderRadius:18,border:`1px solid ${C.border}`,overflow:"hidden" }}>
+        <div style={{ background:C.white,borderRadius:0,border:`1px solid ${C.border}`,overflow:"hidden" }}>
           <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}` }}>
             <div style={{ flex:1,marginRight:12 }}>
               <div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Camera Access</div>
@@ -1647,7 +1647,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
       <div style={{ background:C.white,padding:"16px 20px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        <button onClick={step==="done"?onBack:step==="edit"?()=>setStep("pick"):onBack} style={{ width:36,height:36,borderRadius:12,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
+        <button onClick={step==="done"?onBack:step==="edit"?()=>setStep("pick"):onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
         <div>
           <h1 style={{ fontSize:20,fontWeight:800,color:C.ink,margin:0 }}>Log Today's Outfit</h1>
           <p style={{ fontSize:11,color:C.sub,margin:0 }}>{step==="pick"?"Upload a photo to get started":step==="analysing"?"Analysing with AI…":step==="edit"?"Review and edit detected items":"Outfit logged!"}</p>
@@ -1656,25 +1656,25 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
 
         {step==="pick"&&(
-          <div style={{ background:C.white,borderRadius:20,overflow:"hidden",border:`1px solid ${C.border}` }}>
+          <div style={{ background:C.white,borderRadius:0,overflow:"hidden",border:`1px solid ${C.border}` }}>
             <div style={{ height:140,background:`linear-gradient(145deg,${C.sage}22,${C.green}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:56 }}>📸</div>
             <div style={{ padding:16 }}>
               <h3 style={{ fontSize:16,fontWeight:700,color:C.ink,margin:"0 0 6px" }}>Upload outfit photo</h3>
               <p style={{ fontSize:13,color:C.sub,margin:"0 0 14px" }}>AI detects items, colours and style — and recognises pieces you've worn before</p>
               {showCamera&&<CameraCapture onCapture={async(dataUrl)=>{ setShowCamera(false); const blob=await fetch(dataUrl).then(r=>r.blob()); handleFile(new File([blob],"camera.jpg",{type:"image/jpeg"})); }} onClose={()=>setShowCamera(false)}/>}
               {cameraEnabled
-                ? <button onClick={()=>setShowCamera(true)} style={{ width:"100%",height:48,borderRadius:14,border:"none",background:C.sage,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,cursor:"pointer",fontFamily:"inherit" }}><Camera size={18} color="#fff"/><span style={{ fontSize:14,fontWeight:700,color:"#fff" }}>Open Camera</span></button>
-                : <div style={{ width:"100%",height:48,borderRadius:14,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,opacity:.5 }}><Camera size={18} color={C.sub}/><span style={{ fontSize:14,fontWeight:600,color:C.sub }}>Camera (enable in Privacy)</span></div>
+                ? <button onClick={()=>setShowCamera(true)} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.sage,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,cursor:"pointer",fontFamily:"inherit" }}><Camera size={18} color="#fff"/><span style={{ fontSize:14,fontWeight:700,color:"#fff" }}>Open Camera</span></button>
+                : <div style={{ width:"100%",height:48,borderRadius:0,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,opacity:.5 }}><Camera size={18} color={C.sub}/><span style={{ fontSize:14,fontWeight:600,color:C.sub }}>Camera (enable in Privacy)</span></div>
               }
-              <label style={{ display:"block",cursor:"pointer" }}><input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handleFile(e.target.files[0])}/><div style={{ width:"100%",height:48,borderRadius:14,border:`1.5px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",gap:10 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Choose from Library</span></div></label>
+              <label style={{ display:"block",cursor:"pointer" }}><input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handleFile(e.target.files[0])}/><div style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",gap:10 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Choose from Library</span></div></label>
             </div>
           </div>
         )}
 
         {step==="analysing"&&(
           <>
-            {photo&&<div style={{ width:"100%",borderRadius:18,overflow:"hidden",marginBottom:14,aspectRatio:"9/16" }}><img src={photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>}
-            <div style={{ background:C.white,borderRadius:18,padding:20,display:"flex",alignItems:"center",gap:14,border:`1px solid ${C.border}` }}>
+            {photo&&<div style={{ width:"100%",borderRadius:0,overflow:"hidden",marginBottom:14,aspectRatio:"9/16" }}><img src={photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>}
+            <div style={{ background:C.white,borderRadius:0,padding:20,display:"flex",alignItems:"center",gap:14,border:`1px solid ${C.border}` }}>
               <div style={{ width:24,height:24,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite",flexShrink:0 }}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
               <div><div style={{ fontSize:14,fontWeight:700,color:C.ink }}>Analysing with AI…</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Detecting items and matching your wardrobe</div></div>
             </div>
@@ -1683,40 +1683,40 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
 
         {step==="edit"&&(
           <>
-            {photo&&<div style={{ width:"100%",borderRadius:18,overflow:"hidden",marginBottom:16,aspectRatio:"9/16" }}><img src={photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>}
+            {photo&&<div style={{ width:"100%",borderRadius:0,overflow:"hidden",marginBottom:16,aspectRatio:"9/16" }}><img src={photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>}
             <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Style</p>
             <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-              {STYLES.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,style:s}))} style={{ padding:"6px 14px",borderRadius:999,border:editEntry.style===s?"none":`1.5px solid ${C.border}`,background:editEntry.style===s?C.sage:C.white,color:editEntry.style===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
+              {STYLES.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,style:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.style===s?"none":`1.5px solid ${C.border}`,background:editEntry.style===s?C.sage:C.white,color:editEntry.style===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
             </div>
             <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Formality</p>
             <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-              {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:999,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#7A6A9A":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
+              {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#7A6A9A":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
             </div>
             <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Season</p>
             <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-              {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:999,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5A85C4":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
+              {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5A85C4":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
             </div>
             <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Items</p>
             {editEntry.items.map((item,i)=>(
-              <div key={i} style={{ background:C.surface,borderRadius:14,padding:12,marginBottom:10,border:`1px solid ${C.border}` }}>
+              <div key={i} style={{ background:C.surface,borderRadius:0,padding:12,marginBottom:10,border:`1px solid ${C.border}` }}>
                 <div style={{ display:"flex",alignItems:"center",marginBottom:8,gap:8 }}>
-                  <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:10,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
-                  <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:10,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
+                  <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:0,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
+                  <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:0,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
                 </div>
                 {item._recognized&&<div style={{ marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised — details filled from previous log</span></div>}
-                <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:999,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{catEmojis[c]} {c}</button>)}</div>
+                <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:0,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{catEmojis[c]} {c}</button>)}</div>
                 <div style={{ display:"flex",gap:6,flexWrap:"wrap",marginBottom:8 }}>{COLORS.map(col=><button key={col} onClick={()=>updateItem(i,"color",col)} title={col} style={{ width:22,height:22,borderRadius:"50%",border:item.color===col?`2.5px solid ${C.sage}`:col==="White"?`1.5px solid ${C.border}`:"none",background:colorHex[col],cursor:"pointer",padding:0,flexShrink:0 }}/>)}</div>
                 <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                   <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Price</span>
-                  <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:10,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
+                  <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
                     <span style={{ padding:"0 8px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>£</span>
                     <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                   </div>
                 </div>
               </div>
             ))}
-            <button onClick={addItem} style={{ width:"100%",height:44,borderRadius:14,border:`1.5px dashed ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:16 }}><Plus size={16}/>Add Item</button>
-            <button onClick={handleSave} style={{ width:"100%",height:52,borderRadius:16,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><Check size={18}/>Save to Today</button>
+            <button onClick={addItem} style={{ width:"100%",height:44,borderRadius:0,border:`1.5px dashed ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:16 }}><Plus size={16}/>Add Item</button>
+            <button onClick={handleSave} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><Check size={18}/>Save to Today</button>
           </>
         )}
 
@@ -1725,8 +1725,8 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
             <div style={{ width:80,height:80,borderRadius:"50%",background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40 }}>✅</div>
             <h2 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0,textAlign:"center" }}>Outfit Logged!</h2>
             <p style={{ fontSize:14,color:C.sub,margin:0,textAlign:"center" }}>Saved to today on the calendar. All wardrobe analytics updated.</p>
-            <button onClick={()=>{ setStep("pick"); setPhoto(null); setEditEntry({style:null,formalityLevel:null,season:null,items:[]}); }} style={{ marginTop:8,height:48,padding:"0 28px",borderRadius:16,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Log Another</button>
-            <button onClick={onBack} style={{ height:48,padding:"0 28px",borderRadius:16,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Back to Home</button>
+            <button onClick={()=>{ setStep("pick"); setPhoto(null); setEditEntry({style:null,formalityLevel:null,season:null,items:[]}); }} style={{ marginTop:8,height:48,padding:"0 28px",borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Log Another</button>
+            <button onClick={onBack} style={{ height:48,padding:"0 28px",borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Back to Home</button>
           </div>
         )}
 
@@ -1824,7 +1824,7 @@ export default function App() {
       <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {authLoading
           ? <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16 }}>
-              <div style={{ width:64,height:64,borderRadius:22,background:`linear-gradient(145deg,${C.sage},${C.green})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,boxShadow:"0 8px 24px rgba(154,155,122,.35)" }}>👗</div>
+              <div style={{ width:64,height:64,borderRadius:0,background:C.sage,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32, }}>👗</div>
               <div style={{ width:32,height:32,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }}/>
             </div>
           : !isSignedIn
