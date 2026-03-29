@@ -126,15 +126,18 @@ async function analyseWithGemini(base64, mediaType, knownItems) {
  *                                   color_palette, clothing_items }
  */
 export async function analyseOutfit(base64, mediaType, knownItems = []) {
+  let groqError;
   try {
     return await analyseWithGroq(base64, mediaType, knownItems);
-  } catch (groqError) {
-    const isRateLimitOrMissingKey =
-      groqError.message === "RATE_LIMIT" || groqError.message === "NO_KEY";
+  } catch (e) {
+    groqError = e;
+  }
 
-    if (!isRateLimitOrMissingKey) throw groqError;
-
-    // Groq exhausted or not configured — try Gemini
+  // Groq failed for any reason — try Gemini before giving up
+  try {
     return await analyseWithGemini(base64, mediaType, knownItems);
+  } catch (geminiError) {
+    // Both failed — throw the original Groq error so the toast shows it
+    throw groqError;
   }
 }

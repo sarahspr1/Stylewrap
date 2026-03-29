@@ -2,7 +2,7 @@
   "_instructions": "Edit the prompts and models below to customise how outfit photos are analysed. The placeholders {schema} and {knownList} are filled in automatically at runtime — do not remove them.",
 
   "groq": {
-    "model": "llama-3.2-90b-vision-preview"
+    "model": "llama-3.2-11b-vision-preview"
   },
 
   "gemini": {
