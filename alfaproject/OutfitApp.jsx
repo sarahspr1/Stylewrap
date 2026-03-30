@@ -293,6 +293,11 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
   const totalCI=Object.values(colorCounts).reduce((s,v)=>s+v,0)||1;
   const computedColorData=Object.entries(colorCounts).filter(([n])=>n!=="Other").sort((a,b)=>b[1]-a[1]).concat(colorCounts["Other"]?[["Other",colorCounts["Other"]]]:[]).map(([name,count])=>({ name,value:Math.round(count/totalCI*100),color:colorHex[name]||"#B0B0A8" }));
 
+  // Detailed palette from AI (new {name,hex} format + backward compat with old string format)
+  const paletteMap={};
+  loggedOutfits.forEach(e=>{ (e.colorPalette||[]).forEach(c=>{ if(c&&typeof c==="object"&&c.hex){ const k=c.hex.toLowerCase(); if(!paletteMap[k]) paletteMap[k]={name:c.name,hex:c.hex,count:0}; paletteMap[k].count+=1; } else if(typeof c==="string"&&c){ const k=c.toLowerCase(); if(!paletteMap[k]) paletteMap[k]={name:c,hex:colorHex[c]||"#B0B0A8",count:0}; paletteMap[k].count+=1; } }); });
+  const detailedPalette=Object.values(paletteMap).sort((a,b)=>b.count-a.count).slice(0,12);
+
   const getStyle=items=>{ try { const names=(items||[]).map(i=>((typeof i==="object"?i.name:i)||"").toString().toLowerCase()).join(" "); const cats=(items||[]).map(i=>((typeof i==="object"?i.category:i)||"").toString().toLowerCase()).join(" "); if(cats.includes("activewear")||/gym|sport|athletic|yoga|running|workout|leggings|jogger/.test(names)) return "Activewear"; if(/blazer|suit|dress shirt|slacks|oxford|loafer|trousers|button-up|button up|formal|professional/.test(names)) return "Professional"; if(/dress|heels|jumpsuit|going out|club|evening|sequin|satin/.test(names)) return "Going Out"; return "Everyday"; } catch { return "Everyday"; } };
   const styleCounts={ Everyday:0,"Going Out":0,Activewear:0,Professional:0 };
   Object.values(photoData).forEach(entry=>{ if(entry?.logged){ const s=entry.style&&styleCounts.hasOwnProperty(entry.style)?entry.style:getStyle(entry.items); styleCounts[s]+=1; } });
@@ -561,9 +566,24 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
         <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
             <div style={{ width:36,height:36,borderRadius:0,background:C.blush+"40",display:"flex",alignItems:"center",justifyContent:"center" }}><Palette size={18} color={C.sage}/></div>
-            <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Color Distribution</span>
+            <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Colour Palette</span>
           </div>
-          {computedColorData.length>0?(
+          {detailedPalette.length>0?(
+            <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:4 }}>
+              {detailedPalette.map((c,i)=>{
+                const isLight=parseInt(c.hex.slice(1,3),16)*0.299+parseInt(c.hex.slice(3,5),16)*0.587+parseInt(c.hex.slice(5,7),16)*0.114>180;
+                return(
+                  <div key={i} style={{ minWidth:80,maxWidth:80,flexShrink:0,border:`1px solid ${C.border}`,overflow:"hidden" }}>
+                    <div style={{ height:64,background:c.hex }}/>
+                    <div style={{ padding:"6px 8px" }}>
+                      <div style={{ fontSize:11,fontWeight:700,color:C.ink,lineHeight:1.3,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{c.name}</div>
+                      <div style={{ fontSize:10,color:C.sub,fontFamily:"monospace" }}>{c.hex.toUpperCase()}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ):computedColorData.length>0?(
             <>
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart><Pie data={computedColorData} cx="50%" cy="50%" innerRadius={55} outerRadius={82} paddingAngle={3} dataKey="value">{computedColorData.map((e,i)=><Cell key={i} fill={e.color} stroke={e.color==="#E8E8E8"||e.color==="#B0B0A8"?C.border:"none"}/>)}</Pie></PieChart>
