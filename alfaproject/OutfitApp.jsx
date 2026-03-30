@@ -6,6 +6,38 @@ const _sbUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const _sbKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(_sbUrl, _sbKey);
 
+// Remove background via remove.bg API, composite onto white canvas, return JPEG data-URL.
+// Returns null silently if key is missing or API fails — caller falls back to original.
+async function removeBackground(base64){
+  const key=import.meta.env.VITE_REMOVEBG_KEY;
+  if(!key) return null;
+  try{
+    const res=await fetch("https://api.remove.bg/v1.0/removebg",{
+      method:"POST",
+      headers:{"X-Api-Key":key,"Content-Type":"application/json"},
+      body:JSON.stringify({image_base64:base64,size:"auto",type:"person"}),
+    });
+    if(!res.ok) return null;
+    const blob=await res.blob();
+    return await new Promise(resolve=>{
+      const url=URL.createObjectURL(blob);
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement("canvas");
+        c.width=img.width; c.height=img.height;
+        const ctx=c.getContext("2d");
+        ctx.fillStyle="#FFFFFF";
+        ctx.fillRect(0,0,c.width,c.height);
+        ctx.drawImage(img,0,0);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg",0.92));
+      };
+      img.onerror=()=>{ URL.revokeObjectURL(url); resolve(null); };
+      img.src=url;
+    });
+  }catch{ return null; }
+}
+
 // Compress an image data-URL to a JPEG of max 800 px on the longest side.
 // Reduces a typical phone photo from 3–8 MB down to ~50–150 KB.
 function compressImage(dataUrl, maxPx=800, quality=0.75){
@@ -785,10 +817,12 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
     const r=new FileReader();
     r.onload=async(ev)=>{
       const compressed=await compressImage(ev.target.result);
+      const noBg=await removeBackground(compressed.split(",")[1]);
+      const finalCompressed=noBg||compressed;
       setPhotoUploading(false);
-      const base64=compressed.split(",")[1];
+      const base64=finalCompressed.split(",")[1];
       const dateKey=toKey(selectedDate);
-      setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:compressed,items:[],style:null,analysing:true }}));
+      setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:finalCompressed,items:[],style:null,analysing:true }}));
       setShowModal(true);
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
       // Convert compressed data-URL to a Blob for storage upload
@@ -1636,8 +1670,10 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
     const r=new FileReader();
     r.onload=async(ev)=>{
       const compressed=await compressImage(ev.target.result);
-      const base64=compressed.split(",")[1];
-      setPhoto(compressed);
+      const noBg=await removeBackground(compressed.split(",")[1]);
+      const finalCompressed=noBg||compressed;
+      const base64=finalCompressed.split(",")[1];
+      setPhoto(finalCompressed);
       setStep("analysing");
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
       const blob=await fetch(compressed).then(r=>r.blob());
