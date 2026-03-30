@@ -1595,6 +1595,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
   const [photo,setPhoto]=useState(null);
   const [photoUrl,setPhotoUrl]=useState(null); // Supabase Storage URL once uploaded
   const [editEntry,setEditEntry]=useState({style:null,formalityLevel:null,season:null,items:[]});
+  const [toast,setToast]=useState(null);
   const addItemCameraRef=useRef(null);
   const [showCamera,setShowCamera]=useState(false);
   const today=new Date();
@@ -1620,10 +1621,12 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
       setStep("analysing");
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
       const blob=await fetch(compressed).then(r=>r.blob());
+      let _aiErr=null;
       const [url,parsed]=await Promise.all([
         uploadPhoto(blob,todayKey),
-        analyseOutfit(base64,file.type,knownItemsList).catch(()=>null),
+        analyseOutfit(base64,file.type,knownItemsList).catch(e=>{ _aiErr=e; return null; }),
       ]);
+      if(_aiErr){ setToast("AI error: "+(_aiErr.message||String(_aiErr))); setTimeout(()=>setToast(null),30000); }
       if(url) setPhotoUrl(url);
       if(parsed){
         const rawItems=parsed.clothing_items||[];
@@ -1646,6 +1649,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
 
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
+      {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:"#E5635A",color:"#fff",borderRadius:0,padding:"10px 14px",fontSize:13,fontWeight:700,boxShadow:"0 4px 16px rgba(0,0,0,.18)" }}>{toast}</div>}
       <div style={{ background:C.white,padding:"16px 20px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
         <button onClick={step==="done"?onBack:step==="edit"?()=>setStep("pick"):onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
         <div>
