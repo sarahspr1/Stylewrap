@@ -51,7 +51,7 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { Home, ShoppingBag, Calendar, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check } from "lucide-react";
+import { Home, Shirt, CalendarDays, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 const C = {
@@ -162,14 +162,16 @@ function StatCard({ icon, number, label, accent=C.sage, onClick }) {
 
 
 function TabBar({ active, onChange }) {
-  const tabs=[{ id:"home",label:"Home",icon:Home },{ id:"wardrobe",label:"Wardrobe",icon:ShoppingBag },{ id:"calendar",label:"Calendar",icon:Calendar },{ id:"favorites",label:"Favorites",icon:Heart },{ id:"profile",label:"Profile",icon:User }];
+  const tabs=[{ id:"home",label:"Home",icon:Home },{ id:"wardrobe",label:"Wardrobe",icon:Shirt },{ id:"calendar",label:"Calendar",icon:CalendarDays },{ id:"favorites",label:"Favorites",icon:Heart },{ id:"profile",label:"Profile",icon:User }];
   return (
     <div style={{ height:83,background:C.white,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-around",paddingBottom:20,flexShrink:0 }}>
       {tabs.map(({ id,label,icon:Icon })=>{
         const a=active===id;
-        return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:56,border:"none",background:"transparent",cursor:"pointer",padding:6,borderRadius:0 }}>
-          <div style={{ width:32,height:32,borderRadius:0,background:a?C.sage+"18":"transparent",display:"flex",alignItems:"center",justifyContent:"center" }}><Icon size={20} color={a?C.sage:"#ABABAB"} strokeWidth={a?2.5:2}/></div>
-          <span style={{ fontSize:10,fontWeight:700,color:a?C.sage:"#ABABAB",letterSpacing:"0.06em",textTransform:"uppercase" }}>{label}</span>
+        return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:56,border:"none",background:"transparent",cursor:"pointer",padding:"4px 2px",borderRadius:0 }}>
+          {a
+            ? <div style={{ display:"flex",alignItems:"center",gap:5,background:C.ink,borderRadius:99,padding:"5px 12px" }}><Icon size={16} color="#fff" strokeWidth={1.5}/><span style={{ fontSize:10,fontWeight:700,color:"#fff",letterSpacing:"0.05em",textTransform:"uppercase",whiteSpace:"nowrap" }}>{label}</span></div>
+            : <><Icon size={20} color="#ABABAB" strokeWidth={1.5}/><span style={{ fontSize:10,fontWeight:600,color:"#ABABAB",letterSpacing:"0.05em",textTransform:"uppercase" }}>{label}</span></>
+          }
         </button>;
       })}
     </div>
