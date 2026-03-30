@@ -51,7 +51,7 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { Home, Shirt, CalendarDays, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag } from "lucide-react";
+import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 const C = {
