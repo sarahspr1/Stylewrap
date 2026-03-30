@@ -20,8 +20,8 @@
     "formality_level": "Casual | Smart Casual | Formal | Sporty",
     "season": "Spring | Summer | Autumn | Winter | All Season",
     "color_palette": [
-      { "name": "specific colour name e.g. Eerie Black, Ivory, Sage Green, Cobalt Blue", "hex": "#RRGGBB" },
-      { "name": "second dominant colour name", "hex": "#RRGGBB" }
+      { "name": "Eerie Black", "hex": "#1B1B1B" },
+      { "name": "Ivory", "hex": "#FFFFF0" }
     ],
     "clothing_items": [
       {
