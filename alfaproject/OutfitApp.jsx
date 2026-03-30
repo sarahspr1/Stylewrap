@@ -153,7 +153,7 @@ function StatCard({ icon, number, label, accent=C.sage, onClick }) {
   const El = onClick ? "button" : "div";
   return (
     <El onClick={onClick} style={{ flex:1,background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,cursor:onClick?"pointer":"default",textAlign:"left",fontFamily:"inherit" }}>
-      <div style={{ width:38,height:38,borderRadius:0,background:accent+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,marginBottom:10 }}>{icon}</div>
+      <div style={{ width:38,height:38,borderRadius:0,background:accent+"18",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10 }}>{icon}</div>
       <div style={{ fontSize:26,fontWeight:900,color:C.ink,lineHeight:1,letterSpacing:"-0.02em" }}>{number}</div>
       <div style={{ fontSize:12,color:C.sub,marginTop:4 }}>{label}</div>
     </El>
@@ -220,7 +220,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
         <h1 style={{ fontSize:34,fontWeight:900,color:"#fff",margin:"0 0 4px",lineHeight:1.1,letterSpacing:"-0.03em" }}>Hello{firstName?`, ${firstName}`:""}!</h1>
         {streakLabel
           ? <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,.18)",borderRadius:0,padding:"4px 12px",marginTop:2 }}>
-              <span style={{ fontSize:13 }}>{loggedToday?"✅":"🕐"}</span>
+              {loggedToday?<Check size={14} color="#fff" strokeWidth={2.5}/>:<CalendarDays size={14} color="#fff" strokeWidth={1.5}/>}
               <span style={{ fontSize:13,fontWeight:600,color:"#fff" }}>{streakLabel}</span>
             </div>
           : <p style={{ fontSize:16,color:"rgba(255,255,255,.8)",margin:0 }}>Ready to plan today's look?</p>}
@@ -228,7 +228,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       <div style={{ padding:"16px 16px 0" }}>
         {!hasAnyOutfits?(
           <div style={{ background:C.white,borderRadius:0,padding:20,marginBottom:20,border:`1px solid ${C.border}`,textAlign:"center" }}>
-            <div style={{ fontSize:44,marginBottom:12 }}>👗</div>
+            <div style={{ display:"flex",justifyContent:"center",marginBottom:12 }}><Shirt size={44} color={C.sage} strokeWidth={1.5}/></div>
             <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,margin:"0 0 6px",letterSpacing:"-0.02em" }}>Start tracking your style</h2>
             <p style={{ fontSize:13,color:C.sub,margin:"0 0 16px",lineHeight:1.6 }}>Log your first outfit to unlock wardrobe stats, colour trends, and cost-per-wear tracking.</p>
             <button onClick={onAddItem} style={{ height:48,padding:"0 24px",borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Log First Outfit</button>
@@ -238,19 +238,19 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
             <div style={{ flex:1,background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}>
               <div style={{ width:38,height:38,borderRadius:0,background:topColorHex?(topColorHex+"28"):C.surface,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10 }}>
                 {topColorHex
-                  ? <div style={{ width:22,height:22,borderRadius:"50%",background:topColorHex,border:topColorName==="White"?`1.5px solid ${C.border}`:"none" }}/>
-                  : <Palette size={18} color={C.sub}/>}
+                  ? <div style={{ width:22,height:22,background:topColorHex,border:topColorName==="White"?`1.5px solid ${C.border}`:"none" }}/>
+                  : <Palette size={18} color={C.sub} strokeWidth={1.5}/>}
               </div>
               <div style={{ fontSize:18,fontWeight:900,color:topColorName?C.ink:C.sub,lineHeight:1,letterSpacing:"-0.02em" }}>{topColorName||"None yet"}</div>
               <div style={{ fontSize:12,color:C.sub,marginTop:4 }}>Colour of the Month</div>
             </div>
-            <StatCard icon="❤️" number={String(favourites.length)} label="Favorites" accent="#C47A7A" onClick={onGoToFavorites}/>
+            <StatCard icon={<Heart size={18} color="#C47A7A" strokeWidth={1.5}/>} number={String(favourites.length)} label="Favorites" accent="#C47A7A" onClick={onGoToFavorites}/>
           </div>
         )}
         <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,marginBottom:12,letterSpacing:"-0.02em" }}>Quick Actions</h2>
         <div style={{ display:"flex",gap:10,marginBottom:20 }}>
-          <button onClick={onAddItem} style={{ flex:1,height:56,borderRadius:0,border:`2px solid ${C.ink}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><span style={{ fontSize:20 }}>📸</span><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Log Outfit</span></button>
-          <button onClick={onShowAllItems} style={{ flex:1,height:56,borderRadius:0,border:`2px solid ${C.ink}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><span style={{ fontSize:20 }}>✨</span><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>All Items</span></button>
+          <button onClick={onAddItem} style={{ flex:1,height:56,borderRadius:0,border:`2px solid ${C.ink}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><Camera size={18} color={C.ink} strokeWidth={1.5}/><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Log Outfit</span></button>
+          <button onClick={onShowAllItems} style={{ flex:1,height:56,borderRadius:0,border:`2px solid ${C.ink}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><Layers size={18} color={C.ink} strokeWidth={1.5}/><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>All Items</span></button>
         </div>
       </div>
     </div>
