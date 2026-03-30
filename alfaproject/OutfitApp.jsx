@@ -51,7 +51,7 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { Home, Shirt, CalendarDays, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check } from "lucide-react";
+import { Home, Shirt, CalendarDays, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 const C = {
@@ -286,9 +286,9 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
   const getItemPhoto=(key)=>{ const info=itemLastInfo[key]; if(!info) return null; if(info.photo) return info.photo; if(currentUser&&info.dateKey) return supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${info.dateKey}.jpg`).data.publicUrl; return null; };
   const wearArr=Object.values(wearCounts).map(w=>({...w,lastPhoto:getItemPhoto(w.name.toLowerCase().trim())})).sort((a,b)=>b.count-a.count);
   const totalWears=wearArr.reduce((s,p)=>s+p.count,0);
-  const catEmoji=cat=>cat==="Top"?"👕":cat==="Bottom"?"👖":cat==="Shoes"?"👟":cat==="Outerwear"?"🧥":cat==="Accessories"?"💍":cat==="Dresses"?"👗":cat==="Swimwear"?"👙":"👔";
-  const computedMostWorn=wearArr.slice(0,5).map(p=>({ name:p.name,wears:p.count,category:p.category,image:catEmoji(p.category) }));
-  const computedLeastWorn=[...wearArr].reverse().slice(0,5).map(p=>({ name:p.name,wears:p.count,category:p.category,image:catEmoji(p.category) }));
+  const catIcon=()=><Shirt size={22} color={C.sub} strokeWidth={1.5}/>;
+  const computedMostWorn=wearArr.slice(0,5).map(p=>({ name:p.name,wears:p.count,category:p.category,image:catIcon() }));
+  const computedLeastWorn=[...wearArr].reverse().slice(0,5).map(p=>({ name:p.name,wears:p.count,category:p.category,image:catIcon() }));
 
   const colorCounts={};
   loggedOutfits.forEach(e=>{ (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; let col=null; if(item.color&&colorHex[item.color]) col=item.color; else if(item.name&&typeof item.name==="string"){ const n=item.name.toLowerCase(); for(const [c,kws] of Object.entries(colorKeywords)){ if(kws.some(kw=>n.includes(kw))){ col=c; break; } } } colorCounts[col||"Other"]=(colorCounts[col||"Other"]||0)+1; }); });
@@ -440,7 +440,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
                 <div style={{ fontSize:36,fontWeight:900,color:"#fff",lineHeight:1.1,marginTop:4,letterSpacing:"-0.03em" }}>${avgCPW}</div>
                 <div style={{ fontSize:12,color:"rgba(255,255,255,.7)",marginTop:2 }}>{pricedItems.length} items tracked</div>
               </div>
-              <div style={{ fontSize:44 }}>💰</div>
+              <DollarSign size={44} color="rgba(255,255,255,.8)" strokeWidth={1.5}/>
             </div>
           )}
           {priced.length>0&&(
@@ -527,10 +527,10 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16 }}>
-          <div style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}><div style={{ fontSize:22 }}>🗓️</div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalOutfits)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Outfits</div></div>
-          <button onClick={()=>setView("items")} style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}><div style={{ fontSize:22 }}>👔</div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalItemsCount)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Items</div><div style={{ fontSize:10,color:C.sage,marginTop:4,fontWeight:600 }}>Tap to view →</div></button>
+          <div style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}><div style={{ width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:C.sage+"18" }}><CalendarDays size={18} color={C.sage} strokeWidth={1.5}/></div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalOutfits)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Outfits</div></div>
+          <button onClick={()=>setView("items")} style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}><div style={{ width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:C.sage+"18" }}><Shirt size={18} color={C.sage} strokeWidth={1.5}/></div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalItemsCount)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Items</div><div style={{ fontSize:10,color:C.sage,marginTop:4,fontWeight:600 }}>Tap to view →</div></button>
           <button onClick={()=>setView("cpw")} style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}>
-            <div style={{ fontSize:22 }}>💰</div>
+            <div style={{ width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:C.sage+"18" }}><DollarSign size={18} color={C.sage} strokeWidth={1.5}/></div>
             <div style={{ fontSize:24,fontWeight:800,color:C.sage,marginTop:8 }}>{avgCPW==="—"?"—":`$${avgCPW}`}</div>
             <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Avg Cost/Wear</div>
             <div style={{ fontSize:10,color:C.sage,marginTop:4,fontWeight:600 }}>Tap to manage →</div>
