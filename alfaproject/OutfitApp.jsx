@@ -775,7 +775,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       let _analysisErr=null;
       const [photoUrl,parsed]=await Promise.all([
         uploadPhoto(blob,dateKey),
-        analyseOutfit(base64,file.type,knownItemsList).catch(e=>{ _analysisErr=e; return null; }),
+        analyseOutfit(base64,"image/jpeg",knownItemsList).catch(e=>{ _analysisErr=e; return null; }),
       ]);
       if(_analysisErr){ setToast("AI error: "+(_analysisErr.message||String(_analysisErr))); setTimeout(()=>setToast(null),30000); }
       const finalPhoto=photoUrl||compressed; // fall back to compressed base64 if upload fails
@@ -1624,7 +1624,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
       let _aiErr=null;
       const [url,parsed]=await Promise.all([
         uploadPhoto(blob,todayKey),
-        analyseOutfit(base64,file.type,knownItemsList).catch(e=>{ _aiErr=e; return null; }),
+        analyseOutfit(base64,"image/jpeg",knownItemsList).catch(e=>{ _aiErr=e; return null; }),
       ]);
       if(_aiErr){ setToast("AI error: "+(_aiErr.message||String(_aiErr))); setTimeout(()=>setToast(null),30000); }
       if(url) setPhotoUrl(url);
