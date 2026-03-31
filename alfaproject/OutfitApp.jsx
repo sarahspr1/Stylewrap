@@ -889,7 +889,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       const date=new Date(year,mIdx,d),key=toKey(date);
       const isToday=date.toDateString()===today.toDateString(),hasPhoto=!!(photoData[key]?.logged);
       cells.push(<button key={d} onClick={()=>{ setSelectedDate(date); setShowModal(true); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); }} style={{ aspectRatio:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:"none",background:"transparent",cursor:"pointer",padding:0,gap:2 }}>
-        <span style={{ width:30,height:30,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:isToday?700:hasPhoto?600:400,background:isToday?C.sage:"transparent",color:isToday?"#fff":hasPhoto?C.ink:C.sub }}>{d}</span>
+        <span style={{ width:30,height:30,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:isToday?700:hasPhoto?600:400,background:"transparent",border:isToday?`1.5px solid ${C.sage}`:"none",color:isToday?C.sage:hasPhoto?C.ink:C.sub }}>{d}</span>
         {hasPhoto&&!isToday&&<div style={{ width:5,height:5,borderRadius:"50%",background:C.green }}/>}
       </button>);
     }
