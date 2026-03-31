@@ -15,7 +15,7 @@ async function removeBackground(base64){
   const res=await fetch("https://api.remove.bg/v1.0/removebg",{
     method:"POST",
     headers:{"X-Api-Key":key,"Content-Type":"application/json"},
-    body:JSON.stringify({image_base64:base64,size:"auto",type:"person"}),
+    body:JSON.stringify({image_file_b64:base64,size:"auto",type:"person"}),
   });
   console.log("[removeBG] status:", res.status);
   if(!res.ok){
