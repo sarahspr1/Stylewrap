@@ -12,10 +12,14 @@ async function removeBackground(base64){
   const key=import.meta.env.VITE_REMOVEBG_KEY;
   console.log("[removeBG] key present:", !!key);
   if(!key) throw new Error("No VITE_REMOVEBG_KEY set");
+  const fd=new FormData();
+  fd.append("image_file_b64",base64);
+  fd.append("size","auto");
+  fd.append("type","person");
   const res=await fetch("https://api.remove.bg/v1.0/removebg",{
     method:"POST",
-    headers:{"X-Api-Key":key,"Content-Type":"application/json"},
-    body:JSON.stringify({image_file_b64:base64,size:"auto",type:"person"}),
+    headers:{"X-Api-Key":key},
+    body:fd,
   });
   console.log("[removeBG] status:", res.status);
   if(!res.ok){
