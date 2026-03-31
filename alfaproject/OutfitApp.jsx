@@ -10,19 +10,29 @@ const supabase = createClient(_sbUrl, _sbKey);
 // Throws with a descriptive message on failure so the caller can show a toast.
 async function removeBackground(base64){
   const key=import.meta.env.VITE_REMOVEBG_KEY;
-  if(!key) throw new Error("REMOVEBG_NO_KEY");
+  console.log("[removeBG] key present:", !!key);
+  if(!key) throw new Error("No VITE_REMOVEBG_KEY set");
   const res=await fetch("https://api.remove.bg/v1.0/removebg",{
     method:"POST",
     headers:{"X-Api-Key":key,"Content-Type":"application/json"},
     body:JSON.stringify({image_base64:base64,size:"auto",type:"person"}),
   });
+  console.log("[removeBG] status:", res.status);
   if(!res.ok){
     const body=await res.text().catch(()=>"");
-    throw new Error(`REMOVEBG_${res.status}: ${body.slice(0,120)}`);
+    console.error("[removeBG] error body:", body);
+    throw new Error(`remove.bg ${res.status}: ${body.slice(0,200)}`);
   }
   const blob=await res.blob();
+  console.log("[removeBG] blob size:", blob.size, "type:", blob.type);
+  // Use FileReader instead of createObjectURL for better mobile/browser compatibility
+  const pngDataUrl=await new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>resolve(e.target.result);
+    reader.onerror=()=>reject(new Error("FileReader failed"));
+    reader.readAsDataURL(blob);
+  });
   return await new Promise((resolve,reject)=>{
-    const url=URL.createObjectURL(blob);
     const img=new Image();
     img.onload=()=>{
       const c=document.createElement("canvas");
@@ -31,11 +41,11 @@ async function removeBackground(base64){
       ctx.fillStyle="#FFFFFF";
       ctx.fillRect(0,0,c.width,c.height);
       ctx.drawImage(img,0,0);
-      URL.revokeObjectURL(url);
+      console.log("[removeBG] done, canvas size:", c.width, c.height);
       resolve(c.toDataURL("image/jpeg",0.92));
     };
-    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error("REMOVEBG_IMG_LOAD")); };
-    img.src=url;
+    img.onerror=()=>reject(new Error("PNG image failed to load"));
+    img.src=pngDataUrl;
   });
 }
 
