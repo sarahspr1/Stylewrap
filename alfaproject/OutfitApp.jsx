@@ -83,25 +83,63 @@ async function uploadPhoto(blob, dateKey){
   return supabase.storage.from("outfit-photos").getPublicUrl(path).data.publicUrl;
 }
 
+// Crop a single clothing item from a bg-removed outfit image using AI-provided bbox.
+// bbox: { x, y, w, h } — all fractions of image dimensions (0.0–1.0)
+function cropItemPhoto(dataUrl, bbox) {
+  if (!bbox || typeof bbox.x !== "number" || bbox.w <= 0.01 || bbox.h <= 0.01) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const pad = 0.04;
+      const x = Math.max(0, bbox.x - pad) * img.width;
+      const y = Math.max(0, bbox.y - pad) * img.height;
+      const w = Math.min(img.width - x, (bbox.w + pad * 2) * img.width);
+      const h = Math.min(img.height - y, (bbox.h + pad * 2) * img.height);
+      if (w < 20 || h < 20) { resolve(null); return; }
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(w);
+      canvas.height = Math.round(h);
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, x, y, w, h, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.88));
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
+// Upload a single cropped item photo to Supabase Storage.
+async function uploadItemPhoto(dataUrl, dateKey, idx) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+  const blob = await fetch(dataUrl).then(r => r.blob());
+  const path = `${session.user.id}/${dateKey}_item${idx}.jpg`;
+  const { error } = await supabase.storage.from("outfit-photos").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+  if (error) return null;
+  return supabase.storage.from("outfit-photos").getPublicUrl(path).data.publicUrl + "?t=" + Date.now();
+}
+
 class ErrorBoundary extends Component {
   constructor(props){ super(props); this.state={ error:null }; }
   static getDerivedStateFromError(e){ return { error:e }; }
   render(){
     if(this.state.error) return (
-      <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,background:"#F7F6F4" }}>
+      <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,background:"#fff" }}>
         <div style={{ fontSize:40,marginBottom:16 }}>⚠️</div>
-        <div style={{ fontSize:16,fontWeight:700,color:"#1C1C1E",marginBottom:8,textAlign:"center" }}>Something went wrong</div>
-        <div style={{ fontSize:13,color:"#8E8E93",textAlign:"center",marginBottom:24 }}>{""+this.state.error}</div>
-        <button onClick={()=>this.setState({error:null})} style={{ padding:"10px 24px",borderRadius:0,border:"none",background:"#9A9B7A",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Try Again</button>
+        <div style={{ fontSize:16,fontWeight:700,color:"#3A4438",marginBottom:8,textAlign:"center" }}>Something went wrong</div>
+        <div style={{ fontSize:13,color:"rgba(58,68,56,0.65)",textAlign:"center",marginBottom:24 }}>{""+this.state.error}</div>
+        <button onClick={()=>this.setState({error:null})} style={{ padding:"10px 24px",borderRadius:0,border:"none",background:"#5E6A5C",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Try Again</button>
       </div>
     );
     return this.props.children;
   }
 }
-import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag, Wind, Gem, Waves } from "lucide-react";
+import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, ChevronDown, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag, Wind, Gem, Waves, AtSign } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
-function CatIcon({ cat, size=12, color="#ABABAB" }){
+function CatIcon({ cat, size=12, color="rgba(58,68,56,0.4)" }){
   const p={size,color,strokeWidth:1.5};
   if(cat==="Top")         return <Shirt {...p}/>;
   if(cat==="Bottom")      return <Layers {...p}/>;
@@ -114,13 +152,33 @@ function CatIcon({ cat, size=12, color="#ABABAB" }){
 }
 
 const C = {
-  sage: "#9A9B7A", green: "#7A9B7A", blush: "#D3C2B2", blushD: "#B89A8A",
-  surface: "#F7F6F4", white: "#FFFFFF", ink: "#1C1C1E", sub: "#8E8E93",
-  border: "#E5E5EA", red: "#E5635A",
+  sage: "#5E6A5C", green: "#5E6A5C", blush: "#D3C2B2", blushD: "#B89A8A",
+  surface: "#FFFFFF", white: "#FFFFFF", ink: "#3A4438", sub: "rgba(58,68,56,0.65)",
+  border: "rgba(58,68,56,0.3)", red: "#E5635A",
 };
 
-const colorKeywords = { "Black":["black","dark","charcoal"],"White":["white","cream","ivory","off-white","butter","ecru"],"Blue":["blue","denim","navy","teal"],"Gray":["gray","grey","slate"],"Brown":["brown","tan","camel","beige","khaki"],"Green":["green","olive","sage"],"Red":["red","burgundy"],"Yellow":["yellow","gold","mustard"],"Pink":["pink","blush","salmon"],"Purple":["purple","violet","lavender"] };
-const colorHex = { "Black":"#1A1A1A","White":"#E8E8E8","Blue":"#5A85C4","Gray":"#9E9E9E","Brown":"#8B6347","Green":"#6B9B6B","Red":"#C45A5A","Yellow":"#D4B84A","Pink":"#D4888A","Purple":"#8A7AB5" };
+const colorKeywords = { "Black":["black","dark","charcoal"],"White":["white","off-white","optic white"],"Cream":["cream","ivory","butter","ecru","eggshell","off white"],"Beige":["beige","khaki","sand","stone","oat","nude","taupe","camel","tan"],"Navy":["navy","dark blue","midnight blue"],"Blue":["blue","denim","teal","cobalt","sky blue","light blue"],"Gray":["gray","grey","slate","silver"],"Brown":["brown","chocolate","cognac","rust","terracotta"],"Green":["green","olive","sage","khaki green","forest","emerald"],"Red":["red","burgundy","wine","crimson","scarlet"],"Yellow":["yellow","gold","mustard","lemon","amber"],"Pink":["pink","blush","salmon","rose","hot pink","mauve"],"Purple":["purple","violet","lavender","lilac"] };
+const colorHex = { "Black":"#1A1A1A","White":"#E8E8E8","Cream":"#F5F0E8","Beige":"#D4C5A9","Navy":"#1B2A4A","Blue":"#5E6A5C","Gray":"#9E9E9E","Brown":"#8B6347","Green":"#6B9B6B","Red":"#C45A5A","Yellow":"#D4B84A","Pink":"#D4888A","Purple":"#8A7AB5" };
+const toColors = c => Array.isArray(c) ? c.filter(Boolean) : (c ? [c] : []);
+
+// Map a free-form AI color string to the nearest known colorHex key.
+// Returns null if nothing matches.
+function normalizeAiColor(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const known = Object.keys(colorHex);
+  // Exact match (case-insensitive)
+  const lower = raw.toLowerCase().trim();
+  const exact = known.find(k => k.toLowerCase() === lower);
+  if (exact) return exact;
+  // Keyword match against colorKeywords map
+  for (const [colorName, keywords] of Object.entries(colorKeywords)) {
+    if (keywords.some(kw => lower.includes(kw))) return colorName;
+  }
+  // Partial match: known color name appears inside the raw string
+  const partial = known.find(k => lower.includes(k.toLowerCase()));
+  if (partial) return partial;
+  return null;
+}
 
 function CameraCapture({ onCapture, onClose }) {
   const videoRef=useRef(null);
@@ -163,7 +221,7 @@ function CameraCapture({ onCapture, onClose }) {
       ):(
         <>
           <video ref={videoRef} autoPlay playsInline muted onCanPlay={()=>setReady(true)} style={{ flex:1,width:"100%",objectFit:"cover",background:"#000" }}/>
-          <div style={{ background:"#111",padding:"20px 32px 36px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <div style={{ background:"rgba(58,68,56,0.3)",padding:"20px 32px 36px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
             <button onClick={onClose} style={{ width:52,height:52,borderRadius:"50%",background:"rgba(255,255,255,.15)",border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><X size={22} color="#fff"/></button>
             <button onClick={handleCapture} disabled={!ready} style={{ width:76,height:76,borderRadius:"50%",background:ready?"#fff":"#888",border:`4px solid ${ready?"rgba(255,255,255,.5)":"#666"}`,cursor:ready?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0 }}>
               <div style={{ width:60,height:60,borderRadius:"50%",background:ready?"#fff":"#888",border:"2.5px solid #ddd" }}/>
@@ -194,7 +252,7 @@ function Modal({ isOpen, onClose, title, children }) {
 
 function PrimaryBtn({ children, onClick, disabled, style:s={} }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:disabled?C.border:C.ink,color:disabled?C.sub:"#fff",fontSize:16,fontWeight:700,cursor:disabled?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",...s }}>
+    <button onClick={onClick} disabled={disabled} style={{ width:"100%",height:52,borderRadius:8,border:"none",background:disabled?C.border:C.ink,color:disabled?C.sub:"#fff",fontSize:16,fontWeight:600,cursor:disabled?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",...s }}>
       {children}
     </button>
   );
@@ -229,7 +287,7 @@ function TabBar({ active, onChange }) {
         return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:56,border:"none",background:"transparent",cursor:"pointer",padding:"4px 2px",borderRadius:0 }}>
           {a
             ? <div style={{ display:"flex",alignItems:"center",gap:5,background:C.ink,borderRadius:99,padding:"5px 12px" }}><Icon size={16} color="#fff" strokeWidth={1.5}/><span style={{ fontSize:10,fontWeight:700,color:"#fff",letterSpacing:"0.05em",textTransform:"uppercase",whiteSpace:"nowrap" }}>{label}</span></div>
-            : <><Icon size={20} color="#ABABAB" strokeWidth={1.5}/><span style={{ fontSize:10,fontWeight:600,color:"#ABABAB",letterSpacing:"0.05em",textTransform:"uppercase" }}>{label}</span></>
+            : <><Icon size={20} color="rgba(58,68,56,0.4)" strokeWidth={1.5}/><span style={{ fontSize:10,fontWeight:600,color:"rgba(58,68,56,0.4)",letterSpacing:"0.05em",textTransform:"uppercase" }}>{label}</span></>
           }
         </button>;
       })}
@@ -237,7 +295,7 @@ function TabBar({ active, onChange }) {
   );
 }
 
-function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="" }) {
+function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="", username="" }) {
   const now=new Date();
   const dayName=now.toLocaleDateString("en-US",{weekday:"long"});
   const monthName=now.toLocaleDateString("en-US",{month:"short"});
@@ -264,52 +322,66 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
     .filter(([key,e])=>{ if(!e?.logged) return false; const [y,m]=key.split("-").map(Number); return y===curY&&m===curM; })
     .flatMap(([,e])=>(e.items||[]).map(item=>typeof item==="object"?item:{ name:String(item||""),category:"Other" }).filter(item=>item&&item.name&&typeof item.name==="string"));
   const mColorCounts={};
-  monthItems.forEach(item=>{ let col=null; if(item.color&&colorHex[item.color]) col=item.color; else { const n=item.name.toLowerCase(); for(const [c,kws] of Object.entries(colorKeywords)){ if(kws.some(kw=>n.includes(kw))){ col=c; break; } } } mColorCounts[col||"Other"]=(mColorCounts[col||"Other"]||0)+1; });
-  const topColorEntry=Object.entries(mColorCounts).filter(([k])=>k!=="Other").sort((a,b)=>b[1]-a[1])[0];
-  const topColorName=topColorEntry?topColorEntry[0]:null;
-  const topColorHex=topColorName?colorHex[topColorName]:null;
+  monthItems.forEach(item=>{ const cols=toColors(item.color).filter(c=>colorHex[c]); if(cols.length){ cols.forEach(c=>{ mColorCounts[c]=(mColorCounts[c]||0)+1; }); } else { let col=null; const n=(item.name||"").toLowerCase(); for(const [c,kws] of Object.entries(colorKeywords)){ if(kws.some(kw=>n.includes(kw))){ col=c; break; } } mColorCounts[col||"Other"]=(mColorCounts[col||"Other"]||0)+1; } });
+  const top3Colors=Object.entries(mColorCounts).filter(([k])=>k!=="Other").sort((a,b)=>b[1]-a[1]).slice(0,3);
 
   const hasAnyOutfits=allLoggedKeys.length>0;
 
   return (
-    <div style={{ flex:1,overflowY:"auto",background:C.surface }}>
-      <div style={{ background:`linear-gradient(145deg,${C.sage} 0%,${C.green} 100%)`,paddingTop:30,paddingBottom:20,paddingLeft:24,paddingRight:24,borderRadius:0,position:"relative",overflow:"hidden" }}>
-        <div style={{ position:"absolute",top:-40,right:-40,width:200,height:200,borderRadius:"50%",background:"rgba(255,255,255,.08)" }}/>
-        <p style={{ fontSize:13,color:"rgba(255,255,255,.7)",fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6 }}>{dateLabel}</p>
-        <h1 style={{ fontSize:34,fontWeight:900,color:"#fff",margin:"0 0 4px",lineHeight:1.1,letterSpacing:"-0.03em" }}>Hello{firstName?`, ${firstName}`:""}!</h1>
+    <div style={{ flex:1,overflowY:"auto",background:"#fff" }}>
+      {/* Header */}
+      <div style={{ background:"#fff",padding:"28px 24px 20px" }}>
+        <p style={{ fontSize:12,color:C.sub,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 8px" }}>{dateLabel}</p>
+        <h1 style={{ fontSize:34,fontWeight:900,color:C.ink,margin:"0 0 8px",lineHeight:1.1,letterSpacing:"-0.03em" }}>Hello{username?`, ${username}`:firstName?`, ${firstName}`:""}!</h1>
         {streakLabel
-          ? <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,.18)",borderRadius:0,padding:"4px 12px",marginTop:2 }}>
-              {loggedToday?<Check size={14} color="#fff" strokeWidth={2.5}/>:<CalendarDays size={14} color="#fff" strokeWidth={1.5}/>}
-              <span style={{ fontSize:13,fontWeight:600,color:"#fff" }}>{streakLabel}</span>
+          ? <div style={{ display:"inline-flex",alignItems:"center",gap:6 }}>
+              {loggedToday?<Check size={14} color={C.sage} strokeWidth={2.5}/>:<CalendarDays size={14} color={C.sub} strokeWidth={1.5}/>}
+              <span style={{ fontSize:13,fontWeight:600,color:loggedToday?C.sage:C.sub }}>{streakLabel}</span>
             </div>
-          : <p style={{ fontSize:16,color:"rgba(255,255,255,.8)",margin:0 }}>Ready to plan today's look?</p>}
+          : <p style={{ fontSize:13,color:C.sub,margin:0 }}>Ready to plan today's look?</p>}
       </div>
-      <div style={{ padding:"16px 16px 0" }}>
+
+      {/* Stats row */}
+      <div style={{ borderTop:"1px solid rgba(58,68,56,0.3)",borderBottom:"1px solid rgba(58,68,56,0.3)" }}>
         {!hasAnyOutfits?(
-          <div style={{ background:C.white,borderRadius:0,padding:20,marginBottom:20,border:`1px solid ${C.border}`,textAlign:"center" }}>
-            <div style={{ display:"flex",justifyContent:"center",marginBottom:12 }}><Shirt size={44} color={C.sage} strokeWidth={1.5}/></div>
+          <div style={{ padding:"32px 24px",textAlign:"center" }}>
+            <div style={{ display:"flex",justifyContent:"center",marginBottom:14 }}><Shirt size={44} color={C.sub} strokeWidth={1}/></div>
             <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,margin:"0 0 6px",letterSpacing:"-0.02em" }}>Start tracking your style</h2>
-            <p style={{ fontSize:13,color:C.sub,margin:"0 0 16px",lineHeight:1.6 }}>Log your first outfit to unlock wardrobe stats, colour trends, and cost-per-wear tracking.</p>
+            <p style={{ fontSize:13,color:C.sub,margin:"0 0 20px",lineHeight:1.6 }}>Log your first outfit to unlock wardrobe stats, colour trends, and cost-per-wear tracking.</p>
             <button onClick={onAddItem} style={{ height:48,padding:"0 24px",borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Log First Outfit</button>
           </div>
         ):(
-          <div style={{ display:"flex",gap:10,marginBottom:20 }}>
-            <div style={{ flex:1,background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}>
-              <div style={{ width:38,height:38,borderRadius:0,background:topColorHex?(topColorHex+"28"):C.surface,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10 }}>
-                {topColorHex
-                  ? <div style={{ width:22,height:22,background:topColorHex,border:topColorName==="White"?`1.5px solid ${C.border}`:"none" }}/>
-                  : <Palette size={18} color={C.sub} strokeWidth={1.5}/>}
-              </div>
-              <div style={{ fontSize:18,fontWeight:900,color:topColorName?C.ink:C.sub,lineHeight:1,letterSpacing:"-0.02em" }}>{topColorName||"None yet"}</div>
-              <div style={{ fontSize:12,color:C.sub,marginTop:4 }}>Colour of the Month</div>
+          <div style={{ display:"flex" }}>
+            <div style={{ flex:1,padding:"20px 24px" }}>
+              {top3Colors.length===0
+                ? <div style={{ display:"flex",alignItems:"center",height:36,marginBottom:10 }}><Palette size={20} color={C.sub} strokeWidth={1.5}/></div>
+                : <div style={{ display:"flex",gap:5,marginBottom:10 }}>
+                    {top3Colors.map(([name])=>(
+                      <div key={name} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
+                        <div style={{ width:"100%",height:26,background:colorHex[name],border:(name==="White"||name==="Cream")?`1px solid ${C.border}`:"none" }}/>
+                        <div style={{ fontSize:8,fontWeight:700,color:C.ink,textAlign:"center",lineHeight:1.2 }}>{name}</div>
+                      </div>
+                    ))}
+                  </div>
+              }
+              <div style={{ fontSize:11,fontWeight:700,color:C.sub,letterSpacing:"0.06em",textTransform:"uppercase" }}>Palette of Month</div>
             </div>
-            <StatCard icon={<Heart size={18} color="#C47A7A" strokeWidth={1.5}/>} number={String(favourites.length)} label="Favorites" accent="#C47A7A" onClick={onGoToFavorites}/>
+            <div style={{ width:1,background:"rgba(58,68,56,0.3)",flexShrink:0 }}/>
+            <button onClick={onGoToFavorites} style={{ flex:1,padding:"20px 24px",background:"transparent",border:"none",textAlign:"left",cursor:"pointer",fontFamily:"inherit" }}>
+              <div style={{ fontSize:36,fontWeight:900,color:C.ink,letterSpacing:"-0.04em",lineHeight:1,marginBottom:6 }}>{favourites.length}</div>
+              <div style={{ fontSize:11,fontWeight:700,color:C.sub,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:6 }}>Favourites</div>
+              <div style={{ fontSize:12,fontWeight:700,color:C.ink,textDecoration:"underline",textUnderlineOffset:3 }}>View all →</div>
+            </button>
           </div>
         )}
-        <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,marginBottom:12,letterSpacing:"-0.02em" }}>Quick Actions</h2>
-        <div style={{ display:"flex",gap:10,marginBottom:20 }}>
-          <button onClick={onAddItem} style={{ flex:1,height:56,borderRadius:0,border:`2px solid ${C.ink}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><Camera size={18} color={C.ink} strokeWidth={1.5}/><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Log Outfit</span></button>
-          <button onClick={onShowAllItems} style={{ flex:1,height:56,borderRadius:0,border:`2px solid ${C.ink}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><Layers size={18} color={C.ink} strokeWidth={1.5}/><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>All Items</span></button>
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{ padding:"20px 24px",borderBottom:"1px solid rgba(58,68,56,0.3)" }}>
+        <div style={{ fontSize:12,fontWeight:700,color:C.sub,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:14 }}>Quick Actions</div>
+        <div style={{ display:"flex",gap:10 }}>
+          <button onClick={onAddItem} style={{ flex:1,height:52,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><Camera size={16} color={C.ink} strokeWidth={1.5}/><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Log Outfit</span></button>
+          <button onClick={onShowAllItems} style={{ flex:1,height:52,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><Layers size={16} color={C.ink} strokeWidth={1.5}/><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>All Items</span></button>
         </div>
       </div>
     </div>
@@ -318,7 +390,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
 const initialCPWPrices = {};
 
-function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) {
+function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", onAddItem }) {
   const [view,setView]=useState(initialView);
   const [selectedPiece,setSelectedPiece]=useState(null);
   const [cpwPrices,setCpwPrices]=useState(initialCPWPrices);
@@ -341,16 +413,16 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
   allLoggedObjs.forEach(item=>{ const k=(item.name||"").toLowerCase().trim(); if(!k) return; if(!wearCounts[k]) wearCounts[k]={ name:item.name,category:item.category||"Other",count:0 }; wearCounts[k].count+=1; });
   // Map each item name → { photo, dateKey } from its most recent logged outfit
   const itemLastInfo={};
-  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; (entry.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(k&&!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey }; }); });
-  const getItemPhoto=(key)=>{ const info=itemLastInfo[key]; if(!info) return null; if(info.photo) return info.photo; if(currentUser&&info.dateKey) return supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${info.dateKey}.jpg`).data.publicUrl; return null; };
-  const wearArr=Object.values(wearCounts).map(w=>({...w,lastPhoto:getItemPhoto(w.name.toLowerCase().trim())})).sort((a,b)=>b.count-a.count);
+  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; (entry.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(!k) return; if(!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey, itemPhoto:item.itemPhoto||null, brand:null, price:null, color:null }; if(item.brand&&!itemLastInfo[k].brand) itemLastInfo[k].brand=item.brand; if(item.price!=null&&itemLastInfo[k].price==null){ const p=parseFloat(item.price); if(!isNaN(p)) itemLastInfo[k].price=p; } if(item.color&&!itemLastInfo[k].color) itemLastInfo[k].color=item.color; }); });
+  const getItemPhoto=(key)=>{ const info=itemLastInfo[key]; if(!info) return null; if(info.itemPhoto) return info.itemPhoto; if(info.photo) return info.photo; if(currentUser&&info.dateKey) return supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${info.dateKey}.jpg`).data.publicUrl; return null; };
+  const wearArr=Object.values(wearCounts).map(w=>{ const k=w.name.toLowerCase().trim(); const meta=itemLastInfo[k]||{}; return {...w,lastPhoto:getItemPhoto(k),brand:meta.brand||null,price:meta.price??null,color:meta.color||null}; }).sort((a,b)=>b.count-a.count);
   const totalWears=wearArr.reduce((s,p)=>s+p.count,0);
   const catIcon=()=><Shirt size={22} color={C.sub} strokeWidth={1.5}/>;
   const computedMostWorn=wearArr.slice(0,5).map(p=>({ name:p.name,wears:p.count,category:p.category,image:catIcon() }));
   const computedLeastWorn=[...wearArr].reverse().slice(0,5).map(p=>({ name:p.name,wears:p.count,category:p.category,image:catIcon() }));
 
   const colorCounts={};
-  loggedOutfits.forEach(e=>{ (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; let col=null; if(item.color&&colorHex[item.color]) col=item.color; else if(item.name&&typeof item.name==="string"){ const n=item.name.toLowerCase(); for(const [c,kws] of Object.entries(colorKeywords)){ if(kws.some(kw=>n.includes(kw))){ col=c; break; } } } colorCounts[col||"Other"]=(colorCounts[col||"Other"]||0)+1; }); });
+  loggedOutfits.forEach(e=>{ (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const cols=toColors(item.color).filter(c=>colorHex[c]); if(cols.length){ cols.forEach(c=>{ colorCounts[c]=(colorCounts[c]||0)+1; }); } else if(item.name&&typeof item.name==="string"){ let col=null; const n=item.name.toLowerCase(); for(const [c,kws] of Object.entries(colorKeywords)){ if(kws.some(kw=>n.includes(kw))){ col=c; break; } } colorCounts[col||"Other"]=(colorCounts[col||"Other"]||0)+1; } }); });
   const totalCI=Object.values(colorCounts).reduce((s,v)=>s+v,0)||1;
   const computedColorData=Object.entries(colorCounts).filter(([n])=>n!=="Other").sort((a,b)=>b[1]-a[1]).concat(colorCounts["Other"]?[["Other",colorCounts["Other"]]]:[]).map(([name,count])=>({ name,value:Math.round(count/totalCI*100),color:colorHex[name]||"#B0B0A8" }));
 
@@ -362,13 +434,13 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
   const getStyle=items=>{ try { const names=(items||[]).map(i=>((typeof i==="object"?i.name:i)||"").toString().toLowerCase()).join(" "); const cats=(items||[]).map(i=>((typeof i==="object"?i.category:i)||"").toString().toLowerCase()).join(" "); if(cats.includes("activewear")||/gym|sport|athletic|yoga|running|workout|leggings|jogger/.test(names)) return "Activewear"; if(/blazer|suit|dress shirt|slacks|oxford|loafer|trousers|button-up|button up|formal|professional/.test(names)) return "Professional"; if(/dress|heels|jumpsuit|going out|club|evening|sequin|satin/.test(names)) return "Going Out"; return "Everyday"; } catch { return "Everyday"; } };
   const styleCounts={ Everyday:0,"Going Out":0,Activewear:0,Professional:0 };
   Object.values(photoData).forEach(entry=>{ if(entry?.logged){ const s=entry.style&&styleCounts.hasOwnProperty(entry.style)?entry.style:getStyle(entry.items); styleCounts[s]+=1; } });
-  const styleColors={ "Everyday":C.sage,"Going Out":"#C47A8A","Activewear":"#5A85C4","Professional":"#C4A05A" };
+  const styleColors={ "Everyday":"#5E6A5C","Going Out":"#3A4438","Activewear":"#8A9688","Professional":"#B0B8AE" };
   const totalStyleOutfits=Object.values(styleCounts).reduce((s,v)=>s+v,0)||1;
   const computedStyleData=Object.entries(styleCounts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({ name,value:Math.round(count/totalStyleOutfits*100),color:styleColors[name]||"#B0B0A8" }));
 
   // Build item stats (wears + price) in a single pass over all logged outfits
   // Key = name+color so two items with the same name but different colours are tracked separately
-  const cpwKey=(name,color)=>`${(name||"").trim().toLowerCase()}|${(color||"").toLowerCase()}`;
+  const cpwKey=(name,color)=>`${(name||"").trim().toLowerCase()}|${(Array.isArray(color)?color.join(","):color||"").toLowerCase()}`;
   const itemStatsMap={};
   loggedOutfits.forEach(e=>{ (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim(); if(!name) return; const key=cpwKey(name,item.color); if(!itemStatsMap[key]) itemStatsMap[key]={name,color:item.color||null,category:item.category||"Other",wears:0,price:null}; itemStatsMap[key].wears+=1; if(item.category&&item.category!=="Other") itemStatsMap[key].category=item.category; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) itemStatsMap[key].price=p; }); });
   // Build display labels — append (Color) when two entries share the same name
@@ -417,7 +489,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
           </div>
           <div style={{ display:"flex",gap:6,paddingBottom:12 }}>
             {[{id:"most",label:"Most Worn"},{id:"least",label:"Least Worn"},{id:"az",label:"A–Z"}].map(s=>(
-              <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ height:26,padding:"0 10px",borderRadius:0,border:itemSort===s.id?"none":`1px solid ${C.border}`,background:itemSort===s.id?"#5A85C4":"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{s.label}</button>
+              <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ height:26,padding:"0 10px",borderRadius:0,border:itemSort===s.id?"none":`1px solid ${C.border}`,background:itemSort===s.id?"#5E6A5C":"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{s.label}</button>
             ))}
           </div>
         </div>
@@ -428,7 +500,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
               ? <div style={{ textAlign:"center",padding:"40px 24px" }}><div style={{ fontSize:32,marginBottom:10 }}>🔍</div><div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>No items match</div><div style={{ fontSize:13,color:C.sub }}>Try a different search or category</div></div>
               : sortedItems.map((item,idx)=>(
                   <button key={idx} onClick={()=>setSelectedWearItem(item)} style={{ width:"100%",background:C.white,borderRadius:0,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
-                    <div style={{ width:44,height:44,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{item.lastPhoto?<img src={item.lastPhoto} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:catEmoji(item.category)}</div>
+                    <div style={{ width:44,height:44,borderRadius:0,background:"#fff",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{item.lastPhoto?<img src={item.lastPhoto} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"contain" }}/>:catEmoji(item.category)}</div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{item.name}</div>
                       <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.count} {item.count===1?"wear":"wears"}</div>
@@ -444,9 +516,17 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
             <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,padding:"8px 20px 44px",maxHeight:"70vh",display:"flex",flexDirection:"column" }}>
               <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 16px",flexShrink:0 }}/>
               <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:20,flexShrink:0 }}>
-                <div style={{ width:52,height:52,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,overflow:"hidden" }}>{selectedWearItem.lastPhoto?<img src={selectedWearItem.lastPhoto} alt={selectedWearItem.name} style={{ width:"100%",height:"100%",objectFit:"cover" }}/>:catEmoji(selectedWearItem.category)}</div>
+                <div style={{ width:52,height:52,borderRadius:0,background:"#fff",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,overflow:"hidden" }}>{selectedWearItem.lastPhoto?<img src={selectedWearItem.lastPhoto} alt={selectedWearItem.name} style={{ width:"100%",height:"100%",objectFit:"contain" }}/>:catEmoji(selectedWearItem.category)}</div>
                 <div><div style={{ fontSize:18,fontWeight:900,color:C.ink,letterSpacing:"-0.02em" }}>{selectedWearItem.name}</div><div style={{ fontSize:13,color:C.sub }}>{selectedWearItem.category} · {selectedWearItem.count} {selectedWearItem.count===1?"wear":"wears"}</div></div>
               </div>
+              {(selectedWearItem.brand||selectedWearItem.price!=null||selectedWearItem.color)&&(
+                <div style={{ display:"flex",gap:8,marginBottom:16,flexShrink:0,flexWrap:"wrap" }}>
+                  {toColors(selectedWearItem.color).length>0&&<div style={{ background:C.surface,border:`1px solid ${C.border}`,padding:"6px 12px",display:"flex",alignItems:"center",gap:8 }}><div style={{ display:"flex",gap:4 }}>{toColors(selectedWearItem.color).map(c=><div key={c} style={{ width:12,height:12,borderRadius:"50%",background:colorHex[c]||"#B0B0A8",border:(c==="White"||c==="Cream")?`1px solid ${C.border}`:"none",flexShrink:0 }}/>)}</div><div><div style={{ fontSize:10,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2 }}>Colour</div><div style={{ fontSize:13,fontWeight:700,color:C.ink }}>{toColors(selectedWearItem.color).join(", ")}</div></div></div>}
+                  {selectedWearItem.brand&&<div style={{ background:C.surface,border:`1px solid ${C.border}`,padding:"6px 12px" }}><div style={{ fontSize:10,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2 }}>Brand</div><div style={{ fontSize:13,fontWeight:700,color:C.ink }}>{selectedWearItem.brand}</div></div>}
+                  {selectedWearItem.price!=null&&<div style={{ background:C.surface,border:`1px solid ${C.border}`,padding:"6px 12px" }}><div style={{ fontSize:10,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2 }}>Price</div><div style={{ fontSize:13,fontWeight:700,color:C.ink }}>${selectedWearItem.price.toFixed(2)}</div></div>}
+                  {selectedWearItem.price!=null&&<div style={{ background:C.sage+"14",border:`1px solid ${C.sage}44`,padding:"6px 12px" }}><div style={{ fontSize:10,fontWeight:700,color:C.sage,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2 }}>Cost / Wear</div><div style={{ fontSize:13,fontWeight:700,color:C.sage }}>${(selectedWearItem.price/selectedWearItem.count).toFixed(2)}</div></div>}
+                </div>
+              )}
               <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px",flexShrink:0 }}>Worn on</p>
               <div style={{ overflowY:"auto",flex:1 }}>
                 {datesWorn.length===0
@@ -577,111 +657,158 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main" }) 
     );
   }
 
+  const D = "1px solid rgba(58,68,56,0.3)"; // section divider
+  const iconBox = { width:44,height:44,borderRadius:12,background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 };
+
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
-      <div style={{ background:C.white,padding:"20px 20px 16px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
-        {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:6,border:"none",background:"transparent",color:C.sage,fontSize:14,fontWeight:600,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={18} color={C.sage}/>Back</button>}
-        <h1 style={{ fontSize:28,fontWeight:800,color:C.ink,margin:"0 0 4px" }}>Analytics</h1>
-        <p style={{ fontSize:14,color:C.sub,margin:0 }}>Your wardrobe insights</p>
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff" }}>
+      {/* Header */}
+      <div style={{ padding:"28px 24px 20px",background:"#fff",flexShrink:0,display:"flex",alignItems:"flex-start",justifyContent:"space-between" }}>
+        <div>
+          {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
+          <h1 style={{ fontSize:34,fontWeight:700,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Analytics</h1>
+          <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0",fontWeight:400 }}>Your wardrobe insights</p>
+        </div>
+        <div style={{ display:"flex",alignItems:"center",gap:6,border:`1px solid ${C.border}`,borderRadius:99,padding:"8px 16px",fontSize:13,fontWeight:500,color:C.ink,marginTop:4,flexShrink:0 }}>
+          <Calendar size={13} color={C.ink} strokeWidth={1.5}/>
+          <span>This Month</span>
+          <ChevronDown size={13} color={C.ink} strokeWidth={1.5}/>
+        </div>
       </div>
-      <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16 }}>
-          <div style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}><div style={{ width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:C.sage+"18" }}><CalendarDays size={18} color={C.sage} strokeWidth={1.5}/></div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalOutfits)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Outfits</div></div>
-          <button onClick={()=>setView("items")} style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}><div style={{ width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:C.sage+"18" }}><Shirt size={18} color={C.sage} strokeWidth={1.5}/></div><div style={{ fontSize:24,fontWeight:800,color:C.ink,marginTop:8 }}>{String(totalItemsCount)}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Total Items</div><div style={{ fontSize:10,color:C.sage,marginTop:4,fontWeight:600 }}>Tap to view →</div></button>
-          <button onClick={()=>setView("cpw")} style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column" }}>
-            <div style={{ width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:C.sage+"18" }}><DollarSign size={18} color={C.sage} strokeWidth={1.5}/></div>
-            <div style={{ fontSize:24,fontWeight:800,color:C.sage,marginTop:8 }}>{avgCPW==="—"?"—":`$${avgCPW}`}</div>
-            <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Avg Cost/Wear</div>
-            <div style={{ fontSize:10,color:C.sage,marginTop:4,fontWeight:600 }}>Tap to manage →</div>
+
+      <div style={{ flex:1,overflowY:"auto",background:"#fff" }}>
+        {/* Stat row: Total Outfits | Total Items — always visible */}
+        <div style={{ borderTop:D,borderBottom:D,display:"flex" }}>
+          <div style={{ flex:1,padding:"20px 24px" }}>
+            <div style={iconBox}><CalendarDays size={20} color={C.ink} strokeWidth={1.5}/></div>
+            <div style={{ fontSize:36,fontWeight:700,color:C.ink,letterSpacing:"-0.04em",lineHeight:1,marginTop:16 }}>{totalOutfits}</div>
+            <div style={{ fontSize:13,color:C.sub,marginTop:5,fontWeight:400 }}>Total Outfits</div>
+          </div>
+          <div style={{ width:1,background:"rgba(58,68,56,0.15)",flexShrink:0 }}/>
+          <button onClick={()=>totalOutfits>0&&setView("items")} style={{ flex:1,padding:"20px 24px",background:"transparent",border:"none",textAlign:"left",cursor:totalOutfits>0?"pointer":"default",fontFamily:"inherit" }}>
+            <div style={iconBox}><Shirt size={20} color={C.ink} strokeWidth={1.5}/></div>
+            <div style={{ fontSize:36,fontWeight:700,color:C.ink,letterSpacing:"-0.04em",lineHeight:1,marginTop:16 }}>{totalItemsCount}</div>
+            <div style={{ fontSize:13,color:C.sub,marginTop:5,fontWeight:400 }}>Total Items</div>
+            {totalOutfits>0&&<div style={{ fontSize:12,fontWeight:600,color:C.ink,marginTop:8 }}>Tap to view →</div>}
           </button>
         </div>
 
-        <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
-            <div style={{ width:36,height:36,borderRadius:0,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><TrendingUp size={18} color={C.sage}/></div>
-            <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Most Worn Pieces</span>
+        {/* Avg Cost/Wear row */}
+        <button onClick={()=>totalOutfits>0&&setView("cpw")} style={{ width:"100%",borderTop:"none",borderLeft:"none",borderRight:"none",borderBottom:D,padding:"18px 24px",background:"transparent",textAlign:"left",cursor:totalOutfits>0?"pointer":"default",fontFamily:"inherit",display:"flex",alignItems:"center",gap:14,boxSizing:"border-box" }}>
+          <div style={iconBox}><DollarSign size={20} color={C.ink} strokeWidth={1.5}/></div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:13,color:C.sub,fontWeight:500,marginBottom:4 }}>Avg Cost/Wear</div>
+            <div style={{ fontSize:22,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1 }}>{avgCPW==="—"?"—":`$${avgCPW}`}</div>
           </div>
-          {computedMostWorn.length>0?computedMostWorn.map((p,i)=>(
-            <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:C.surface,borderRadius:0,padding:"10px 12px",display:"flex",alignItems:"center",gap:12,marginBottom:8,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left" }}>
-              <div style={{ width:44,height:44,borderRadius:0,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{p.image}</div>
-              <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{p.name}</div><div style={{ display:"flex",alignItems:"center",gap:8,marginTop:3 }}><span style={{ fontSize:12,color:C.sub }}>{p.wears} wear{p.wears!==1?"s":""}</span>{totalWears>0&&<span style={{ fontSize:12,fontWeight:700,color:C.sage }}>{((p.wears/totalWears)*100).toFixed(0)}%</span>}</div></div>
-              <ChevronRight size={16} color={C.border}/>
-            </button>
-          )):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
-        </div>
+          {totalOutfits>0&&<span style={{ fontSize:13,fontWeight:500,color:C.ink,whiteSpace:"nowrap" }}>Tap to manage →</span>}
+        </button>
 
-        <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
-            <div style={{ width:36,height:36,borderRadius:0,background:"#E5635A18",display:"flex",alignItems:"center",justifyContent:"center" }}><TrendingUp size={18} color="#E5635A" style={{ transform:"rotate(180deg)" }}/></div>
-            <div style={{ flex:1 }}><span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Least Worn Pieces</span><p style={{ fontSize:12,color:C.sub,margin:0 }}>Items that need more love</p></div>
-          </div>
-          {computedLeastWorn.length>0?computedLeastWorn.map((p,i)=>(
-            <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:C.surface,borderRadius:0,padding:"10px 12px",display:"flex",alignItems:"center",gap:12,marginBottom:8,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left" }}>
-              <div style={{ width:44,height:44,borderRadius:0,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{p.image}</div>
-              <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{p.name}</div><div style={{ display:"flex",alignItems:"center",gap:8,marginTop:3 }}><span style={{ fontSize:12,color:C.sub }}>{p.wears} wear{p.wears!==1?"s":""}</span>{totalWears>0&&<span style={{ fontSize:12,fontWeight:700,color:C.sage }}>{((p.wears/totalWears)*100).toFixed(0)}%</span>}</div></div>
-              <ChevronRight size={16} color={C.border}/>
-            </button>
-          )):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
-        </div>
-
-        <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
-            <div style={{ width:36,height:36,borderRadius:0,background:C.blush+"40",display:"flex",alignItems:"center",justifyContent:"center" }}><Palette size={18} color={C.sage}/></div>
-            <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Colour Palette</span>
-          </div>
-          {detailedPalette.length>0?(
-            <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:4 }}>
-              {detailedPalette.map((c,i)=>{
-                const isLight=parseInt(c.hex.slice(1,3),16)*0.299+parseInt(c.hex.slice(3,5),16)*0.587+parseInt(c.hex.slice(5,7),16)*0.114>180;
-                return(
-                  <div key={i} style={{ minWidth:80,maxWidth:80,flexShrink:0,border:`1px solid ${C.border}`,overflow:"hidden" }}>
-                    <div style={{ height:64,background:c.hex }}/>
-                    <div style={{ padding:"6px 8px" }}>
-                      <div style={{ fontSize:11,fontWeight:700,color:C.ink,lineHeight:1.3,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{c.name}</div>
-                      <div style={{ fontSize:10,color:C.sub,fontFamily:"monospace" }}>{c.hex.toUpperCase()}</div>
-                    </div>
-                  </div>
-                );
-              })}
+        {/* Most Worn Pieces */}
+        <div style={{ borderBottom:D,padding:"18px 24px" }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:totalOutfits>0?18:0 }}>
+            <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+              <div style={iconBox}><TrendingUp size={20} color={C.ink} strokeWidth={1.5}/></div>
+              <span style={{ fontSize:15,fontWeight:600,color:C.ink }}>Most Worn Pieces</span>
             </div>
-          ):computedColorData.length>0?(
-            <>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart><Pie data={computedColorData} cx="50%" cy="50%" innerRadius={55} outerRadius={82} paddingAngle={3} dataKey="value">{computedColorData.map((e,i)=><Cell key={i} fill={e.color} stroke={e.color==="#E8E8E8"||e.color==="#B0B0A8"?C.border:"none"}/>)}</Pie></PieChart>
-              </ResponsiveContainer>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px 8px",marginTop:14 }}>
-                {computedColorData.map((e,i)=>(
-                  <div key={i} style={{ display:"flex",alignItems:"center",gap:8 }}>
-                    <div style={{ width:14,height:14,borderRadius:"50%",background:e.color,border:e.color==="#E8E8E8"||e.color==="#B0B0A8"?`1px solid ${C.border}`:"none",flexShrink:0 }}/>
-                    <span style={{ fontSize:13,color:C.ink,flex:1 }}>{e.name}</span>
-                    <span style={{ fontSize:13,fontWeight:700,color:C.ink }}>{e.value}%</span>
+            {totalOutfits>0&&<button onClick={()=>setView("items")} style={{ background:"none",border:"none",fontSize:13,fontWeight:500,color:C.ink,cursor:"pointer",fontFamily:"inherit",padding:0 }}>View All →</button>}
+          </div>
+          {totalOutfits===0 ? (
+            <div style={{ padding:"36px 0 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:10 }}>
+              <div style={{ width:72,height:72,borderRadius:"50%",background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center" }}><Shirt size={30} color={C.sub} strokeWidth={1}/></div>
+              <div style={{ fontSize:16,fontWeight:600,color:C.ink,marginTop:4 }}>No outfits logged yet</div>
+              <div style={{ fontSize:13,color:C.sub,textAlign:"center",lineHeight:1.6 }}>Start logging your outfits to see your insights</div>
+              {onAddItem&&<button onClick={onAddItem} style={{ marginTop:12,height:50,padding:"0 32px",border:"none",background:C.ink,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",borderRadius:8 }}>Log Your First Outfit</button>}
+            </div>
+          ) : computedMostWorn.map((p,i)=>(
+            <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:"transparent",border:"none",borderBottom:i<computedMostWorn.length-1?`1px solid ${C.border}`:"none",padding:"12px 0",display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
+              <div style={{ width:44,height:44,background:"rgba(58,68,56,0.07)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{p.image}</div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{p.name}</div>
+                <div style={{ fontSize:12,color:C.sub,marginTop:3 }}>{p.wears} wear{p.wears!==1?"s":""}{totalWears>0?` · ${((p.wears/totalWears)*100).toFixed(0)}%`:""}</div>
+              </div>
+              <ChevronRight size={15} color={C.sub}/>
+            </button>
+          ))}
+        </div>
+
+        {totalOutfits>0&&<>
+          {/* Least Worn Pieces */}
+          <div style={{ borderBottom:D,padding:"18px 24px" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:18 }}>
+              <div style={iconBox}><TrendingUp size={20} color={C.ink} strokeWidth={1.5} style={{ transform:"rotate(180deg)" }}/></div>
+              <div>
+                <div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Least Worn Pieces</div>
+                <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Items that need more love</div>
+              </div>
+            </div>
+            {computedLeastWorn.map((p,i)=>(
+              <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:"transparent",border:"none",borderBottom:i<computedLeastWorn.length-1?`1px solid ${C.border}`:"none",padding:"12px 0",display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
+                <div style={{ width:44,height:44,background:"rgba(58,68,56,0.07)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{p.image}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{p.name}</div>
+                  <div style={{ fontSize:12,color:C.sub,marginTop:3 }}>{p.wears} wear{p.wears!==1?"s":""}{totalWears>0?` · ${((p.wears/totalWears)*100).toFixed(0)}%`:""}</div>
+                </div>
+                <ChevronRight size={15} color={C.sub}/>
+              </button>
+            ))}
+          </div>
+
+          {/* Colour Palette */}
+          <div style={{ borderBottom:D,padding:"18px 24px" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:18 }}>
+              <div style={iconBox}><Palette size={20} color={C.ink} strokeWidth={1.5}/></div>
+              <span style={{ fontSize:15,fontWeight:600,color:C.ink }}>Colour Palette</span>
+            </div>
+            {computedColorData.length>0?(
+              <>
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart><Pie data={computedColorData} cx="50%" cy="50%" innerRadius={55} outerRadius={82} paddingAngle={3} dataKey="value">{computedColorData.map((e,i)=><Cell key={i} fill={e.color} stroke={e.color==="#E8E8E8"||e.color==="#B0B0A8"?C.border:"none"}/>)}</Pie></PieChart>
+                </ResponsiveContainer>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px 8px",marginTop:16 }}>
+                  {computedColorData.map((e,i)=>(
+                    <div key={i} style={{ display:"flex",alignItems:"center",gap:8 }}>
+                      <div style={{ width:13,height:13,borderRadius:"50%",background:e.color,border:e.color==="#E8E8E8"||e.color==="#B0B0A8"?`1px solid ${C.border}`:"none",flexShrink:0 }}/>
+                      <span style={{ fontSize:13,color:C.ink,flex:1 }}>{e.name}</span>
+                      <span style={{ fontSize:13,fontWeight:600,color:C.ink }}>{e.value}%</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display:"flex",gap:6,marginTop:20,width:"50%" }}>
+                  {computedColorData.slice(0,5).map((e,i)=>(
+                    <div key={i} style={{ flex:1,border:`1px solid ${C.border}`,overflow:"hidden",borderRadius:4 }}>
+                      <div style={{ height:32,background:e.color }}/>
+                      <div style={{ padding:"4px 5px" }}>
+                        <div style={{ fontSize:9,fontWeight:600,color:C.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{e.name}</div>
+                        <div style={{ fontSize:8,color:C.sub,fontFamily:"monospace" }}>{e.color.toUpperCase()}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ):<div style={{ fontSize:13,color:C.sub,padding:"8px 0" }}>No colour data yet</div>}
+          </div>
+
+          {/* Style Distribution */}
+          <div style={{ padding:"18px 24px",paddingBottom:48 }}>
+            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:18 }}>
+              <div style={iconBox}><Layers size={20} color={C.ink} strokeWidth={1.5}/></div>
+              <span style={{ fontSize:15,fontWeight:600,color:C.ink }}>Style Distribution</span>
+            </div>
+            {computedStyleData.length>0?(
+              <div style={{ display:"flex",alignItems:"flex-end",gap:10 }}>
+                {computedStyleData.map((e,i)=>(
+                  <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
+                    <span style={{ fontSize:12,fontWeight:600,color:C.ink }}>{e.value}%</span>
+                    <div style={{ width:"100%",height:120,display:"flex",alignItems:"flex-end" }}>
+                      <div style={{ width:"100%",height:`${Math.max(e.value,4)}%`,background:e.color,borderRadius:"3px 3px 0 0" }}/>
+                    </div>
+                    <span style={{ fontSize:10,fontWeight:500,color:C.sub,textAlign:"center",lineHeight:1.3 }}>{e.name}</span>
                   </div>
                 ))}
               </div>
-            </>
-          ):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
-        </div>
-
-        <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:12,border:`1px solid ${C.border}` }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
-            <div style={{ width:36,height:36,borderRadius:0,background:"#5A85C418",display:"flex",alignItems:"center",justifyContent:"center" }}><Layers size={18} color="#5A85C4"/></div>
-            <span style={{ fontSize:17,fontWeight:700,color:C.ink }}>Style Distribution</span>
+            ):<div style={{ fontSize:13,color:C.sub,padding:"8px 0" }}>No style data yet</div>}
           </div>
-          {computedStyleData.length>0?(
-            <div style={{ display:"flex",alignItems:"flex-end",gap:10,marginTop:8 }}>
-              {computedStyleData.map((e,i)=>(
-                <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-                  <span style={{ fontSize:12,fontWeight:700,color:C.ink }}>{e.value}%</span>
-                  <div style={{ width:"100%",height:130,display:"flex",alignItems:"flex-end" }}>
-                    <div style={{ width:"100%",height:`${Math.max(e.value,4)}%`,background:e.color,borderRadius:0 }}/>
-                  </div>
-                  <span style={{ fontSize:11,fontWeight:600,color:C.sub,textAlign:"center",lineHeight:1.3 }}>{e.name}</span>
-                </div>
-              ))}
-            </div>
-          ):<div style={{ fontSize:13,color:C.sub,textAlign:"center",padding:16 }}>No outfits logged yet</div>}
-        </div>
-
+        </>}
       </div>
     </div>
   );
@@ -853,8 +980,8 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:finalCompressed,items:[],style:null,analysing:true }}));
       setShowModal(true);
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
-      // Convert compressed data-URL to a Blob for storage upload
-      const blob=await fetch(compressed).then(r=>r.blob());
+      // Convert bg-removed data-URL to a Blob for storage upload
+      const blob=await fetch(finalCompressed).then(r=>r.blob());
       // Upload photo and run AI analysis in parallel
       let _analysisErr=null;
       const [photoUrl,parsed]=await Promise.all([
@@ -862,16 +989,32 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         analyseOutfit(base64,"image/jpeg",knownItemsList).catch(e=>{ _analysisErr=e; return null; }),
       ]);
       if(_analysisErr){ setToast("AI error: "+(_analysisErr.message||String(_analysisErr))); setTimeout(()=>setToast(null),30000); }
-      const finalPhoto=photoUrl||compressed; // fall back to compressed base64 if upload fails
+      // Append cache-buster so the browser always loads the fresh photo after re-upload on the same date
+      const finalPhoto=photoUrl?(photoUrl+"?t="+Date.now()):finalCompressed;
       if(parsed){
         const rawItems=parsed.clothing_items||[];
-        const items=rawItems.map(item=>{const key=(item.name||"").trim().toLowerCase();const known=knownItems[key];if(known){return {...item,price:known.price??item.price,_recognized:true,_wearCount:known.count};}return item;});
+        const items=rawItems.map(item=>{const key=(item.name||"").trim().toLowerCase();const known=knownItems[key];const normColor=normalizeAiColor(item.color);const base={...item,color:normColor};if(known){return {...base,price:known.price??item.price,_recognized:true,_wearCount:known.count};}return base;});
         const style=parsed.style_category||null;
         const formalityLevel=parsed.formality_level||null;
         const season=parsed.season||null;
         const colorPalette=parsed.color_palette||[];
-        setPhotoData(p=>({...p,[dateKey]:{logged:true,photo:finalPhoto,items,style,formalityLevel,season,colorPalette,analysing:false}}));
-        setEditEntry({style,formalityLevel,season,items:items.map(item=>({...item}))});
+        // Crop each item: try per-item bg removal for clean product photo; fall back to crop from already-bg-removed outfit
+        const itemsWithPhotos=[];
+        for(let idx=0;idx<items.length;idx++){
+          const item=items[idx];
+          const {bbox,...itemData}=item;
+          if(!bbox){ itemsWithPhotos.push(itemData); continue; }
+          const fallbackCrop=await cropItemPhoto(finalCompressed,bbox);
+          const rawCrop=await cropItemPhoto(compressed,bbox);
+          let cleanCrop=fallbackCrop;
+          if(rawCrop){ try{ cleanCrop=await removeBackground(rawCrop.split(",")[1])||fallbackCrop; }catch(e){} }
+          const source=cleanCrop||fallbackCrop;
+          if(!source){ itemsWithPhotos.push(itemData); continue; }
+          const itemPhotoUrl=await uploadItemPhoto(source,dateKey,idx);
+          itemsWithPhotos.push(itemPhotoUrl?{...itemData,itemPhoto:itemPhotoUrl}:itemData);
+        }
+        setPhotoData(p=>({...p,[dateKey]:{logged:true,photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}));
+        setEditEntry({style,formalityLevel,season,items:itemsWithPhotos.map(item=>({...item}))});
         setToast(`Outfit analysed — ${items.length} item${items.length!==1?"s":""} found`);
         setTimeout(()=>setToast(null),3000);
       }else{
@@ -901,22 +1044,22 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
   };
 
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface,position:"relative" }}>
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff",position:"relative" }}>
       {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:toast.startsWith("AI error")?"#E5635A":C.sage,color:"#fff",borderRadius:0,padding:"10px 14px",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 16px rgba(0,0,0,.18)" }}><Check size={15} color="#fff"/>{toast}</div>}
-      <div style={{ background:C.sage,padding:"20px 20px 20px",flexShrink:0,borderRadius:0,position:"relative" }}>
-        {onBack&&<button onClick={onBack} style={{ position:"absolute",top:20,left:16,width:36,height:36,borderRadius:0,border:"none",background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color="#fff"/></button>}
-        <h1 style={{ fontSize:28,fontWeight:800,color:"#fff",margin:"0 0 4px",paddingLeft:onBack?44:0 }}>Outfit Calendar</h1>
-        <p style={{ fontSize:14,color:"rgba(255,255,255,.8)",margin:0 }}>Track your daily outfits</p>
+      <div style={{ background:"#fff",padding:"28px 24px 20px",flexShrink:0 }}>
+        {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
+        <h1 style={{ fontSize:34,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Outfit Calendar</h1>
+        <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0" }}>Track your daily outfits</p>
       </div>
-      <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
-        <div style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14 }}>
-            <button onClick={()=>{ if(calMonth===0){ setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }} style={{ width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={18} color={C.sage}/></button>
+      <div style={{ flex:1,overflowY:"auto" }}>
+        <div style={{ borderTop:"1px solid rgba(58,68,56,0.3)",padding:"20px 16px 32px" }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
+            <button onClick={()=>{ if(calMonth===0){ setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }} style={{ width:36,height:36,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={18} color={C.ink}/></button>
             <div style={{ textAlign:"center" }}>
-              <h2 style={{ fontSize:17,fontWeight:700,color:C.ink,margin:0 }}>{months[calMonth]} {calYear}</h2>
-              {(calMonth!==today.getMonth()||calYear!==today.getFullYear())&&<button onClick={()=>{ setCalMonth(today.getMonth()); setCalYear(today.getFullYear()); }} style={{ fontSize:11,color:C.sage,background:"none",border:"none",cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"2px 0" }}>Today</button>}
+              <h2 style={{ fontSize:18,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.02em" }}>{months[calMonth]} {calYear}</h2>
+              {(calMonth!==today.getMonth()||calYear!==today.getFullYear())&&<button onClick={()=>{ setCalMonth(today.getMonth()); setCalYear(today.getFullYear()); }} style={{ fontSize:11,color:C.sub,background:"none",border:"none",cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"2px 0",textDecoration:"underline",textUnderlineOffset:2 }}>Today</button>}
             </div>
-            <button onClick={()=>{ if(calMonth===11){ setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }} style={{ width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronRight size={18} color={C.sage}/></button>
+            <button onClick={()=>{ if(calMonth===11){ setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }} style={{ width:36,height:36,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronRight size={18} color={C.ink}/></button>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4 }}>
             {["S","M","T","W","T","F","S"].map((d,i)=><div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.sub,height:24 }}>{d}</div>)}
@@ -933,7 +1076,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
             const FORMALITY=["Casual","Smart Casual","Formal","Sporty"];
             const SEASONS=["Spring","Summer","Autumn","Winter","All Season"];
             const CATS=["Top","Bottom","Outerwear","Shoes","Accessories","Dresses","Swimwear"];
-            const COLORS=["Black","White","Blue","Gray","Brown","Green","Red","Yellow","Pink","Purple"];
+            const COLORS=["Black","White","Cream","Beige","Navy","Blue","Gray","Brown","Green","Red","Yellow","Pink","Purple"];
             const catEmojis={ Top:"👕",Bottom:"👖",Outerwear:"🧥",Shoes:"👟",Accessories:"💍",Dresses:"👗",Swimwear:"👙",Other:"👔" };
             const ORDER=["Top","Bottom","Outerwear","Shoes","Accessories","Dresses","Swimwear"];
 
@@ -943,7 +1086,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
               const removeItem=(i)=>setEditEntry(e=>({...e,items:e.items.filter((_,idx)=>idx!==i)}));
               const addItem=()=>setEditEntry(e=>({...e,items:[...e.items,{category:"Top",name:"",color:"Black",_isNew:true}]}));
               const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
-              const saveEdit=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,...rest})=>rest); setPhotoData(p=>({...p,[toKey(selectedDate)]:{...p[toKey(selectedDate)],style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season,notes:editEntry.notes||"",items:cleanItems}})); setEditMode(false); setEditEntry(null); };
+              const saveEdit=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); setPhotoData(p=>({...p,[toKey(selectedDate)]:{...p[toKey(selectedDate)],style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season,notes:editEntry.notes||"",items:cleanItems}})); setEditMode(false); setEditEntry(null); };
               return (<>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Style</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:16 }}>
@@ -951,15 +1094,15 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                 </div>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Formality</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:16 }}>
-                  {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#7A6A9A":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
+                  {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#5E6A5C":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
                 </div>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Season</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-                  {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5A85C4":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
+                  {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5E6A5C":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
                 </div>
                 <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Items</p>
                 {editEntry.items.map((item,i)=>(
-                  <div key={i} style={{ background:C.surface,borderRadius:0,padding:12,marginBottom:10,border:`1px solid ${C.border}` }}>
+                  <div key={i} style={{ background:"rgba(58,68,56,0.04)",borderRadius:0,padding:12,marginBottom:10,border:`1px solid rgba(58,68,56,0.15)` }}>
                     <div style={{ display:"flex",alignItems:"center",marginBottom:8,gap:8 }}>
                       <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:0,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                       <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:0,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
@@ -968,7 +1111,11 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                     <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>
                       {CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:0,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4 }}><CatIcon cat={c} size={11} color={item.category===c?C.sage:C.sub}/>{c}</button>)}
                     </div>
-                    {(()=>{ const outfitColors=[...new Set((editEntry.items||[]).map(it=>it.color).filter(c=>c&&colorHex[c]))]; const pickerColors=outfitColors.length>0?outfitColors:COLORS; return <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{pickerColors.map(col=><button key={col} onClick={()=>updateItem(i,"color",col)} title={col} style={{ width:52,border:item.color===col?`2px solid ${C.sage}`:col==="White"?`1px solid ${C.border}`:`1px solid transparent`,cursor:"pointer",padding:0,background:"transparent",flexShrink:0,overflow:"hidden" }}><div style={{ width:"100%",height:32,background:colorHex[col] }}/><div style={{ padding:"3px 4px",background:C.white,textAlign:"left" }}><div style={{ fontSize:9,fontWeight:700,color:C.ink,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{col}</div><div style={{ fontSize:8,color:C.sub,fontFamily:"monospace",lineHeight:1.3 }}>{colorHex[col]}</div></div></button>)}</div>; })()}
+                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap" }}>
+                      {toColors(item.color).filter(c=>colorHex[c]).map(c=><div key={c} style={{ display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:`1px solid ${C.border}`,background:C.white }}><div style={{ width:12,height:12,background:colorHex[c],border:(c==="White"||c==="Cream")?`1px solid ${C.border}`:"none",flexShrink:0 }}/><span style={{ fontSize:12,fontWeight:700,color:C.ink }}>{c}</span></div>)}
+                      <button onClick={()=>updateItem(i,"_showColorPicker",!item._showColorPicker)} style={{ fontSize:12,fontWeight:600,color:C.sage,background:"none",border:`1px solid ${C.sage}`,padding:"5px 12px",cursor:"pointer",fontFamily:"inherit",borderRadius:0 }}>{item._showColorPicker?"Close":"Edit colour"}</button>
+                    </div>
+                    {item._showColorPicker&&<div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{COLORS.map(col=>{ const sel=toColors(item.color).includes(col); return <button key={col} onClick={()=>{ const cur=toColors(item.color); const nxt=sel?cur.filter(c=>c!==col):[...cur,col]; updateItem(i,"color",nxt.length===0?null:nxt.length===1?nxt[0]:nxt); }} title={col} style={{ width:52,border:sel?`2px solid ${C.sage}`:(col==="White"||col==="Cream")?`1px solid ${C.border}`:`1px solid transparent`,cursor:"pointer",padding:0,background:"transparent",flexShrink:0,overflow:"hidden" }}><div style={{ width:"100%",height:32,background:colorHex[col] }}/><div style={{ padding:"3px 4px",background:C.white,textAlign:"left" }}><div style={{ fontSize:9,fontWeight:700,color:C.ink,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{col}</div><div style={{ fontSize:8,color:C.sub,fontFamily:"monospace",lineHeight:1.3 }}>{colorHex[col]}</div></div></button>; })}</div>}
                     <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
                       <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Price</span>
                       <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
@@ -1000,7 +1147,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
             const removeSelected=()=>{ const newItems=(entry.items||[]).filter((_,i)=>!selectedItemIdxs.has(i)); setPhotoData(p=>({...p,[toKey(selectedDate)]:{...p[toKey(selectedDate)],items:newItems}})); setSelectedItemIdxs(new Set()); };
             return (<>
               {entry.photo?<div style={{ display:"flex",justifyContent:"center",marginBottom:entry.style?10:14 }}><div style={{ width:"55%",borderRadius:0,overflow:"hidden",aspectRatio:"3/4" }}><img src={entry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div></div>:<div style={{ background:C.sage+"14",borderRadius:0,padding:16,textAlign:"center",marginBottom:entry.style?10:14 }}><div style={{ fontSize:32 }}>👔</div><div style={{ fontSize:13,fontWeight:600,color:C.sage,marginTop:4 }}>Outfit logged</div></div>}
-              {(entry.style||entry.formalityLevel||entry.season)&&<div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:14 }}>{entry.style&&<span style={{ fontSize:12,fontWeight:700,color:C.sage,background:C.sage+"18",padding:"5px 14px",borderRadius:0,border:`1px solid ${C.sage}30` }}>{entry.style}</span>}{entry.formalityLevel&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#7A6A9A",padding:"5px 14px",borderRadius:0 }}>{entry.formalityLevel}</span>}{entry.season&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#5A85C4",padding:"5px 14px",borderRadius:0 }}>{entry.season}</span>}</div>}
+              {(entry.style||entry.formalityLevel||entry.season)&&<div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:14 }}>{entry.style&&<span style={{ fontSize:12,fontWeight:700,color:C.sage,background:C.sage+"18",padding:"5px 14px",borderRadius:0,border:`1px solid ${C.sage}30` }}>{entry.style}</span>}{entry.formalityLevel&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#5E6A5C",padding:"5px 14px",borderRadius:0 }}>{entry.formalityLevel}</span>}{entry.season&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#5E6A5C",padding:"5px 14px",borderRadius:0 }}>{entry.season}</span>}</div>}
               {entry.notes&&<div style={{ background:C.surface,borderRadius:0,padding:"10px 14px",border:`1px solid ${C.border}`,marginBottom:14 }}><p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 4px" }}>Notes</p><p style={{ fontSize:13,color:C.ink,margin:0,lineHeight:1.5 }}>{entry.notes}</p></div>}
               <div style={{ marginBottom:16 }}>
                 <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
@@ -1053,53 +1200,60 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
     return { key:dates[0], label:new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",day:"numeric"}) };
   };
 
-  if(favourites.length===0) return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface }}>
-      <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        {onBack&&<button onClick={onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>}
-        <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Favourites</h1>
+  const favHeader = (count) => (
+    <div style={{ background:"#fff",padding:"28px 24px 20px",flexShrink:0 }}>
+      {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
+      <div style={{ display:"flex",alignItems:"flex-end",justifyContent:"space-between" }}>
+        <div>
+          <h1 style={{ fontSize:34,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Favourites</h1>
+          <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0" }}>Your saved pieces</p>
+        </div>
+        {count>0&&<span style={{ fontSize:13,fontWeight:700,color:C.sub,marginBottom:2 }}>{count} item{count!==1?"s":""}</span>}
       </div>
-      <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24 }}>
-        <div style={{ fontSize:52,marginBottom:16 }}>🤍</div>
-        <h2 style={{ fontSize:20,fontWeight:700,color:C.ink,margin:"0 0 8px" }}>No Favourites Yet</h2>
-        <p style={{ fontSize:14,color:C.sub,textAlign:"center",margin:0 }}>Tap the heart on any item in your calendar outfit log to save it here.</p>
+    </div>
+  );
+
+  if(favourites.length===0) return (
+    <div style={{ flex:1,display:"flex",flexDirection:"column",background:"#fff" }}>
+      {favHeader(0)}
+      <div style={{ borderTop:"1px solid rgba(58,68,56,0.3)",flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32 }}>
+        <Heart size={52} color={C.sub} strokeWidth={1} style={{ marginBottom:16 }}/>
+        <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,margin:"0 0 8px",letterSpacing:"-0.01em" }}>No Favourites Yet</h2>
+        <p style={{ fontSize:13,color:C.sub,textAlign:"center",margin:0,lineHeight:1.6 }}>Tap the heart on any item in your calendar outfit log to save it here.</p>
       </div>
     </div>
   );
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
-      <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        {onBack&&<button onClick={onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>}
-        <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Favourites</h1>
-        <span style={{ marginLeft:"auto",fontSize:13,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"3px 10px",borderRadius:0 }}>{favourites.length} item{favourites.length!==1?"s":""}</span>
-      </div>
-      <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff" }}>
+      {favHeader(favourites.length)}
+      <div style={{ flex:1,overflowY:"auto",borderTop:"1px solid rgba(58,68,56,0.3)" }}>
         {favourites.map((fav,i)=>{
-          const hex=fav.color&&colorHex[fav.color]?colorHex[fav.color]:null;
+          const favColors=toColors(fav.color).filter(c=>colorHex[c]);
           const worn=lastWornDate(fav.name);
+          const favItemPhoto=(()=>{ const k=(fav.name||"").trim().toLowerCase(); const sorted=Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)); for(const [,entry] of sorted){ if(!entry?.logged) continue; const match=(entry.items||[]).find(item=>item&&typeof item==="object"&&(item.name||"").trim().toLowerCase()===k); if(match) return match.itemPhoto||entry.photo||null; } return null; })();
           return (
-            <div key={i} style={{ position:"relative",overflow:"hidden",borderRadius:0,marginBottom:10 }}>
-              <button onClick={()=>{ removeFav(fav.name); setSwipedFav(null); }} style={{ position:"absolute",right:0,top:0,bottom:0,width:80,background:C.red,display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",borderRadius:0 }}><Trash2 size={20} color="#fff"/></button>
+            <div key={i} style={{ position:"relative",overflow:"hidden",borderBottom:"1px solid rgba(58,68,56,0.3)" }}>
+              <button onClick={()=>{ removeFav(fav.name); setSwipedFav(null); }} style={{ position:"absolute",right:0,top:0,bottom:0,width:80,background:C.red,display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer" }}><Trash2 size={20} color="#fff"/></button>
               <div
                 onTouchStart={e=>{ touchStartX.current=e.touches[0].clientX; }}
                 onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(touchStartX.current||0); if(dx<-50) setSwipedFav(fav.name); else if(dx>20) setSwipedFav(null); }}
-                style={{ background:C.white,borderRadius:0,padding:"14px 16px",border:`1px solid ${C.border}`,transform:swipedFav===fav.name?"translateX(-80px)":"translateX(0)",transition:"transform .2s ease",position:"relative" }}
+                style={{ background:"#fff",padding:"16px 24px",transform:swipedFav===fav.name?"translateX(-80px)":"translateX(0)",transition:"transform .2s ease",position:"relative" }}
               >
-              <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-                <div style={{ width:46,height:46,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>{catEmoji(fav.category)}</div>
+              <div style={{ display:"flex",alignItems:"center",gap:14 }}>
+                <div style={{ width:50,height:50,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{favItemPhoto?<img src={favItemPhoto} alt={fav.name} style={{ width:"100%",height:"100%",objectFit:"contain" }}/>:catEmoji(fav.category)}</div>
                 <div style={{ flex:1,minWidth:0 }}>
-                  <div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:3 }}>{fav.name}</div>
+                  <div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>{fav.name}</div>
                   <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
-                    <span style={{ fontSize:11,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"2px 8px",borderRadius:0 }}>{fav.category}</span>
-                    {hex&&<div style={{ display:"flex",alignItems:"center",gap:4 }}><div style={{ width:10,height:10,borderRadius:"50%",background:hex,border:fav.color==="White"?`1px solid ${C.border}`:"none" }}/><span style={{ fontSize:11,color:C.sub }}>{fav.color}</span></div>}
+                    <span style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.06em" }}>{fav.category}</span>
+                    {favColors.length>0&&<div style={{ display:"flex",gap:3 }}>{favColors.map(c=><div key={c} style={{ width:10,height:10,borderRadius:"50%",background:colorHex[c],border:(c==="White"||c==="Cream")?`1px solid ${C.border}`:"none" }}/>)}</div>}
                     {fav.price&&<span style={{ fontSize:11,color:C.sub }}>£{fav.price}</span>}
                   </div>
                 </div>
                 <button onClick={()=>removeFav(fav.name)} style={{ background:"none",border:"none",cursor:"pointer",padding:6,flexShrink:0 }}><Heart size={20} color={C.red} fill={C.red}/></button>
               </div>
               {worn&&onGoToDate&&(
-                <button onClick={()=>onGoToDate(worn.key)} style={{ marginTop:10,width:"100%",height:32,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
-                  <Calendar size={12} color={C.sub}/>Last worn {worn.label} — tap to view
+                <button onClick={()=>onGoToDate(worn.key)} style={{ marginTop:12,width:"100%",height:34,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.ink,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
+                  <Calendar size={12} color={C.ink}/>Last worn {worn.label} — tap to view
                 </button>
               )}
               </div>
@@ -1117,6 +1271,7 @@ function AuthScreen({ onAuth }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [recoverEmail, setRecoverEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1156,23 +1311,34 @@ function AuthScreen({ onAuth }) {
       setError(friendlyAuthError(authError.message));
       return;
     }
-    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites").eq("id", data.user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites,username").eq("id", data.user.id).maybeSingle();
+    if (!profile) {
+      // First sign-in after email confirmation — create profile using username stored in metadata
+      const uname = data.user.user_metadata?.username || "";
+      await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], username: uname });
+      setLoading(false);
+      onAuth(data.user.email, {}, [], data.user.id, uname);
+      return;
+    }
     setLoading(false);
-    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id);
+    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.username||data.user.user_metadata?.username||"");
   };
 
   const handleSignUp = async () => {
     setError("");
-    if (!email || !password || !confirmPassword) { setError("Please fill in all fields."); return; }
+    if (!username || !email || !password || !confirmPassword) { setError("Please fill in all fields."); return; }
+    if (!/^[a-z0-9_]{3,20}$/.test(username)) { setError("Username must be 3–20 characters and contain only lowercase letters, numbers, and underscores."); return; }
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    const { data, error: authError } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: window.location.origin } });
+    const { data: taken } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
+    if (taken) { setLoading(false); setError("That username is already taken. Please choose another."); return; }
+    const { data, error: authError } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: window.location.origin, data:{ username } } });
     if (authError) { setLoading(false); setError(friendlyAuthError(authError.message)); return; }
     if (!data.session) { setLoading(false); setView("confirm-email"); return; }
-    await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[] });
+    await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], username });
     setLoading(false);
-    onAuth(data.user.email, {}, [], data.user.id);
+    onAuth(data.user.email, {}, [], data.user.id, username);
   };
 
   // ── Landing ──────────────────────────────────────────────────────────────
@@ -1196,7 +1362,14 @@ function AuthScreen({ onAuth }) {
 
       <ErrorMsg/>
 
-      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Email Address</p>
+      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Username</p>
+      <div style={{ position:"relative" }}>
+        <span style={{ position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",fontSize:15,color:C.sub,fontWeight:600,pointerEvents:"none",userSelect:"none" }}>@</span>
+        <input value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,""))} placeholder="yourname" maxLength={20} style={{...inputStyle,paddingLeft:32}} onFocus={focusStyle} onBlur={blurStyle}/>
+      </div>
+      <p style={{ fontSize:11,color:C.sub,margin:"6px 0 0",lineHeight:1.5 }}>3–20 characters · letters, numbers, underscores · cannot be changed later</p>
+
+      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"18px 0 8px" }}>Email Address</p>
       <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
 
       <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"18px 0 8px" }}>Password</p>
@@ -1275,7 +1448,7 @@ function AuthScreen({ onAuth }) {
   );
 }
 
-function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignOut, userEmail="" }) {
+function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignOut, userEmail="", username="" }) {
   const [profileImage, setProfileImage] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -1291,73 +1464,67 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
   };
 
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
-      {/* Hidden file inputs */}
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff" }}>
       <input ref={galleryRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handleImageFile(e.target.files[0])}/>
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e=>handleImageFile(e.target.files[0])}/>
 
-      {/* Sign out confirmation bottom sheet */}
       {showSignOutConfirm && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={()=>setShowSignOutConfirm(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",padding:"8px 20px 44px" }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:"#fff",width:"100%",padding:"8px 24px 44px" }}>
             <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
             <div style={{ textAlign:"center",marginBottom:24 }}>
-              <div style={{ width:56,height:56,borderRadius:0,background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px" }}><LogOut size={24} color={C.red}/></div>
+              <div style={{ width:56,height:56,background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px" }}><LogOut size={24} color={C.red}/></div>
               <h2 style={{ fontSize:20,fontWeight:900,color:C.ink,margin:"0 0 6px",letterSpacing:"-0.02em" }}>Are you sure?</h2>
               <p style={{ fontSize:14,color:C.sub,margin:0 }}>You will be signed out of your account.</p>
             </div>
-            <button onClick={onSignOut} style={{ width:"100%",height:54,borderRadius:0,border:`2px solid ${C.red}`,background:"transparent",color:C.red,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><LogOut size={18}/>Sign Out</button>
-            <button onClick={()=>setShowSignOutConfirm(false)} style={{ width:"100%",height:54,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={onSignOut} style={{ width:"100%",height:54,border:`1px solid ${C.red}`,background:"transparent",color:C.red,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><LogOut size={18}/>Sign Out</button>
+            <button onClick={()=>setShowSignOutConfirm(false)} style={{ width:"100%",height:54,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </div>
         </div>
       )}
 
-      {/* Image source picker bottom sheet */}
       {showPicker && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={()=>setShowPicker(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",padding:"8px 20px 44px" }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:"#fff",width:"100%",padding:"8px 24px 44px" }}>
             <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
-            <h2 style={{ fontSize:20,fontWeight:800,color:C.ink,margin:"0 0 20px" }}>Change Profile Photo</h2>
-            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>galleryRef.current?.click(),100); }} style={{ width:"100%",height:56,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:12 }}>
-              <div style={{ width:40,height:40,borderRadius:0,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><Camera size={20} color={C.sage}/></div>
-              Camera Roll
-            </button>
-            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>cameraRef.current?.click(),100); }} style={{ width:"100%",height:56,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:12 }}>
-              <div style={{ width:40,height:40,borderRadius:0,background:C.green+"18",display:"flex",alignItems:"center",justifyContent:"center" }}><Camera size={20} color={C.green}/></div>
-              Camera
-            </button>
-            <button onClick={()=>setShowPicker(false)} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.border,color:C.sub,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <h2 style={{ fontSize:20,fontWeight:800,color:C.ink,margin:"0 0 20px",letterSpacing:"-0.02em" }}>Change Profile Photo</h2>
+            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>galleryRef.current?.click(),100); }} style={{ width:"100%",height:54,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.ink,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:10 }}><Camera size={18} color={C.ink}/>Camera Roll</button>
+            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>cameraRef.current?.click(),100); }} style={{ width:"100%",height:54,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.ink,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:10 }}><Camera size={18} color={C.ink}/>Camera</button>
+            <button onClick={()=>setShowPicker(false)} style={{ width:"100%",height:48,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </div>
         </div>
       )}
 
-      <div style={{ background:C.sage,padding:"20px 20px 24px",flexShrink:0,borderRadius:0,textAlign:"center",position:"relative" }}>
-        {onBack&&<button onClick={onBack} style={{ position:"absolute",top:20,left:16,width:36,height:36,borderRadius:0,border:"none",background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color="#fff"/></button>}
-        {/* Tappable profile photo */}
-        <button onClick={()=>setShowPicker(true)} style={{ width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.2)",margin:"0 auto 12px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,border:"3px solid rgba(255,255,255,.5)",cursor:"pointer",padding:0,overflow:"hidden",position:"relative" }}>
-          {profileImage
-            ? <img src={profileImage} alt="Profile" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>
-            : <span>👤</span>
-          }
-        </button>
-        <h1 style={{ fontSize:22,fontWeight:900,color:"#fff",margin:"0 0 4px",letterSpacing:"-0.02em" }}>{userEmail?(userEmail.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase())):"My Wardrobe"}</h1>
-        <p style={{ fontSize:14,color:"rgba(255,255,255,.8)",margin:0 }}>{userEmail||"Style enthusiast"}</p>
+      {/* Header */}
+      <div style={{ background:"#fff",padding:"28px 24px 20px",flexShrink:0 }}>
+        {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
+        <div style={{ display:"flex",alignItems:"center",gap:16 }}>
+          <button onClick={()=>setShowPicker(true)} style={{ width:64,height:64,borderRadius:"50%",background:C.surface,border:"1px solid rgba(58,68,56,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,cursor:"pointer",padding:0,overflow:"hidden",flexShrink:0 }}>
+            {profileImage?<img src={profileImage} alt="Profile" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>:<User size={28} color={C.sub} strokeWidth={1.5}/>}
+          </button>
+          <div>
+            <h1 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 2px",letterSpacing:"-0.03em",lineHeight:1 }}>{username?`@${username}`:userEmail?(userEmail.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase())):"My Wardrobe"}</h1>
+            <p style={{ fontSize:13,color:C.sub,margin:0 }}>{userEmail||"Style enthusiast"}</p>
+          </div>
+        </div>
       </div>
-      <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
-        {[{ icon:<Bell size={18} color={C.sage}/>,label:"Notifications",sub:"Push alerts",action:onNotifications },{ icon:<Shield size={18} color={C.sage}/>,label:"Privacy",sub:"Data & permissions",action:onPrivacy },{ icon:<Phone size={18} color={C.sage}/>,label:"Settings",sub:"App preferences",action:onSettings }].map((item,i)=>(
-          <button key={i} onClick={item.action} style={{ width:"100%",background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
-            <div style={{ width:40,height:40,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{item.icon}</div>
+
+      {/* Menu */}
+      <div style={{ flex:1,overflowY:"auto",borderTop:"1px solid rgba(58,68,56,0.3)" }}>
+        {[{ icon:<Bell size={18} color={C.ink}/>,label:"Notifications",sub:"Push alerts",action:onNotifications },{ icon:<Shield size={18} color={C.ink}/>,label:"Privacy",sub:"Data & permissions",action:onPrivacy },{ icon:<Phone size={18} color={C.ink}/>,label:"Settings",sub:"App preferences",action:onSettings }].map((item,i)=>(
+          <button key={i} onClick={item.action} style={{ width:"100%",background:"#fff",padding:"18px 24px",borderBottom:"1px solid rgba(58,68,56,0.3)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit",border:"none",borderBottom:"1px solid rgba(58,68,56,0.3)",boxSizing:"border-box" }}>
+            <div style={{ width:38,height:38,borderRadius:8,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{item.icon}</div>
             <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>{item.label}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.sub}</div></div>
-            <ChevronRight size={18} color={C.border}/>
+            <ChevronRight size={16} color={C.sub}/>
           </button>
         ))}
-        <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:"#FEF0EF",color:C.red,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",marginTop:8 }}><LogOut size={18}/> Sign Out</button>
+        <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",padding:"18px 24px",border:"none",borderTop:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.red,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",marginTop:8,boxSizing:"border-box" }}><LogOut size={18}/> Sign Out</button>
       </div>
     </div>
   );
 }
 
-function SettingsScreen({ onBack }) {
+function SettingsScreen({ onBack, username="" }) {
   const [panel,setPanel]=useState(null); // null | "password" | "phone" | "name" | "dob" | "delete"
   const [curPw,setCurPw]=useState(""); const [newPw,setNewPw]=useState(""); const [confPw,setConfPw]=useState("");
   const [phone,setPhone]=useState(""); const [firstName,setFirstName]=useState(""); const [lastName,setLastName]=useState("");
@@ -1461,6 +1628,16 @@ function SettingsScreen({ onBack }) {
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         {!panel&&(<>
+          {username&&(
+            <div style={{ background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:14 }}>
+              <div style={{ width:40,height:40,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><AtSign size={18} color={C.sage}/></div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Username</div>
+                <div style={{ fontSize:13,fontWeight:700,color:C.sage,marginTop:2 }}>@{username}</div>
+              </div>
+              <div style={{ fontSize:11,fontWeight:700,color:C.sub,background:C.surface,padding:"3px 8px",border:`1px solid ${C.border}` }}>Permanent</div>
+            </div>
+          )}
           {[{id:"password",title:"Change Password",sub:"Enter your current password and choose a new one."},{id:"phone",title:"Update Phone Number",sub:"Enter your new phone number to receive a verification code."},{id:"name",title:"Change Name",sub:"Update your display name."},{id:"dob",title:"Date of Birth",sub:"Update your date of birth."}].map(item=>(
             <button key={item.id} onClick={()=>{setPanel(item.id);setErr("");setMsg("");}} style={{ width:"100%",background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit" }}>
               <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>{item.title}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.sub}</div></div>
@@ -1686,7 +1863,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
   const FORMALITY=["Casual","Smart Casual","Formal","Sporty"];
   const SEASONS=["Spring","Summer","Autumn","Winter","All Season"];
   const CATS=["Top","Bottom","Outerwear","Shoes","Accessories","Dresses","Swimwear"];
-  const COLORS=["Black","White","Blue","Gray","Brown","Green","Red","Yellow","Pink","Purple"];
+  const COLORS=["Black","White","Cream","Beige","Navy","Blue","Gray","Brown","Green","Red","Yellow","Pink","Purple"];
   const catEmojis={Top:"👕",Bottom:"👖",Outerwear:"🧥",Shoes:"👟",Accessories:"💍",Dresses:"👗",Swimwear:"👙",Other:"👔"};
 
   // Build known items from all previously logged outfits
@@ -1705,21 +1882,32 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
       setPhoto(finalCompressed);
       setStep("analysing");
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
-      const blob=await fetch(compressed).then(r=>r.blob());
+      const blob=await fetch(finalCompressed).then(r=>r.blob());
       let _aiErr=null;
       const [url,parsed]=await Promise.all([
         uploadPhoto(blob,todayKey),
         analyseOutfit(base64,"image/jpeg",knownItemsList).catch(e=>{ _aiErr=e; return null; }),
       ]);
       if(_aiErr){ setToast("AI error: "+(_aiErr.message||String(_aiErr))); setTimeout(()=>setToast(null),30000); }
-      if(url) setPhotoUrl(url);
+      if(url) setPhotoUrl(url+"?t="+Date.now());
       if(parsed){
         const rawItems=parsed.clothing_items||[];
-        const items=rawItems.map(item=>{ const key=(item.name||"").trim().toLowerCase(); const known=knownItems[key]; if(known){return {...item,price:known.price??item.price,_recognized:true,_wearCount:known.count};} return item; });
+        const items=rawItems.map(item=>{ const key=(item.name||"").trim().toLowerCase(); const known=knownItems[key]; const normColor=normalizeAiColor(item.color); const base={...item,color:normColor}; if(known){return {...base,price:known.price??item.price,_recognized:true,_wearCount:known.count};} return base; });
         const style=parsed.style_category||null;
         const formalityLevel=parsed.formality_level||null;
         const season=parsed.season||null;
-        setEditEntry({style,formalityLevel,season,items});
+        // Crop each item from the original image, then remove its background individually for a clean product-style photo
+        const itemsWithPhotos=await Promise.all(items.map(async(item,idx)=>{
+          const {bbox,...itemData}=item;
+          if(!bbox) return itemData;
+          const crop=await cropItemPhoto(compressed,bbox);
+          if(!crop) return itemData;
+          let cleanCrop=crop;
+          try{ cleanCrop=await removeBackground(crop.split(",")[1])||crop; }catch(e){}
+          const itemPhotoUrl=await uploadItemPhoto(cleanCrop,todayKey,idx);
+          return itemPhotoUrl?{...itemData,itemPhoto:itemPhotoUrl}:itemData;
+        }));
+        setEditEntry({style,formalityLevel,season,items:itemsWithPhotos});
       }else{ setEditEntry({style:null,formalityLevel:null,season:null,items:[]}); }
       setStep("edit");
     };
@@ -1730,7 +1918,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
   const removeItem=(i)=>setEditEntry(e=>({...e,items:e.items.filter((_,idx)=>idx!==i)}));
   const addItem=()=>setEditEntry(e=>({...e,items:[...e.items,{category:"Top",name:"",color:"Black",_isNew:true}]}));
   const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
-  const handleSave=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,...rest})=>rest); setPhotoData(p=>({...p,[todayKey]:{logged:true,photo:photoUrl||photo,items:cleanItems,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season}})); setStep("done"); };
+  const handleSave=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); setPhotoData(p=>({...p,[todayKey]:{logged:true,photo:photoUrl||photo,items:cleanItems,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season}})); setStep("done"); };
 
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
@@ -1779,22 +1967,26 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
             </div>
             <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Formality</p>
             <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-              {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#7A6A9A":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
+              {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#5E6A5C":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
             </div>
             <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Season</p>
             <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-              {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5A85C4":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
+              {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5E6A5C":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
             </div>
             <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Items</p>
             {editEntry.items.map((item,i)=>(
-              <div key={i} style={{ background:C.surface,borderRadius:0,padding:12,marginBottom:10,border:`1px solid ${C.border}` }}>
+              <div key={i} style={{ background:"rgba(58,68,56,0.04)",borderRadius:0,padding:12,marginBottom:10,border:`1px solid rgba(58,68,56,0.15)` }}>
                 <div style={{ display:"flex",alignItems:"center",marginBottom:8,gap:8 }}>
                   <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:0,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                   <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:0,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
                 </div>
                 {item._recognized&&<div style={{ marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised — details filled from previous log</span></div>}
                 <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:0,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4 }}><CatIcon cat={c} size={11} color={item.category===c?C.sage:C.sub}/>{c}</button>)}</div>
-                {(()=>{ const outfitColors=[...new Set((editEntry.items||[]).map(it=>it.color).filter(c=>c&&colorHex[c]))]; const pickerColors=outfitColors.length>0?outfitColors:COLORS; return <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{pickerColors.map(col=><button key={col} onClick={()=>updateItem(i,"color",col)} title={col} style={{ width:52,border:item.color===col?`2px solid ${C.sage}`:col==="White"?`1px solid ${C.border}`:`1px solid transparent`,cursor:"pointer",padding:0,background:"transparent",flexShrink:0,overflow:"hidden" }}><div style={{ width:"100%",height:32,background:colorHex[col] }}/><div style={{ padding:"3px 4px",background:C.white,textAlign:"left" }}><div style={{ fontSize:9,fontWeight:700,color:C.ink,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{col}</div><div style={{ fontSize:8,color:C.sub,fontFamily:"monospace",lineHeight:1.3 }}>{colorHex[col]}</div></div></button>)}</div>; })()}
+                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap" }}>
+                  {toColors(item.color).filter(c=>colorHex[c]).map(c=><div key={c} style={{ display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:`1px solid ${C.border}`,background:C.white }}><div style={{ width:12,height:12,background:colorHex[c],border:(c==="White"||c==="Cream")?`1px solid ${C.border}`:"none",flexShrink:0 }}/><span style={{ fontSize:12,fontWeight:700,color:C.ink }}>{c}</span></div>)}
+                  <button onClick={()=>updateItem(i,"_showColorPicker",!item._showColorPicker)} style={{ fontSize:12,fontWeight:600,color:C.sage,background:"none",border:`1px solid ${C.sage}`,padding:"5px 12px",cursor:"pointer",fontFamily:"inherit",borderRadius:0 }}>{item._showColorPicker?"Close":"Edit colour"}</button>
+                </div>
+                {item._showColorPicker&&<div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{COLORS.map(col=>{ const sel=toColors(item.color).includes(col); return <button key={col} onClick={()=>{ const cur=toColors(item.color); const nxt=sel?cur.filter(c=>c!==col):[...cur,col]; updateItem(i,"color",nxt.length===0?null:nxt.length===1?nxt[0]:nxt); }} title={col} style={{ width:52,border:sel?`2px solid ${C.sage}`:(col==="White"||col==="Cream")?`1px solid ${C.border}`:`1px solid transparent`,cursor:"pointer",padding:0,background:"transparent",flexShrink:0,overflow:"hidden" }}><div style={{ width:"100%",height:32,background:colorHex[col] }}/><div style={{ padding:"3px 4px",background:C.white,textAlign:"left" }}><div style={{ fontSize:9,fontWeight:700,color:C.ink,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{col}</div><div style={{ fontSize:8,color:C.sub,fontFamily:"monospace",lineHeight:1.3 }}>{colorHex[col]}</div></div></button>; })}</div>}
                 <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                   <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Price</span>
                   <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
@@ -1829,6 +2021,7 @@ export default function App() {
   const [authLoading,setAuthLoading]=useState(true);
   const [currentUser,setCurrentUser]=useState(null);
   const [currentEmail,setCurrentEmail]=useState("");
+  const [currentUsername,setCurrentUsername]=useState("");
   const [tab,setTab]=useState("home");
   const [subScreen,setSubScreen]=useState(null);
   const [wardrobeInitialView,setWardrobeInitialView]=useState("main");
@@ -1843,9 +2036,10 @@ export default function App() {
   useEffect(()=>{
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
-        const {data:profile}=await supabase.from("profiles").select("photo_data,favourites").eq("id",session.user.id).single();
+        const {data:profile}=await supabase.from("profiles").select("photo_data,favourites,username").eq("id",session.user.id).single();
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
+        setCurrentUsername(profile?.username||session.user.user_metadata?.username||"");
         setPhotoData(profile?.photo_data||{});
         setFavourites(profile?.favourites||[]);
         setIsSignedIn(true);
@@ -1894,22 +2088,22 @@ export default function App() {
 
   const renderContent=()=>{
     if(subScreen==="addItem") return <AddItemScreen onBack={goBack} photoData={photoData} setPhotoData={setPhotoData} cameraEnabled={cameraEnabled}/>;
-    if(subScreen==="settings") return <SettingsScreen onBack={goBack}/>;
+    if(subScreen==="settings") return <SettingsScreen onBack={goBack} username={currentUsername}/>;
     if(subScreen==="notifications") return <NotificationsScreen onBack={goBack}/>;
     if(subScreen==="privacy") return <PrivacyScreen onBack={goBack} cameraEnabled={cameraEnabled} onCameraToggle={setCameraEnabled}/>;
     switch(tab){
-      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
-      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} onBack={canGoBack?goBack:null} initialView={wardrobeInitialView}/>;
+      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} onBack={canGoBack?goBack:null} initialView={wardrobeInitialView} onAddItem={()=>setSubScreen("addItem")}/>;
       case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null} initialDate={calendarOpenDate} onClearInitialDate={()=>setCalendarOpenDate(null)} cameraEnabled={cameraEnabled}/>;
       case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} photoData={photoData} onGoToDate={dateKey=>{ setCalendarOpenDate(dateKey); navigateTo("calendar"); }} onBack={canGoBack?goBack:null}/>;
-      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
-      default:          return <HomeScreen photoData={photoData} userEmail={currentEmail} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
+      default:          return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
     }
   };
 
   return (
     <>
-      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;font-family:'Archivo',-apple-system,BlinkMacSystemFont,sans-serif;background:${C.surface}}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{display:none}`}</style>
+      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:${C.surface}}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{display:none}`}</style>
       <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {authLoading
           ? <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16 }}>
@@ -1917,7 +2111,7 @@ export default function App() {
               <div style={{ width:32,height:32,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }}/>
             </div>
           : !isSignedIn
-            ? <AuthScreen onAuth={(email,data,favs,userId)=>{ setCurrentUser(userId); setCurrentEmail(email||""); setPhotoData(data||{}); setFavourites(favs||[]); setIsSignedIn(true); dataSyncReady.current=true; }}/>
+            ? <AuthScreen onAuth={(email,data,favs,userId,uname)=>{ setCurrentUser(userId); setCurrentEmail(email||""); setCurrentUsername(uname||""); setPhotoData(data||{}); setFavourites(favs||[]); setIsSignedIn(true); dataSyncReady.current=true; }}/>
             : <>
                 <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
                 {!subScreen&&<TabBar active={tab} onChange={t=>{ if(t!=="wardrobe") setWardrobeInitialView("main"); setTab(t); setSubScreen(null); }}/>}
