@@ -79,7 +79,7 @@ async function uploadPhoto(blob, dateKey){
   const { error } = await supabase.storage
     .from("outfit-photos")
     .upload(path, blob, { upsert:true, contentType:"image/jpeg" });
-  if(error) return null;
+  if(error){ console.error("[uploadPhoto]",error); return null; }
   return supabase.storage.from("outfit-photos").getPublicUrl(path).data.publicUrl;
 }
 
@@ -413,7 +413,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   allLoggedObjs.forEach(item=>{ const k=(item.name||"").toLowerCase().trim(); if(!k) return; if(!wearCounts[k]) wearCounts[k]={ name:item.name,category:item.category||"Other",count:0 }; wearCounts[k].count+=1; });
   // Map each item name → { photo, dateKey } from its most recent logged outfit
   const itemLastInfo={};
-  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; (entry.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(!k) return; if(!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey, itemPhoto:item.itemPhoto||null, brand:null, price:null, color:null }; if(item.brand&&!itemLastInfo[k].brand) itemLastInfo[k].brand=item.brand; if(item.price!=null&&itemLastInfo[k].price==null){ const p=parseFloat(item.price); if(!isNaN(p)) itemLastInfo[k].price=p; } if(item.color&&!itemLastInfo[k].color) itemLastInfo[k].color=item.color; }); });
+  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; (entry.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(!k) return; if(!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey, itemPhoto:item.itemPhoto||null, brand:null, price:null, color:null }; if(item.brand&&!itemLastInfo[k].brand) itemLastInfo[k].brand=toCanonicalBrand(item.brand); if(item.price!=null&&itemLastInfo[k].price==null){ const p=parseFloat(item.price); if(!isNaN(p)) itemLastInfo[k].price=p; } if(item.color&&!itemLastInfo[k].color) itemLastInfo[k].color=item.color; }); });
   const getItemPhoto=(key)=>{ const info=itemLastInfo[key]; if(!info) return null; if(info.itemPhoto) return info.itemPhoto; if(info.photo) return info.photo; if(currentUser&&info.dateKey) return supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${info.dateKey}.jpg`).data.publicUrl; return null; };
   const wearArr=Object.values(wearCounts).map(w=>{ const k=w.name.toLowerCase().trim(); const meta=itemLastInfo[k]||{}; return {...w,lastPhoto:getItemPhoto(k),brand:meta.brand||null,price:meta.price??null,color:meta.color||null}; }).sort((a,b)=>b.count-a.count);
   const totalWears=wearArr.reduce((s,p)=>s+p.count,0);
@@ -495,7 +495,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
         </div>
         <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
           {wearArr.length===0
-            ? <div style={{ textAlign:"center",padding:"48px 24px" }}><div style={{ fontSize:40,marginBottom:12 }}>👗</div><div style={{ fontSize:16,fontWeight:700,color:C.ink,marginBottom:6 }}>No items yet</div><div style={{ fontSize:13,color:C.sub }}>Log an outfit on the Calendar screen to see your items here.</div></div>
+            ? <div style={{ textAlign:"center",padding:"48px 24px" }}><div style={{ width:72,height:72,borderRadius:16,background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px" }}><Shirt size={36} color={C.ink} strokeWidth={1.5}/></div><div style={{ fontSize:16,fontWeight:700,color:C.ink,marginBottom:6 }}>No items yet</div><div style={{ fontSize:13,color:C.sub }}>Log an outfit on the Calendar screen to see your items here.</div></div>
             : sortedItems.length===0
               ? <div style={{ textAlign:"center",padding:"40px 24px" }}><div style={{ fontSize:32,marginBottom:10 }}>🔍</div><div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>No items match</div><div style={{ fontSize:13,color:C.sub }}>Try a different search or category</div></div>
               : sortedItems.map((item,idx)=>(
@@ -837,23 +837,29 @@ const BRANDS = [
   "Michael Kors","Ralph Lauren","Tommy Hilfiger","Tory Burch",
 ].sort((a,b)=>a.localeCompare(b));
 
+// Normalise a brand string to canonical casing — matches against BRANDS list first, then title-cases
+const toCanonicalBrand=n=>{ if(!n||typeof n!=="string") return n; const l=n.toLowerCase().trim(); return BRANDS.find(b=>b.toLowerCase()===l)||n.trim().replace(/\b\w/g,c=>c.toUpperCase()); };
+
 // Module-level brand cache — loaded once per session, shared across all BrandPicker instances
 let _brandsCache=null;
 
 const loadBrands=async()=>{
   if(_brandsCache!==null) return _brandsCache;
   const {data}=await supabase.from("brands").select("name").order("name");
-  const custom=(data||[]).map(r=>r.name);
-  _brandsCache=[...new Set([...BRANDS,...custom])].sort((a,b)=>a.localeCompare(b));
+  // Normalise each custom brand: prefer canonical casing from BRANDS list, else title-case it
+  const custom=(data||[]).map(r=>toCanonicalBrand(r.name));
+  // Deduplicate case-insensitively, BRANDS entries take precedence
+  const seen=new Set();
+  _brandsCache=[...BRANDS,...custom].filter(b=>{ const k=b.toLowerCase().trim(); if(seen.has(k)) return false; seen.add(k); return true; }).sort((a,b)=>a.localeCompare(b));
   return _brandsCache;
 };
 
 const saveCustomBrand=async(name)=>{
-  // Skip if already in the predefined list
+  // Skip if already in the predefined list (case-insensitive)
   if(BRANDS.some(b=>b.replace(/\s+/g," ").toLowerCase()===name.replace(/\s+/g," ").toLowerCase())) return;
   await supabase.from("brands").upsert({name},{onConflict:"name"});
-  // Update cache immediately so other pickers see it in this session
-  if(_brandsCache&&!_brandsCache.includes(name)){
+  // Update cache immediately — deduplicate case-insensitively
+  if(_brandsCache&&!_brandsCache.some(b=>b.toLowerCase()===name.toLowerCase())){
     _brandsCache=[..._brandsCache,name].sort((a,b)=>a.localeCompare(b));
   }
 };
@@ -879,7 +885,7 @@ function BrandPicker({ value, onChange }) {
     if(!trimmed) return "";
     const canonical=allBrands.find(b=>b.replace(/\s+/g," ").toLowerCase()===trimmed.toLowerCase());
     if(canonical) return canonical;
-    return trimmed.replace(/\b\w/g,c=>c.toUpperCase());
+    return toCanonicalBrand(trimmed);
   };
 
   const q=query.trim().replace(/\s+/g," ").toLowerCase();
@@ -993,7 +999,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       const finalPhoto=photoUrl?(photoUrl+"?t="+Date.now()):finalCompressed;
       if(parsed){
         const rawItems=parsed.clothing_items||[];
-        const items=rawItems.map(item=>{const key=(item.name||"").trim().toLowerCase();const known=knownItems[key];const normColor=normalizeAiColor(item.color);const base={...item,color:normColor};if(known){return {...base,price:known.price??item.price,_recognized:true,_wearCount:known.count};}return base;});
+        const items=rawItems.map(item=>{const key=(item.name||"").trim().toLowerCase();const known=knownItems[key];const normColor=normalizeAiColor(item.color);const normBrand=toCanonicalBrand(item.brand||null);const base={...item,color:normColor,brand:normBrand};if(known){return {...base,price:known.price??item.price,_recognized:true,_wearCount:known.count};}return base;});
         const style=parsed.style_category||null;
         const formalityLevel=parsed.formality_level||null;
         const season=parsed.season||null;
@@ -1281,7 +1287,7 @@ function AuthScreen({ onAuth }) {
   const blurStyle  = (e) => e.target.style.borderColor = C.border;
 
   const Logo = () => (
-    <div style={{ width:72,height:72,borderRadius:0,background:C.sage,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px", }}>👗</div>
+    <div style={{ width:72,height:72,borderRadius:16,background:C.ink,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px" }}><Shirt size={36} color="#FFFFFF" strokeWidth={1.5}/></div>
   );
 
   const ErrorMsg = () => error ? (
@@ -1311,17 +1317,17 @@ function AuthScreen({ onAuth }) {
       setError(friendlyAuthError(authError.message));
       return;
     }
-    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites,username").eq("id", data.user.id).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites,Username").eq("id", data.user.id).maybeSingle();
     if (!profile) {
       // First sign-in after email confirmation — create profile using username stored in metadata
       const uname = data.user.user_metadata?.username || "";
-      await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], username: uname });
+      await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], Username: uname });
       setLoading(false);
       onAuth(data.user.email, {}, [], data.user.id, uname);
       return;
     }
     setLoading(false);
-    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.username||data.user.user_metadata?.username||"");
+    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.Username||data.user.user_metadata?.username||"");
   };
 
   const handleSignUp = async () => {
@@ -1331,12 +1337,12 @@ function AuthScreen({ onAuth }) {
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    const { data: taken } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
+    const { data: taken } = await supabase.from("profiles").select("id").eq("Username", username).maybeSingle();
     if (taken) { setLoading(false); setError("That username is already taken. Please choose another."); return; }
     const { data, error: authError } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: window.location.origin, data:{ username } } });
     if (authError) { setLoading(false); setError(friendlyAuthError(authError.message)); return; }
     if (!data.session) { setLoading(false); setView("confirm-email"); return; }
-    await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], username });
+    await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], Username: username });
     setLoading(false);
     onAuth(data.user.email, {}, [], data.user.id, username);
   };
@@ -1892,7 +1898,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
       if(url) setPhotoUrl(url+"?t="+Date.now());
       if(parsed){
         const rawItems=parsed.clothing_items||[];
-        const items=rawItems.map(item=>{ const key=(item.name||"").trim().toLowerCase(); const known=knownItems[key]; const normColor=normalizeAiColor(item.color); const base={...item,color:normColor}; if(known){return {...base,price:known.price??item.price,_recognized:true,_wearCount:known.count};} return base; });
+        const items=rawItems.map(item=>{ const key=(item.name||"").trim().toLowerCase(); const known=knownItems[key]; const normColor=normalizeAiColor(item.color); const normBrand=toCanonicalBrand(item.brand||null); const base={...item,color:normColor,brand:normBrand}; if(known){return {...base,price:known.price??item.price,_recognized:true,_wearCount:known.count};} return base; });
         const style=parsed.style_category||null;
         const formalityLevel=parsed.formality_level||null;
         const season=parsed.season||null;
@@ -1920,94 +1926,135 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
   const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
   const handleSave=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); setPhotoData(p=>({...p,[todayKey]:{logged:true,photo:photoUrl||photo,items:cleanItems,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season}})); setStep("done"); };
 
+  const D = "1px solid rgba(58,68,56,0.3)";
+
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
-      {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:"#E5635A",color:"#fff",borderRadius:0,padding:"10px 14px",fontSize:13,fontWeight:700,boxShadow:"0 4px 16px rgba(0,0,0,.18)" }}>{toast}</div>}
-      <div style={{ background:C.white,padding:"16px 20px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        <button onClick={step==="done"?onBack:step==="edit"?()=>setStep("pick"):onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
-        <div>
-          <h1 style={{ fontSize:20,fontWeight:800,color:C.ink,margin:0 }}>Log Today's Outfit</h1>
-          <p style={{ fontSize:11,color:C.sub,margin:0 }}>{step==="pick"?"Upload a photo to get started":step==="analysing"?"Analysing with AI…":step==="edit"?"Review and edit detected items":"Outfit logged!"}</p>
-        </div>
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff" }}>
+      {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:C.red,color:"#fff",borderRadius:0,padding:"10px 14px",fontSize:13,fontWeight:600,boxShadow:"0 4px 16px rgba(0,0,0,.12)" }}>{toast}</div>}
+
+      {/* Header */}
+      <div style={{ background:"#fff",padding:"28px 24px 20px",borderBottom:D,flexShrink:0 }}>
+        <button onClick={step==="done"?onBack:step==="edit"?()=>setStep("pick"):onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>
+        <h1 style={{ fontSize:28,fontWeight:700,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Log Today's Outfit</h1>
+        <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0",fontWeight:400 }}>{step==="pick"?"Upload a photo to get started":step==="analysing"?"Analysing with AI…":step==="edit"?"Review and edit detected items":"Outfit logged!"}</p>
       </div>
-      <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
+
+      <div style={{ flex:1,overflowY:"auto",padding:"24px 24px 40px" }}>
 
         {step==="pick"&&(
-          <div style={{ background:C.white,borderRadius:0,overflow:"hidden",border:`1px solid ${C.border}` }}>
-            <div style={{ height:140,background:`linear-gradient(145deg,${C.sage}22,${C.green}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:56 }}>📸</div>
-            <div style={{ padding:16 }}>
-              <h3 style={{ fontSize:16,fontWeight:700,color:C.ink,margin:"0 0 6px" }}>Upload outfit photo</h3>
-              <p style={{ fontSize:13,color:C.sub,margin:"0 0 14px" }}>AI detects items, colours and style — and recognises pieces you've worn before</p>
+          <>
+            {/* Camera icon hero */}
+            <div style={{ display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 28px" }}>
+              <Camera size={56} color={C.sage} strokeWidth={1}/>
+              <p style={{ fontSize:13,color:C.sub,margin:"16px 0 0",textAlign:"center",lineHeight:1.6,maxWidth:260 }}>AI detects items, colours and style — and recognises pieces you've worn before</p>
+            </div>
+            <div style={{ borderTop:D,paddingTop:24,display:"flex",flexDirection:"column",gap:12 }}>
               {showCamera&&<CameraCapture onCapture={async(dataUrl)=>{ setShowCamera(false); const blob=await fetch(dataUrl).then(r=>r.blob()); handleFile(new File([blob],"camera.jpg",{type:"image/jpeg"})); }} onClose={()=>setShowCamera(false)}/>}
               {cameraEnabled
-                ? <button onClick={()=>setShowCamera(true)} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.sage,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,cursor:"pointer",fontFamily:"inherit" }}><Camera size={18} color="#fff"/><span style={{ fontSize:14,fontWeight:700,color:"#fff" }}>Open Camera</span></button>
-                : <div style={{ width:"100%",height:48,borderRadius:0,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,opacity:.5 }}><Camera size={18} color={C.sub}/><span style={{ fontSize:14,fontWeight:600,color:C.sub }}>Camera (enable in Privacy)</span></div>
+                ? <button onClick={()=>setShowCamera(true)} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.ink,display:"flex",alignItems:"center",justifyContent:"center",gap:10,cursor:"pointer",fontFamily:"inherit" }}><Camera size={18} color="#fff"/><span style={{ fontSize:14,fontWeight:600,color:"#fff" }}>Open Camera</span></button>
+                : <div style={{ width:"100%",height:52,borderRadius:0,border:D,display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:.4 }}><Camera size={18} color={C.ink}/><span style={{ fontSize:14,fontWeight:600,color:C.ink }}>Camera (enable in Privacy)</span></div>
               }
-              <label style={{ display:"block",cursor:"pointer" }}><input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handleFile(e.target.files[0])}/><div style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",gap:10 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Choose from Library</span></div></label>
+              <label style={{ display:"block",cursor:"pointer" }}>
+                <input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handleFile(e.target.files[0])}/>
+                <div style={{ width:"100%",height:52,borderRadius:0,border:D,display:"flex",alignItems:"center",justifyContent:"center",gap:10 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span style={{ fontSize:14,fontWeight:600,color:C.ink }}>Choose from Library</span>
+                </div>
+              </label>
             </div>
-          </div>
+          </>
         )}
 
         {step==="analysing"&&(
           <>
-            {photo&&<div style={{ width:"100%",borderRadius:0,overflow:"hidden",marginBottom:14,aspectRatio:"9/16" }}><img src={photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>}
-            <div style={{ background:C.white,borderRadius:0,padding:20,display:"flex",alignItems:"center",gap:14,border:`1px solid ${C.border}` }}>
-              <div style={{ width:24,height:24,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite",flexShrink:0 }}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-              <div><div style={{ fontSize:14,fontWeight:700,color:C.ink }}>Analysing with AI…</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Detecting items and matching your wardrobe</div></div>
+            {photo&&<div style={{ width:"100%",overflow:"hidden",marginBottom:20,aspectRatio:"9/16",borderRadius:0 }}><img src={photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>}
+            <div style={{ borderTop:D,paddingTop:20,display:"flex",alignItems:"center",gap:14 }}>
+              <div style={{ width:22,height:22,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite",flexShrink:0 }}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+              <div>
+                <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>Analysing with AI…</div>
+                <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Detecting items and matching your wardrobe</div>
+              </div>
             </div>
           </>
         )}
 
         {step==="edit"&&(
           <>
-            {photo&&<div style={{ width:"100%",borderRadius:0,overflow:"hidden",marginBottom:16,aspectRatio:"9/16" }}><img src={photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>}
-            <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Style</p>
-            <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-              {STYLES.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,style:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.style===s?"none":`1.5px solid ${C.border}`,background:editEntry.style===s?C.sage:C.white,color:editEntry.style===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
+            {photo&&<div style={{ width:"100%",overflow:"hidden",marginBottom:24,aspectRatio:"9/16" }}><img src={photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div>}
+
+            <p style={{ fontSize:11,fontWeight:600,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px" }}>Style</p>
+            <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:24 }}>
+              {STYLES.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,style:s}))} style={{ padding:"7px 16px",borderRadius:0,border:editEntry.style===s?`1px solid ${C.ink}`:`1px solid ${C.border}`,background:editEntry.style===s?C.ink:"transparent",color:editEntry.style===s?"#fff":C.ink,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
             </div>
-            <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Formality</p>
-            <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-              {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#5E6A5C":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
+
+            <p style={{ fontSize:11,fontWeight:600,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px" }}>Formality</p>
+            <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:24 }}>
+              {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"7px 16px",borderRadius:0,border:editEntry.formalityLevel===f?`1px solid ${C.ink}`:`1px solid ${C.border}`,background:editEntry.formalityLevel===f?C.ink:"transparent",color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
             </div>
-            <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Season</p>
-            <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
-              {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5E6A5C":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
+
+            <p style={{ fontSize:11,fontWeight:600,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px" }}>Season</p>
+            <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:24 }}>
+              {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"7px 16px",borderRadius:0,border:editEntry.season===s?`1px solid ${C.ink}`:`1px solid ${C.border}`,background:editEntry.season===s?C.ink:"transparent",color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
             </div>
-            <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Items</p>
-            {editEntry.items.map((item,i)=>(
-              <div key={i} style={{ background:"rgba(58,68,56,0.04)",borderRadius:0,padding:12,marginBottom:10,border:`1px solid rgba(58,68,56,0.15)` }}>
-                <div style={{ display:"flex",alignItems:"center",marginBottom:8,gap:8 }}>
-                  <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:0,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
-                  <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:0,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
-                </div>
-                {item._recognized&&<div style={{ marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised — details filled from previous log</span></div>}
-                <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:0,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4 }}><CatIcon cat={c} size={11} color={item.category===c?C.sage:C.sub}/>{c}</button>)}</div>
-                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap" }}>
-                  {toColors(item.color).filter(c=>colorHex[c]).map(c=><div key={c} style={{ display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:`1px solid ${C.border}`,background:C.white }}><div style={{ width:12,height:12,background:colorHex[c],border:(c==="White"||c==="Cream")?`1px solid ${C.border}`:"none",flexShrink:0 }}/><span style={{ fontSize:12,fontWeight:700,color:C.ink }}>{c}</span></div>)}
-                  <button onClick={()=>updateItem(i,"_showColorPicker",!item._showColorPicker)} style={{ fontSize:12,fontWeight:600,color:C.sage,background:"none",border:`1px solid ${C.sage}`,padding:"5px 12px",cursor:"pointer",fontFamily:"inherit",borderRadius:0 }}>{item._showColorPicker?"Close":"Edit colour"}</button>
-                </div>
-                {item._showColorPicker&&<div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>{COLORS.map(col=>{ const sel=toColors(item.color).includes(col); return <button key={col} onClick={()=>{ const cur=toColors(item.color); const nxt=sel?cur.filter(c=>c!==col):[...cur,col]; updateItem(i,"color",nxt.length===0?null:nxt.length===1?nxt[0]:nxt); }} title={col} style={{ width:52,border:sel?`2px solid ${C.sage}`:(col==="White"||col==="Cream")?`1px solid ${C.border}`:`1px solid transparent`,cursor:"pointer",padding:0,background:"transparent",flexShrink:0,overflow:"hidden" }}><div style={{ width:"100%",height:32,background:colorHex[col] }}/><div style={{ padding:"3px 4px",background:C.white,textAlign:"left" }}><div style={{ fontSize:9,fontWeight:700,color:C.ink,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{col}</div><div style={{ fontSize:8,color:C.sub,fontFamily:"monospace",lineHeight:1.3 }}>{colorHex[col]}</div></div></button>; })}</div>}
-                <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                  <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Price</span>
-                  <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
-                    <span style={{ padding:"0 8px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>£</span>
-                    <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
+
+            <div style={{ borderTop:D,paddingTop:20,marginBottom:12 }}>
+              <p style={{ fontSize:11,fontWeight:600,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 16px" }}>Items</p>
+              {editEntry.items.map((item,i)=>(
+                <div key={i} style={{ borderBottom:D,paddingBottom:16,marginBottom:16 }}>
+                  <div style={{ display:"flex",alignItems:"center",marginBottom:10,gap:8 }}>
+                    <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:38,padding:"0 12px",borderRadius:0,border:`1px solid ${item._recognized?C.sage:C.border}`,background:"#fff",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
+                    <button onClick={()=>removeItem(i)} style={{ width:34,height:34,borderRadius:0,border:`1px solid ${C.border}`,background:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
+                  </div>
+                  {item._recognized&&<p style={{ fontSize:11,fontWeight:600,color:C.sage,margin:"0 0 8px" }}>✓ Recognised — details filled from previous log</p>}
+                  <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginBottom:10 }}>
+                    {CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:26,padding:"0 10px",borderRadius:0,border:`1px solid ${item.category===c?C.sage:C.border}`,background:item.category===c?C.sage:"transparent",color:item.category===c?"#fff":C.sub,fontSize:11,fontWeight:500,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4 }}><CatIcon cat={c} size={11} color={item.category===c?"#fff":C.sub}/>{c}</button>)}
+                  </div>
+                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap" }}>
+                    {toColors(item.color).filter(c=>colorHex[c]).map(c=>(
+                      <div key={c} style={{ display:"flex",alignItems:"center",gap:6,padding:"4px 10px",border:`1px solid ${C.border}` }}>
+                        <div style={{ width:11,height:11,background:colorHex[c],border:(c==="White"||c==="Cream")?`1px solid ${C.border}`:"none",flexShrink:0 }}/>
+                        <span style={{ fontSize:12,fontWeight:500,color:C.ink }}>{c}</span>
+                      </div>
+                    ))}
+                    <button onClick={()=>updateItem(i,"_showColorPicker",!item._showColorPicker)} style={{ fontSize:12,fontWeight:500,color:C.sage,background:"none",border:`1px solid ${C.sage}`,padding:"4px 12px",cursor:"pointer",fontFamily:"inherit",borderRadius:0 }}>{item._showColorPicker?"Close":"Edit colour"}</button>
+                  </div>
+                  {item._showColorPicker&&(
+                    <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:10 }}>
+                      {COLORS.map(col=>{ const sel=toColors(item.color).includes(col); return (
+                        <button key={col} onClick={()=>{ const cur=toColors(item.color); const nxt=sel?cur.filter(c=>c!==col):[...cur,col]; updateItem(i,"color",nxt.length===0?null:nxt.length===1?nxt[0]:nxt); }} title={col} style={{ width:52,border:sel?`2px solid ${C.sage}`:`1px solid ${C.border}`,cursor:"pointer",padding:0,background:"transparent",flexShrink:0,overflow:"hidden" }}>
+                          <div style={{ width:"100%",height:32,background:colorHex[col] }}/>
+                          <div style={{ padding:"3px 4px",background:"#fff" }}>
+                            <div style={{ fontSize:9,fontWeight:600,color:C.ink,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{col}</div>
+                          </div>
+                        </button>
+                      ); })}
+                    </div>
+                  )}
+                  <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+                    <span style={{ fontSize:12,fontWeight:500,color:C.sub }}>Price</span>
+                    <div style={{ display:"flex",alignItems:"center",flex:1,height:36,border:`1px solid ${C.border}`,overflow:"hidden" }}>
+                      <span style={{ padding:"0 10px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>£</span>
+                      <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            <button onClick={addItem} style={{ width:"100%",height:44,borderRadius:0,border:`1.5px dashed ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:16 }}><Plus size={16}/>Add Item</button>
-            <button onClick={handleSave} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><Check size={18}/>Save to Today</button>
+              ))}
+              <button onClick={addItem} style={{ width:"100%",height:44,borderRadius:0,border:D,background:"transparent",color:C.sub,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:20 }}><Plus size={15} color={C.sub}/>Add Item</button>
+            </div>
+
+            <button onClick={handleSave} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><Check size={18}/>Save to Today</button>
           </>
         )}
 
         {step==="done"&&(
-          <div style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,paddingTop:60 }}>
-            <div style={{ width:80,height:80,borderRadius:"50%",background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40 }}>✅</div>
-            <h2 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0,textAlign:"center" }}>Outfit Logged!</h2>
-            <p style={{ fontSize:14,color:C.sub,margin:0,textAlign:"center" }}>Saved to today on the calendar. All wardrobe analytics updated.</p>
-            <button onClick={()=>{ setStep("pick"); setPhoto(null); setEditEntry({style:null,formalityLevel:null,season:null,items:[]}); }} style={{ marginTop:8,height:48,padding:"0 28px",borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Log Another</button>
-            <button onClick={onBack} style={{ height:48,padding:"0 28px",borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Back to Home</button>
+          <div style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",paddingTop:60,gap:14 }}>
+            <div style={{ width:64,height:64,borderRadius:"50%",border:`1px solid ${C.sage}`,display:"flex",alignItems:"center",justifyContent:"center" }}><Check size={28} color={C.sage} strokeWidth={1.5}/></div>
+            <h2 style={{ fontSize:24,fontWeight:700,color:C.ink,margin:0,letterSpacing:"-0.02em" }}>Outfit Logged!</h2>
+            <p style={{ fontSize:13,color:C.sub,margin:0,textAlign:"center",lineHeight:1.6 }}>Saved to today on the calendar.<br/>All wardrobe analytics updated.</p>
+            <div style={{ display:"flex",flexDirection:"column",gap:10,width:"100%",marginTop:16 }}>
+              <button onClick={()=>{ setStep("pick"); setPhoto(null); setEditEntry({style:null,formalityLevel:null,season:null,items:[]}); }} style={{ width:"100%",height:50,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Log Another</button>
+              <button onClick={onBack} style={{ width:"100%",height:50,borderRadius:0,border:D,background:"transparent",color:C.ink,fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"inherit" }}>Back to Home</button>
+            </div>
           </div>
         )}
 
@@ -2036,10 +2083,13 @@ export default function App() {
   useEffect(()=>{
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
-        const {data:profile}=await supabase.from("profiles").select("photo_data,favourites,username").eq("id",session.user.id).single();
+        console.log("[session restore] user id:", session.user.id);
+        const {data:profile,error:profileErr}=await supabase.from("profiles").select("photo_data,favourites,Username").eq("id",session.user.id).single();
+        if(profileErr) console.error("[session restore] profile load error:", profileErr);
+        console.log("[session restore] profile loaded:", profile ? `photo_data keys: ${Object.keys(profile.photo_data||{}).length}` : "null");
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
-        setCurrentUsername(profile?.username||session.user.user_metadata?.username||"");
+        setCurrentUsername(profile?.Username||session.user.user_metadata?.username||"");
         setPhotoData(profile?.photo_data||{});
         setFavourites(profile?.favourites||[]);
         setIsSignedIn(true);
@@ -2049,16 +2099,21 @@ export default function App() {
     });
   },[]);
 
-  // Auto-save photoData → Supabase (photos are now URLs, not base64, so size is fine)
+  // Auto-save photoData → Supabase
+  // Skip any entry that is still analysing (photo may still be base64 at that point)
   useEffect(()=>{
     if(!currentUser||!dataSyncReady.current) return;
-    supabase.from("profiles").upsert({id:currentUser,photo_data:photoData}).then();
+    const isAnyAnalysing=Object.values(photoData).some(v=>v?.analysing);
+    if(isAnyAnalysing) return;
+    supabase.from("profiles").upsert({id:currentUser,photo_data:photoData})
+      .then(({error})=>{ if(error) console.error("[save photoData]",error); });
   },[photoData,currentUser]);
 
   // Auto-save favourites → Supabase
   useEffect(()=>{
     if(!currentUser||!dataSyncReady.current) return;
-    supabase.from("profiles").upsert({id:currentUser,favourites}).then();
+    supabase.from("profiles").upsert({id:currentUser,favourites})
+      .then(({error})=>{ if(error) console.error("[save favourites]",error); });
   },[favourites,currentUser]);
 
   const toggleFavourite=(item)=>{
@@ -2107,7 +2162,7 @@ export default function App() {
       <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {authLoading
           ? <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16 }}>
-              <div style={{ width:64,height:64,borderRadius:0,background:C.sage,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32, }}>👗</div>
+              <div style={{ width:64,height:64,borderRadius:16,background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center" }}><Shirt size={32} color={C.ink} strokeWidth={1.5}/></div>
               <div style={{ width:32,height:32,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }}/>
             </div>
           : !isSignedIn
