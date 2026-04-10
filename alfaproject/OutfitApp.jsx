@@ -6,6 +6,75 @@ const _sbUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const _sbKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(_sbUrl, _sbKey);
 
+// One session ID per browser tab — resets when the tab is closed.
+const _sessionId = (() => {
+  const key = "sw_session_id";
+  let id = sessionStorage.getItem(key);
+  if (!id) { id = crypto.randomUUID(); sessionStorage.setItem(key, id); }
+  return id;
+})();
+
+// Sync an outfit and its items to the normalized outfits / wardrobe_items / outfit_items tables.
+// Runs in the background after photo analysis — does not block the UI.
+async function syncOutfit(userId, dateKey, photoUrl, style, season, items) {
+  // 1. Upsert the outfit row (one per user per date)
+  const { data: outfit, error: outfitErr } = await supabase
+    .from("outfits")
+    .upsert(
+      { user_id: userId, date_key: dateKey, photo_url: photoUrl, occasion: style, weather: season },
+      { onConflict: "user_id,date_key" }
+    )
+    .select("id")
+    .single();
+  if (outfitErr) { console.error("[syncOutfit]", outfitErr.message); return; }
+
+  // 2. Upsert each clothing item into wardrobe_items
+  //    Use a generated UUID per item based on user+name+category to avoid duplicates
+  const itemRows = items.map(item => ({
+    user_id: userId,
+    category: item.category || "Other",
+    color: item.color || null,
+    photo_url: item.itemPhoto || null,
+    thumbnail_url: item.itemPhoto || null,
+    notes: item.name || null,
+  }));
+
+  const wardrobeIds = [];
+  for (const row of itemRows) {
+    const { data: wi, error: wiErr } = await supabase
+      .from("wardrobe_items")
+      .insert(row)
+      .select("id")
+      .single();
+    if (wiErr) { console.error("[syncOutfit wardrobe_item]", wiErr.message); wardrobeIds.push(null); }
+    else wardrobeIds.push(wi.id);
+  }
+
+  // 3. Delete existing outfit_items and re-insert with real wardrobe item IDs
+  await supabase.from("outfit_items").delete().eq("outfit_id", outfit.id);
+  const outfitItemRows = wardrobeIds
+    .map((itemId, i) => itemId ? ({ outfit_id: outfit.id, item_id: itemId, crop_url: items[i]?.itemPhoto || null, position: i }) : null)
+    .filter(Boolean);
+  if (outfitItemRows.length > 0) {
+    const { error: oiErr } = await supabase.from("outfit_items").insert(outfitItemRows);
+    if (oiErr) console.error("[syncOutfit outfit_items]", oiErr.message);
+  }
+}
+
+// Track a user event directly to Supabase user_events table.
+async function track(eventName, properties = {}) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  const { error } = await supabase.from("user_events").insert({
+    user_id: session.user.id,
+    session_id: _sessionId,
+    event_name: eventName,
+    properties,
+    platform: "web",
+  });
+  if (error) console.error("[track]", eventName, error.message);
+}
+
 // Remove background via remove.bg API, composite onto white canvas, return JPEG data-URL.
 // Throws with a descriptive message on failure so the caller can show a toast.
 async function removeBackground(base64){
@@ -994,7 +1063,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         uploadPhoto(blob,dateKey),
         analyseOutfit(base64,"image/jpeg",knownItemsList).catch(e=>{ _analysisErr=e; return null; }),
       ]);
-      if(_analysisErr){ setToast("AI error: "+(_analysisErr.message||String(_analysisErr))); setTimeout(()=>setToast(null),30000); }
+      if(_analysisErr){ setToast("AI error: "+(_analysisErr.message||String(_analysisErr))); setTimeout(()=>setToast(null),30000); track("ai_analysis_failed", { error: _analysisErr.message||String(_analysisErr), date_key: dateKey }); }
       // Append cache-buster so the browser always loads the fresh photo after re-upload on the same date
       const finalPhoto=photoUrl?(photoUrl+"?t="+Date.now()):finalCompressed;
       if(parsed){
@@ -1021,6 +1090,12 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         }
         setPhotoData(p=>({...p,[dateKey]:{logged:true,photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}));
         setEditEntry({style,formalityLevel,season,items:itemsWithPhotos.map(item=>({...item}))});
+        track("outfit_created", { date_key: dateKey, items_count: items.length, style, season });
+        // onboarding_completed fires only on the very first outfit
+        if(Object.keys(photoData).length===0) track("onboarding_completed", { items_count: items.length });
+        supabase.auth.getSession().then(({data:{session}})=>{
+          if(session) syncOutfit(session.user.id, dateKey, finalPhoto, style, season, itemsWithPhotos);
+        });
         setToast(`Outfit analysed — ${items.length} item${items.length!==1?"s":""} found`);
         setTimeout(()=>setToast(null),3000);
       }else{
@@ -1164,7 +1239,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
 return <div key={i} style={{ width:"100%",background:isSel?C.sage+"14":C.surface,borderRadius:0,padding:"9px 12px",marginBottom:4,border:isSel?`1.5px solid ${C.sage}`:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8 }}><div onClick={()=>toggleItem(item._idx)} style={{ width:18,height:18,borderRadius:"50%",border:isSel?"none":`1.5px solid ${C.border}`,background:isSel?C.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer" }}>{isSel&&<span style={{ color:"#fff",fontSize:11,lineHeight:1 }}>✓</span>}</div>{hex&&<div style={{ width:12,height:12,background:hex,flexShrink:0,border:item.color==="White"?`1px solid ${C.border}`:"none" }}/>}<span onClick={()=>toggleItem(item._idx)} style={{ fontSize:13,color:C.ink,fontWeight:500,flex:1,cursor:"pointer" }}>{item.name||String(item)}</span>{wearCount>1&&<span style={{ fontSize:10,fontWeight:700,color:C.sage,background:C.sage+"18",borderRadius:0,padding:"2px 7px",flexShrink:0 }}>{wearCount}x</span>}{item.color&&<span style={{ fontSize:11,color:C.sub }}>{item.color}</span>}<button onClick={e=>{ e.stopPropagation(); onToggleFavourite&&onToggleFavourite(item); }} style={{ background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,display:"flex",alignItems:"center" }}><Heart size={16} color={isFav?C.red:"#ccc"} fill={isFav?C.red:"none"}/></button></div>; })}</div>))}</div>:<div style={{ background:C.surface,borderRadius:0,padding:"10px 14px",border:`1px solid ${C.border}` }}><span style={{ fontSize:13,color:C.sub }}>No items added yet — tap Edit Outfit to add what you wore</span></div>}
               </div>
               <button onClick={()=>{ setEditEntry({ style:entry.style||null, formalityLevel:entry.formalityLevel||null, season:entry.season||null, notes:entry.notes||"", items:(entry.items||[]).map(item=>typeof item==="object"&&item?{...item}:{ name:String(item||""),category:"Other",color:null }) }); setEditMode(true); setSelectedItemIdxs(new Set()); }} style={{ width:"100%",height:50,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,color:C.ink,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10 }}><Pencil size={16} color={C.sage}/>Edit Outfit</button>
-              <DangerBtn onClick={()=>{ setPhotoData(p=>{ const n={...p}; delete n[toKey(selectedDate)]; return n; }); setShowModal(false); }}>Remove Outfit Log</DangerBtn>
+              <DangerBtn onClick={()=>{ const dk=toKey(selectedDate); track("outfit_deleted",{date_key:dk}); setPhotoData(p=>{ const n={...p}; delete n[dk]; return n; }); setShowModal(false); }}>Remove Outfit Log</DangerBtn>
             </>);
           }
           return (<>
@@ -1317,17 +1392,18 @@ function AuthScreen({ onAuth }) {
       setError(friendlyAuthError(authError.message));
       return;
     }
-    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites,Username").eq("id", data.user.id).maybeSingle();
+    const { data: profile } = await supabase.from("users").select("photo_data,favourites,username").eq("id", data.user.id).maybeSingle();
     if (!profile) {
       // First sign-in after email confirmation — create profile using username stored in metadata
       const uname = data.user.user_metadata?.username || "";
-      await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], Username: uname });
+      await supabase.from("users").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username: uname });
       setLoading(false);
       onAuth(data.user.email, {}, [], data.user.id, uname);
       return;
     }
     setLoading(false);
-    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.Username||data.user.user_metadata?.username||"");
+    await track("user_signed_in");
+    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.username||data.user.user_metadata?.username||"");
   };
 
   const handleSignUp = async () => {
@@ -1337,12 +1413,13 @@ function AuthScreen({ onAuth }) {
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    const { data: taken } = await supabase.from("profiles").select("id").eq("Username", username).maybeSingle();
+    const { data: taken } = await supabase.from("users").select("id").eq("username", username).maybeSingle();
     if (taken) { setLoading(false); setError("That username is already taken. Please choose another."); return; }
     const { data, error: authError } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: window.location.origin, data:{ username } } });
     if (authError) { setLoading(false); setError(friendlyAuthError(authError.message)); return; }
     if (!data.session) { setLoading(false); setView("confirm-email"); return; }
-    await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], Username: username });
+    await supabase.from("users").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username });
+    await track("user_signed_up", { username });
     setLoading(false);
     onAuth(data.user.email, {}, [], data.user.id, username);
   };
@@ -2084,12 +2161,12 @@ export default function App() {
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
         console.log("[session restore] user id:", session.user.id);
-        const {data:profile,error:profileErr}=await supabase.from("profiles").select("photo_data,favourites,Username").eq("id",session.user.id).single();
+        const {data:profile,error:profileErr}=await supabase.from("users").select("photo_data,favourites,username").eq("id",session.user.id).single();
         if(profileErr) console.error("[session restore] profile load error:", profileErr);
         console.log("[session restore] profile loaded:", profile ? `photo_data keys: ${Object.keys(profile.photo_data||{}).length}` : "null");
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
-        setCurrentUsername(profile?.Username||session.user.user_metadata?.username||"");
+        setCurrentUsername(profile?.username||session.user.user_metadata?.username||"");
         setPhotoData(profile?.photo_data||{});
         setFavourites(profile?.favourites||[]);
         setIsSignedIn(true);
@@ -2099,20 +2176,42 @@ export default function App() {
     });
   },[]);
 
+  // session_ended — fires when user closes/refreshes the tab
+  useEffect(()=>{
+    const _sessionStart = Date.now();
+    const handleUnload = () => {
+      const duration = Math.round((Date.now() - _sessionStart) / 1000);
+      // Use sendBeacon so the request survives tab close
+      const payload = JSON.stringify({
+        user_id: currentUser,
+        session_id: _sessionId,
+        event_name: "session_ended",
+        properties: { session_duration_seconds: duration },
+        platform: "web",
+      });
+      navigator.sendBeacon(
+        `${_sbUrl}/rest/v1/user_events?apikey=${_sbKey}`,
+        new Blob([payload], { type: "application/json" })
+      );
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [currentUser]);
+
   // Auto-save photoData → Supabase
   // Skip any entry that is still analysing (photo may still be base64 at that point)
   useEffect(()=>{
     if(!currentUser||!dataSyncReady.current) return;
     const isAnyAnalysing=Object.values(photoData).some(v=>v?.analysing);
     if(isAnyAnalysing) return;
-    supabase.from("profiles").upsert({id:currentUser,photo_data:photoData})
+    supabase.from("users").update({photo_data:photoData}).eq("id",currentUser)
       .then(({error})=>{ if(error) console.error("[save photoData]",error); });
   },[photoData,currentUser]);
 
   // Auto-save favourites → Supabase
   useEffect(()=>{
     if(!currentUser||!dataSyncReady.current) return;
-    supabase.from("profiles").upsert({id:currentUser,favourites})
+    supabase.from("users").update({favourites}).eq("id",currentUser)
       .then(({error})=>{ if(error) console.error("[save favourites]",error); });
   },[favourites,currentUser]);
 
@@ -2120,6 +2219,7 @@ export default function App() {
     const key=(item.name||"").trim().toLowerCase();
     setFavourites(prev=>{
       const exists=prev.some(f=>(f.name||"").trim().toLowerCase()===key);
+      track("favourite_toggled", { item_name: item.name, action: exists ? "removed" : "added" });
       if(exists) return prev.filter(f=>(f.name||"").trim().toLowerCase()!==key);
       return [...prev,{name:item.name,category:item.category||"Other",color:item.color||null,price:item.price||null}];
     });
@@ -2129,6 +2229,7 @@ export default function App() {
     setTabHistory(h=>[...h,tab]);
     setTab(newTab);
     setSubScreen(null);
+    track("screen_viewed", { screen: newTab });
   };
   const goBack=()=>{
     if(subScreen){ setSubScreen(null); return; }
