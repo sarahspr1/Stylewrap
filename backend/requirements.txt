@@ -1,0 +1,29 @@
+# Web framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# Validation & settings
+pydantic[email]==2.10.0
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+
+# Auth (JWT verification)
+python-jose[cryptography]==3.3.0
+
+# HTTP client (Supabase Storage, AI APIs)
+httpx==0.28.0
+
+# File uploads
+python-multipart==0.0.17
+
+# Observability
+posthog==3.7.0
+prometheus-fastapi-instrumentator==7.0.0
+
+# Encryption
+cryptography==43.0.3
