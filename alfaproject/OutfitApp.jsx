@@ -2175,7 +2175,7 @@ export default function App() {
   // Restore session on mount — skip if this is a password recovery redirect
   useEffect(()=>{
     const isRecovery = window.location.hash.includes("type=recovery");
-    if(isRecovery){ setNeedsPasswordReset(true); setAuthLoading(false); return; }
+    if(isRecovery) return; // onAuthStateChange will fire PASSWORD_RECOVERY once token is ready
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
         console.log("[session restore] user id:", session.user.id);
