@@ -1510,7 +1510,7 @@ function AuthScreen({ onAuth }) {
       setError("");
       if (!recoverEmail || !/\S+@\S+\.\S+/.test(recoverEmail)) { setError("Please enter a valid email address."); return; }
       setLoading(true);
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(recoverEmail, { redirectTo: window.location.origin });
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(recoverEmail);
       setLoading(false);
       if (resetErr) { setError(resetErr.message || "Failed to send reset email. Please try again."); return; }
       setView("forgot-sent");
