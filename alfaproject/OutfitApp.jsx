@@ -1348,12 +1348,15 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
 
 
 function AuthScreen({ onAuth }) {
-  const [view, setView] = useState("landing"); // "landing" | "signin" | "signup" | "forgot" | "forgot-sent"
+  const [view, setView] = useState("landing"); // "landing" | "signin" | "signup" | "forgot" | "forgot-code" | "forgot-reset" | "forgot-done"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
   const [recoverEmail, setRecoverEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetNewPw, setResetNewPw] = useState("");
+  const [resetConfirmPw, setResetConfirmPw] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -1505,28 +1508,95 @@ function AuthScreen({ onAuth }) {
   );
 
   // ── Forgot password ───────────────────────────────────────────────────────
-  if (view === "forgot") return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:32,overflowY:"auto" }}>
-      <button onClick={()=>setView("signin")} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28 }}><ChevronLeft size={20} color={C.ink}/></button>
-      <div style={{ width:72,height:72,borderRadius:0,background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 20px" }}>🔑</div>
-      <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>Forgot Password?</h2>
-      <p style={{ fontSize:14,color:C.sub,margin:"0 0 28px",textAlign:"center" }}>Enter your email and we'll send you a link to reset your password.</p>
+  // ── Forgot password — step 1: enter email ────────────────────────────────
+  if (view === "forgot") {
+    const sendCode = async () => {
+      setError("");
+      if (!recoverEmail || !/\S+@\S+\.\S+/.test(recoverEmail)) { setError("Please enter a valid email address."); return; }
+      setLoading(true);
+      const { error: otpErr } = await supabase.auth.signInWithOtp({ email: recoverEmail, options: { shouldCreateUser: false } });
+      setLoading(false);
+      if (otpErr) { setError(otpErr.message || "Failed to send code. Please try again."); return; }
+      setResetCode(""); setError("");
+      setView("forgot-code");
+    };
+    return (
+      <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:32,overflowY:"auto" }}>
+        <button onClick={()=>{ setError(""); setView("signin"); }} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28 }}><ChevronLeft size={20} color={C.ink}/></button>
+        <div style={{ width:72,height:72,borderRadius:16,background:C.ink,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px" }}><AtSign size={32} color="#fff" strokeWidth={1.5}/></div>
+        <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>Reset Password</h2>
+        <p style={{ fontSize:14,color:C.sub,margin:"0 0 28px",textAlign:"center" }}>Enter your email and we'll send you a 6-digit code.</p>
+        <ErrorMsg/>
+        <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Email Address</p>
+        <input type="email" value={recoverEmail} onChange={e=>setRecoverEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendCode()} placeholder="you@example.com" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
+        <button onClick={sendCode} disabled={loading} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:recoverEmail?C.ink:C.border,color:recoverEmail?"#fff":C.sub,fontSize:16,fontWeight:700,cursor:recoverEmail?"pointer":"not-allowed",fontFamily:"inherit",marginTop:24,opacity:loading?0.7:1 }}>{loading?"Sending…":"Send Code"}</button>
+      </div>
+    );
+  }
 
-      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Email Address</p>
-      <input type="email" value={recoverEmail} onChange={e=>setRecoverEmail(e.target.value)} placeholder="you@example.com" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
+  // ── Forgot password — step 2: enter code ─────────────────────────────────
+  if (view === "forgot-code") {
+    const verifyCode = async () => {
+      setError("");
+      if (!resetCode || resetCode.length < 6) { setError("Please enter the 6-digit code."); return; }
+      setLoading(true);
+      const { error: verifyErr } = await supabase.auth.verifyOtp({ email: recoverEmail, token: resetCode, type: "email" });
+      setLoading(false);
+      if (verifyErr) { setError(verifyErr.message.includes("expired") || verifyErr.message.includes("invalid") ? "Invalid or expired code. Please check the code and try again." : verifyErr.message); return; }
+      setResetNewPw(""); setResetConfirmPw(""); setError("");
+      setView("forgot-reset");
+    };
+    return (
+      <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:32,overflowY:"auto" }}>
+        <button onClick={()=>{ setError(""); setView("forgot"); }} style={{ alignSelf:"flex-start",width:36,height:36,borderRadius:0,border:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:28 }}><ChevronLeft size={20} color={C.ink}/></button>
+        <div style={{ width:72,height:72,borderRadius:16,background:C.ink,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px" }}><Check size={32} color="#fff" strokeWidth={2}/></div>
+        <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>Enter Code</h2>
+        <p style={{ fontSize:14,color:C.sub,margin:"0 0 6px",textAlign:"center" }}>We sent a 6-digit code to</p>
+        <p style={{ fontSize:14,fontWeight:700,color:C.ink,margin:"0 0 24px",textAlign:"center" }}>{recoverEmail}</p>
+        <ErrorMsg/>
+        <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Verification Code</p>
+        <input type="text" inputMode="numeric" maxLength={6} value={resetCode} onChange={e=>setResetCode(e.target.value.replace(/\D/g,""))} onKeyDown={e=>e.key==="Enter"&&verifyCode()} placeholder="123456" style={{ ...inputStyle, fontSize:24,fontWeight:700,letterSpacing:"0.3em",textAlign:"center" }} onFocus={focusStyle} onBlur={blurStyle}/>
+        <button onClick={verifyCode} disabled={loading} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:resetCode.length===6?C.ink:C.border,color:resetCode.length===6?"#fff":C.sub,fontSize:16,fontWeight:700,cursor:resetCode.length===6?"pointer":"not-allowed",fontFamily:"inherit",marginTop:24,opacity:loading?0.7:1 }}>{loading?"Verifying…":"Verify Code"}</button>
+        <button onClick={async()=>{ setError(""); setLoading(true); await supabase.auth.signInWithOtp({ email: recoverEmail, options:{ shouldCreateUser:false } }); setLoading(false); }} style={{ background:"none",border:"none",color:C.sage,fontSize:13,fontWeight:600,cursor:"pointer",padding:"16px 0 0",fontFamily:"inherit",textAlign:"center" }}>Resend code</button>
+      </div>
+    );
+  }
 
-      <button onClick={()=>{ if(recoverEmail) setView("forgot-sent"); }} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:recoverEmail?C.ink:C.border,color:recoverEmail?"#fff":C.sub,fontSize:16,fontWeight:700,cursor:recoverEmail?"pointer":"not-allowed",fontFamily:"inherit",marginTop:24, }}>Recover Password</button>
-    </div>
-  );
+  // ── Forgot password — step 3: set new password ────────────────────────────
+  if (view === "forgot-reset") {
+    const doReset = async () => {
+      setError("");
+      if (!resetNewPw || resetNewPw.length < 8) { setError("Password must be at least 8 characters."); return; }
+      if (resetNewPw !== resetConfirmPw) { setError("Passwords do not match."); return; }
+      setLoading(true);
+      const { error: updateErr } = await supabase.auth.updateUser({ password: resetNewPw });
+      setLoading(false);
+      if (updateErr) { setError(updateErr.message || "Failed to update password. Please try again."); return; }
+      await supabase.auth.signOut();
+      setView("forgot-done");
+    };
+    return (
+      <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:32,overflowY:"auto" }}>
+        <div style={{ width:72,height:72,borderRadius:16,background:C.ink,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 28px" }}><Shield size={32} color="#fff" strokeWidth={1.5}/></div>
+        <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>New Password</h2>
+        <p style={{ fontSize:14,color:C.sub,margin:"0 0 28px",textAlign:"center" }}>Choose a strong password of at least 8 characters.</p>
+        <ErrorMsg/>
+        <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>New Password</p>
+        <input type="password" value={resetNewPw} onChange={e=>setResetNewPw(e.target.value)} placeholder="Min. 8 characters" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
+        <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"20px 0 8px" }}>Confirm Password</p>
+        <input type="password" value={resetConfirmPw} onChange={e=>setResetConfirmPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doReset()} placeholder="Repeat password" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
+        <button onClick={doReset} disabled={loading} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:24,opacity:loading?0.7:1 }}>{loading?"Updating…":"Reset Password"}</button>
+      </div>
+    );
+  }
 
-  // ── Forgot password — sent confirmation ───────────────────────────────────
-  if (view === "forgot-sent") return (
+  // ── Forgot password — step 4: success ────────────────────────────────────
+  if (view === "forgot-done") return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:C.surface,padding:32 }}>
-      <div style={{ width:80,height:80,borderRadius:0,background:`${C.sage}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:24 }}>📬</div>
-      <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 10px",textAlign:"center",letterSpacing:"-0.03em" }}>Check your email</h2>
-      <p style={{ fontSize:15,color:C.sub,margin:"0 0 8px",textAlign:"center" }}>We sent a password reset link to</p>
-      <p style={{ fontSize:15,fontWeight:700,color:C.ink,margin:"0 0 36px",textAlign:"center" }}>{recoverEmail}</p>
-      <button onClick={()=>setView("signin")} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Back to Sign In</button>
+      <div style={{ width:80,height:80,borderRadius:"50%",border:`3px solid ${C.ink}`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:24 }}><Check size={36} color={C.ink} strokeWidth={2.5}/></div>
+      <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 10px",textAlign:"center",letterSpacing:"-0.03em" }}>Password Reset</h2>
+      <p style={{ fontSize:15,color:C.sub,margin:"0 0 36px",textAlign:"center" }}>Your password has been successfully updated. Sign in with your new password.</p>
+      <button onClick={()=>{ setError(""); setResetCode(""); setResetNewPw(""); setResetConfirmPw(""); setView("signin"); }} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Sign In</button>
     </div>
   );
 }
