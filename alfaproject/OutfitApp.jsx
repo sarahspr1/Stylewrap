@@ -1347,8 +1347,8 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
 }
 
 
-function AuthScreen({ onAuth }) {
-  const [view, setView] = useState("landing"); // "landing" | "signin" | "signup" | "forgot" | "forgot-sent"
+function AuthScreen({ onAuth, initialView="landing" }) {
+  const [view, setView] = useState(initialView); // "landing" | "signin" | "signup" | "forgot" | "forgot-sent"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -2166,6 +2166,7 @@ export default function App() {
   const [favourites,setFavourites]=useState([]);
   const [tabHistory,setTabHistory]=useState([]);
   const [needsPasswordReset,setNeedsPasswordReset]=useState(false);
+  const [authGoToSignIn,setAuthGoToSignIn]=useState(false);
   const [resetPwNew,setResetPwNew]=useState("");
   const [resetPwConfirm,setResetPwConfirm]=useState("");
   const [resetPwError,setResetPwError]=useState("");
@@ -2299,7 +2300,7 @@ export default function App() {
                 if(error){ setResetPwError(error.message); return; }
                 await supabase.auth.signOut();
                 window.location.hash = "";
-                setNeedsPasswordReset(false); setResetPwNew(""); setResetPwConfirm(""); setResetPwError("");
+                setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); setAuthGoToSignIn(true); setNeedsPasswordReset(false);
               };
               const inputStyle = { width:"100%",height:52,padding:"0 16px",border:`1.5px solid rgba(58,68,56,0.3)`,background:"#fff",fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",borderRadius:0 };
               return (
@@ -2311,7 +2312,7 @@ export default function App() {
                   <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"20px 0 8px" }}>Confirm New Password</p>
                   <input type="password" value={resetPwConfirm} onChange={e=>setResetPwConfirm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doReset()} placeholder="Repeat password" style={inputStyle} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor="rgba(58,68,56,0.3)"}/>
                   <button disabled={resetPwLoading} onClick={doReset} style={{ width:"100%",height:54,border:"none",background:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:24,opacity:resetPwLoading?0.7:1 }}>{resetPwLoading?"Updating…":"Change Password"}</button>
-                  <button onClick={async()=>{ await supabase.auth.signOut(); window.location.hash=""; setNeedsPasswordReset(false); setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); }} style={{ width:"100%",height:54,border:`1px solid rgba(58,68,56,0.3)`,background:"transparent",color:C.sub,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginTop:12 }}>Cancel</button>
+                  <button onClick={async()=>{ await supabase.auth.signOut(); window.location.hash=""; setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); setAuthGoToSignIn(true); setNeedsPasswordReset(false); }} style={{ width:"100%",height:54,border:`1px solid rgba(58,68,56,0.3)`,background:"transparent",color:C.sub,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginTop:12 }}>Cancel</button>
                 </div>
               );
             })()
@@ -2322,7 +2323,7 @@ export default function App() {
               <div style={{ width:32,height:32,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }}/>
             </div>
           : !isSignedIn
-            ? <AuthScreen onAuth={(email,data,favs,userId,uname)=>{ setCurrentUser(userId); setCurrentEmail(email||""); setCurrentUsername(uname||""); setPhotoData(data||{}); setFavourites(favs||[]); setIsSignedIn(true); dataSyncReady.current=true; }}/>
+            ? <AuthScreen initialView={authGoToSignIn?"signin":"landing"} onAuth={(email,data,favs,userId,uname)=>{ setCurrentUser(userId); setCurrentEmail(email||""); setCurrentUsername(uname||""); setPhotoData(data||{}); setFavourites(favs||[]); setIsSignedIn(true); setAuthGoToSignIn(false); dataSyncReady.current=true; }}/>
             : <>
                 <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
                 {!subScreen&&<TabBar active={tab} onChange={t=>{ if(t!=="wardrobe") setWardrobeInitialView("main"); setTab(t); setSubScreen(null); }}/>}
