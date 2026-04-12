@@ -2172,17 +2172,19 @@ export default function App() {
   const [resetPwLoading,setResetPwLoading]=useState(false);
   const dataSyncReady=useRef(false);
 
-  // Restore session on mount
+  // Restore session on mount — skip if this is a password recovery redirect
   useEffect(()=>{
+    const isRecovery = window.location.hash.includes("type=recovery");
+    if(isRecovery){ setNeedsPasswordReset(true); setAuthLoading(false); return; }
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
         console.log("[session restore] user id:", session.user.id);
-        const {data:profile,error:profileErr}=await supabase.from("users").select("photo_data,favourites,username").eq("id",session.user.id).single();
+        const {data:profile,error:profileErr}=await supabase.from("profiles").select("photo_data,favourites,Username").eq("id",session.user.id).single();
         if(profileErr) console.error("[session restore] profile load error:", profileErr);
         console.log("[session restore] profile loaded:", profile ? `photo_data keys: ${Object.keys(profile.photo_data||{}).length}` : "null");
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
-        setCurrentUsername(profile?.username||session.user.user_metadata?.username||"");
+        setCurrentUsername(profile?.Username||session.user.user_metadata?.username||"");
         setPhotoData(profile?.photo_data||{});
         setFavourites(profile?.favourites||[]);
         setIsSignedIn(true);
@@ -2286,18 +2288,34 @@ export default function App() {
       <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:${C.surface}}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{display:none}`}</style>
       <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {needsPasswordReset
-          ? <div style={{ flex:1,display:"flex",flexDirection:"column",background:"#fff",padding:32,overflowY:"auto" }}>
-              <div style={{ width:72,height:72,borderRadius:16,background:C.ink,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 28px" }}><Shield size={32} color="#fff" strokeWidth={1.5}/></div>
-              <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>New Password</h2>
-              <p style={{ fontSize:14,color:C.sub,margin:"0 0 28px",textAlign:"center" }}>Choose a strong password of at least 8 characters.</p>
-              {resetPwError&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",borderRadius:0,padding:"10px 14px",fontSize:13,color:"#C0392B",marginBottom:16,textAlign:"center" }}>{resetPwError}</div>}
-              <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>New Password</p>
-              <input type="password" value={resetPwNew} onChange={e=>setResetPwNew(e.target.value)} placeholder="Min. 8 characters" style={{ width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid rgba(58,68,56,0.3)`,background:"#fff",fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor="rgba(58,68,56,0.3)"}/>
-              <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"20px 0 8px" }}>Confirm Password</p>
-              <input type="password" value={resetPwConfirm} onChange={e=>setResetPwConfirm(e.target.value)} placeholder="Repeat password" style={{ width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid rgba(58,68,56,0.3)`,background:"#fff",fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor="rgba(58,68,56,0.3)"}
-                onKeyDown={async e=>{ if(e.key==="Enter"){ e.preventDefault(); if(!resetPwNew||resetPwNew.length<8){setResetPwError("Password must be at least 8 characters.");return;} if(resetPwNew!==resetPwConfirm){setResetPwError("Passwords do not match.");return;} setResetPwLoading(true); const{error}=await supabase.auth.updateUser({password:resetPwNew}); setResetPwLoading(false); if(error){setResetPwError(error.message);return;} await supabase.auth.signOut(); setNeedsPasswordReset(false); setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); }}}/>
-              <button disabled={resetPwLoading} onClick={async()=>{ setResetPwError(""); if(!resetPwNew||resetPwNew.length<8){setResetPwError("Password must be at least 8 characters.");return;} if(resetPwNew!==resetPwConfirm){setResetPwError("Passwords do not match.");return;} setResetPwLoading(true); const{error}=await supabase.auth.updateUser({password:resetPwNew}); setResetPwLoading(false); if(error){setResetPwError(error.message);return;} await supabase.auth.signOut(); setNeedsPasswordReset(false); setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); }} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:24,opacity:resetPwLoading?0.7:1 }}>{resetPwLoading?"Updating…":"Reset Password"}</button>
-            </div>
+          ? (() => {
+              const doReset = async () => {
+                setResetPwError("");
+                if(!resetPwNew||resetPwNew.length<8){ setResetPwError("Password must be at least 8 characters."); return; }
+                if(resetPwNew!==resetPwConfirm){ setResetPwError("Passwords do not match."); return; }
+                setResetPwLoading(true);
+                const { error } = await supabase.auth.updateUser({ password: resetPwNew });
+                setResetPwLoading(false);
+                if(error){ setResetPwError(error.message); return; }
+                await supabase.auth.signOut();
+                window.location.hash = "";
+                setNeedsPasswordReset(false); setResetPwNew(""); setResetPwConfirm(""); setResetPwError("");
+              };
+              const inputStyle = { width:"100%",height:52,padding:"0 16px",border:`1.5px solid rgba(58,68,56,0.3)`,background:"#fff",fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",borderRadius:0 };
+              return (
+                <div style={{ flex:1,display:"flex",flexDirection:"column",background:"#fff",padding:"48px 32px 32px",overflowY:"auto",justifyContent:"center" }}>
+                  <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 32px",textAlign:"left",letterSpacing:"-0.03em" }}>Change Password</h2>
+                  {resetPwError&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",padding:"10px 14px",fontSize:13,color:"#C0392B",marginBottom:16 }}>{resetPwError}</div>}
+                  <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>New Password</p>
+                  <input type="password" value={resetPwNew} onChange={e=>setResetPwNew(e.target.value)} placeholder="Min. 8 characters" style={inputStyle} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor="rgba(58,68,56,0.3)"}/>
+                  <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"20px 0 8px" }}>Confirm New Password</p>
+                  <input type="password" value={resetPwConfirm} onChange={e=>setResetPwConfirm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doReset()} placeholder="Repeat password" style={inputStyle} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor="rgba(58,68,56,0.3)"}/>
+                  <button disabled={resetPwLoading} onClick={doReset} style={{ width:"100%",height:54,border:"none",background:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:24,opacity:resetPwLoading?0.7:1 }}>{resetPwLoading?"Updating…":"Change Password"}</button>
+                  <button onClick={async()=>{ await supabase.auth.signOut(); window.location.hash=""; setNeedsPasswordReset(false); setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); }} style={{ width:"100%",height:54,border:`1px solid rgba(58,68,56,0.3)`,background:"transparent",color:C.sub,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginTop:12 }}>Cancel</button>
+                </div>
+              );
+            })()
+
           : authLoading
           ? <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16 }}>
               <div style={{ width:64,height:64,borderRadius:16,background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center" }}><Shirt size={32} color={C.ink} strokeWidth={1.5}/></div>
