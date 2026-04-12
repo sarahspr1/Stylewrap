@@ -1392,18 +1392,18 @@ function AuthScreen({ onAuth }) {
       setError(friendlyAuthError(authError.message));
       return;
     }
-    const { data: profile } = await supabase.from("users").select("photo_data,favourites,username").eq("id", data.user.id).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites,Username").eq("id", data.user.id).maybeSingle();
     if (!profile) {
       // First sign-in after email confirmation — create profile using username stored in metadata
       const uname = data.user.user_metadata?.username || "";
-      await supabase.from("users").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username: uname });
+      await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], Username: uname });
       setLoading(false);
       onAuth(data.user.email, {}, [], data.user.id, uname);
       return;
     }
     setLoading(false);
     await track("user_signed_in");
-    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.username||data.user.user_metadata?.username||"");
+    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.Username||data.user.user_metadata?.username||"");
   };
 
   const handleSignUp = async () => {
@@ -1413,12 +1413,12 @@ function AuthScreen({ onAuth }) {
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    const { data: taken } = await supabase.from("users").select("id").eq("username", username).maybeSingle();
+    const { data: taken } = await supabase.from("profiles").select("id").eq("Username", username).maybeSingle();
     if (taken) { setLoading(false); setError("That username is already taken. Please choose another."); return; }
     const { data, error: authError } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: window.location.origin, data:{ username } } });
     if (authError) { setLoading(false); setError(friendlyAuthError(authError.message)); return; }
     if (!data.session) { setLoading(false); setView("confirm-email"); return; }
-    await supabase.from("users").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username });
+    await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], Username: username });
     await track("user_signed_up", { username });
     setLoading(false);
     onAuth(data.user.email, {}, [], data.user.id, username);
