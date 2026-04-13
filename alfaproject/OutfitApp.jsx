@@ -2175,7 +2175,9 @@ export default function App() {
 
   // Restore session on mount — skip if this is a password recovery redirect
   useEffect(()=>{
-    const isRecovery = window.location.hash.includes("type=recovery");
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+    const isRecovery = hash.includes("type=recovery") || params.get("type")==="recovery" || params.has("code");
     if(isRecovery) return; // onAuthStateChange will fire PASSWORD_RECOVERY once token is ready
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
@@ -2295,6 +2297,8 @@ export default function App() {
                 if(!resetPwNew||resetPwNew.length<8){ setResetPwError("Password must be at least 8 characters."); return; }
                 if(resetPwNew!==resetPwConfirm){ setResetPwError("Passwords do not match."); return; }
                 setResetPwLoading(true);
+                const { data: { session: currentSession } } = await supabase.auth.getSession();
+                if(!currentSession){ setResetPwLoading(false); setResetPwError("Reset link has expired. Please request a new one."); return; }
                 const { error } = await supabase.auth.updateUser({ password: resetPwNew });
                 setResetPwLoading(false);
                 if(error){ setResetPwError(error.message); return; }
