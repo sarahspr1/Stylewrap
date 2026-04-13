@@ -2233,14 +2233,14 @@ export default function App() {
     if(!currentUser||!dataSyncReady.current) return;
     const isAnyAnalysing=Object.values(photoData).some(v=>v?.analysing);
     if(isAnyAnalysing) return;
-    supabase.from("users").update({photo_data:photoData}).eq("id",currentUser)
+    supabase.from("profiles").upsert({id:currentUser,photo_data:photoData})
       .then(({error})=>{ if(error) console.error("[save photoData]",error); });
   },[photoData,currentUser]);
 
   // Auto-save favourites → Supabase
   useEffect(()=>{
     if(!currentUser||!dataSyncReady.current) return;
-    supabase.from("users").update({favourites}).eq("id",currentUser)
+    supabase.from("profiles").upsert({id:currentUser,favourites})
       .then(({error})=>{ if(error) console.error("[save favourites]",error); });
   },[favourites,currentUser]);
 
