@@ -364,6 +364,38 @@ function TabBar({ active, onChange }) {
   );
 }
 
+function DailyLogPrompt({ photoData={}, onAddItem, onDismiss, streak=0 }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(()=>{ const t=setTimeout(()=>setVisible(true),1500); return ()=>clearTimeout(t); },[]);
+  const lastPhotoEntry = Object.entries(photoData).filter(([,v])=>v?.logged&&v?.photo).sort((a,b)=>b[0].localeCompare(a[0]))[0];
+  const lastPhoto = lastPhotoEntry?.[1]?.photo;
+  const dismiss = ()=>{ onDismiss(); setVisible(false); };
+  if(!visible) return null;
+  return (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9998,display:"flex",alignItems:"flex-end",animation:"fadeIn .2s ease" }} onClick={dismiss}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:"#fff",width:"100%",padding:"20px 24px 48px",animation:"slideUp .3s cubic-bezier(.32,.72,0,1)" }}>
+        <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"0 auto 24px" }}/>
+        <div style={{ display:"flex",alignItems:"center",gap:16,marginBottom:22 }}>
+          {lastPhoto
+            ? <img src={lastPhoto} style={{ width:56,height:56,borderRadius:"50%",objectFit:"cover",border:`2px solid ${C.border}`,flexShrink:0 }}/>
+            : <div style={{ width:56,height:56,borderRadius:"50%",background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><Camera size={24} color={C.sage} strokeWidth={1.5}/></div>
+          }
+          <div>
+            {streak>0&&<div style={{ fontSize:11,fontWeight:700,color:C.sage,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:3 }}>{streak} day streak</div>}
+            <p style={{ fontSize:13,color:C.sub,margin:0,lineHeight:1.4 }}>{lastPhoto?"Your last look is saved. Add today's.":"Start building your wardrobe story."}</p>
+          </div>
+        </div>
+        <h2 style={{ fontSize:24,fontWeight:900,color:C.ink,margin:"0 0 4px",letterSpacing:"-0.03em" }}>Log Today's Outfit</h2>
+        <p style={{ fontSize:14,color:C.sub,margin:"0 0 22px" }}>Capture your look in seconds.</p>
+        <button onClick={()=>{ dismiss(); onAddItem(); }} style={{ width:"100%",height:56,background:C.ink,border:"none",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,fontFamily:"inherit",marginBottom:10,transition:"opacity .15s",borderRadius:0 }} onMouseDown={e=>e.currentTarget.style.opacity=".8"} onMouseUp={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+          <Camera size={20} color="#fff" strokeWidth={1.5}/>Take Photo
+        </button>
+        <button onClick={dismiss} style={{ width:"100%",height:44,background:"transparent",border:"none",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Skip for now</button>
+      </div>
+    </div>
+  );
+}
+
 function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="", username="" }) {
   const now=new Date();
   const dayName=now.toLocaleDateString("en-US",{weekday:"long"});
@@ -2167,6 +2199,7 @@ export default function App() {
   const [tabHistory,setTabHistory]=useState([]);
   const [needsPasswordReset,setNeedsPasswordReset]=useState(false);
   const [authGoToSignIn,setAuthGoToSignIn]=useState(false);
+  const [promptDismissed,setPromptDismissed]=useState(false);
   const [resetPwNew,setResetPwNew]=useState("");
   const [resetPwConfirm,setResetPwConfirm]=useState("");
   const [resetPwError,setResetPwError]=useState("");
@@ -2244,6 +2277,47 @@ export default function App() {
       .then(({error})=>{ if(error) console.error("[save favourites]",error); });
   },[favourites,currentUser]);
 
+  // Daily prompt + notification scheduling
+  const _toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const _todayKey=_toKey(new Date());
+  const _loggedToday=!!(photoData[_todayKey]?.logged);
+  const _dismissedToday=localStorage.getItem("promptDismissed")===new Date().toDateString();
+  const showDailyPrompt=isSignedIn&&!_loggedToday&&!_dismissedToday&&!promptDismissed&&!subScreen&&!needsPasswordReset;
+
+  // Streak count
+  let _streak=0;
+  const _d=new Date();
+  while(photoData[_toKey(_d)]?.logged){ _streak++; _d.setDate(_d.getDate()-1); }
+
+  // Request notification permission politely after 8s
+  useEffect(()=>{
+    if(!isSignedIn||!("Notification" in window)) return;
+    if(Notification.permission!=="default") return;
+    const t=setTimeout(()=>Notification.requestPermission(),8000);
+    return ()=>clearTimeout(t);
+  },[isSignedIn]);
+
+  // Schedule browser notifications for morning + evening
+  useEffect(()=>{
+    if(!isSignedIn||!("Notification" in window)||Notification.permission!=="granted") return;
+    const now=new Date();
+    const timers=[];
+    const scheduleNotif=(hour,minRange,body,tag)=>{
+      const t=new Date(now);
+      t.setHours(hour,Math.floor(Math.random()*minRange),0,0);
+      if(t<=now) return;
+      timers.push(setTimeout(()=>{
+        const key=_toKey(new Date());
+        if(!photoData[key]?.logged) new Notification("Stylewrap",{ body, icon:"/favicon.ico", tag });
+      }, t-now));
+    };
+    if(!_loggedToday){
+      scheduleNotif(10,120,"What are you wearing today? 📸 Log your outfit in seconds.","morning-reminder");
+      scheduleNotif(18,180,"Don't forget to log today's outfit! ✨ Your wardrobe story awaits.","evening-reminder");
+    }
+    return ()=>timers.forEach(clearTimeout);
+  },[isSignedIn,_loggedToday]);
+
   const toggleFavourite=(item)=>{
     const key=(item.name||"").trim().toLowerCase();
     setFavourites(prev=>{
@@ -2288,7 +2362,7 @@ export default function App() {
 
   return (
     <>
-      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:${C.surface}}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{display:none}`}</style>
+      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:${C.surface}}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
       <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {needsPasswordReset
           ? (() => {
@@ -2331,6 +2405,7 @@ export default function App() {
             : <>
                 <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
                 {!subScreen&&<TabBar active={tab} onChange={t=>{ if(t!=="wardrobe") setWardrobeInitialView("main"); setTab(t); setSubScreen(null); }}/>}
+                {showDailyPrompt&&<DailyLogPrompt photoData={photoData} onAddItem={()=>setSubScreen("addItem")} streak={_streak} onDismiss={()=>{ localStorage.setItem("promptDismissed",new Date().toDateString()); setPromptDismissed(true); }}/>}
               </>
         }
       </div>
