@@ -1855,7 +1855,7 @@ function SettingsScreen({ onBack, username="" }) {
 
 function NotificationsScreen({ onBack }) {
   const [pushOn,setPushOn]=useState(true);
-  const [reminderOn,setReminderOn]=useState(true);
+  const [reminderOn,setReminderOn]=useState(()=>localStorage.getItem("dailyReminderEnabled")!=="false");
 
   const Toggle=({on,onToggle})=>(
     <div onClick={onToggle} style={{ width:44,height:26,borderRadius:0,background:on?C.sage:C.border,position:"relative",cursor:"pointer",flexShrink:0,transition:"background .2s" }}>
@@ -1878,7 +1878,7 @@ function NotificationsScreen({ onBack }) {
           </div>
           <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
             <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Daily Reminder</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Reminder to capture your outfit</div></div>
-            <Toggle on={reminderOn} onToggle={()=>setReminderOn(v=>!v)}/>
+            <Toggle on={reminderOn} onToggle={()=>setReminderOn(v=>{ const next=!v; localStorage.setItem("dailyReminderEnabled",String(next)); return next; })}/>
           </div>
         </div>
       </div>
@@ -2282,7 +2282,8 @@ export default function App() {
   const _todayKey=_toKey(new Date());
   const _loggedToday=!!(photoData[_todayKey]?.logged);
   const _dismissedToday=localStorage.getItem("promptDismissed")===new Date().toDateString();
-  const showDailyPrompt=isSignedIn&&!_loggedToday&&!_dismissedToday&&!promptDismissed&&!subScreen&&!needsPasswordReset;
+  const _reminderEnabled=localStorage.getItem("dailyReminderEnabled")!=="false";
+  const showDailyPrompt=isSignedIn&&_reminderEnabled&&!_loggedToday&&!_dismissedToday&&!promptDismissed&&!subScreen&&!needsPasswordReset;
 
   // Streak count
   let _streak=0;
@@ -2311,7 +2312,8 @@ export default function App() {
         if(!photoData[key]?.logged) new Notification("Stylewrap",{ body, icon:"/favicon.ico", tag });
       }, t-now));
     };
-    if(!_loggedToday){
+    const _rem=localStorage.getItem("dailyReminderEnabled")!=="false";
+    if(!_loggedToday&&_rem){
       scheduleNotif(10,120,"What are you wearing today? 📸 Log your outfit in seconds.","morning-reminder");
       scheduleNotif(18,180,"Don't forget to log today's outfit! ✨ Your wardrobe story awaits.","evening-reminder");
     }
