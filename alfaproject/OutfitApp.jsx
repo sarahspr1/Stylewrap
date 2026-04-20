@@ -503,8 +503,17 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   const [itemCatFilter,setItemCatFilter]=useState("All");
   const [itemSort,setItemSort]=useState("most");
   const [selectedWearItem,setSelectedWearItem]=useState(null);
+  const [filterPeriod,setFilterPeriod]=useState("overall");
+  const [showFilterMenu,setShowFilterMenu]=useState(false);
 
-  const loggedOutfits=Object.values(photoData).filter(e=>e&&e.logged);
+  // Available months (months with logged data + current month)
+  const _now=new Date();
+  const _nowMonthKey=`${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,"0")}`;
+  const _availableMonths=[...(()=>{ const s=new Set(Object.keys(photoData).filter(k=>photoData[k]?.logged).map(k=>k.slice(0,7))); s.add(_nowMonthKey); return [...s].sort().reverse(); })()];
+  const _formatPeriod=key=>{ if(key==="overall") return "Overall"; const [y,m]=key.split("-"); return new Date(Number(y),Number(m)-1,1).toLocaleDateString("en-US",{month:"long",year:"numeric"}); };
+  const filterLabel=_formatPeriod(filterPeriod);
+
+  const loggedOutfits=Object.entries(photoData).filter(([key,e])=>e&&e.logged&&(filterPeriod==="overall"||key.startsWith(filterPeriod))).map(([,e])=>e);
   const totalOutfits=loggedOutfits.length;
   // Total item instances across all outfits (any valid object counts)
   const totalItemsCount=loggedOutfits.reduce((sum,e)=>sum+(e.items||[]).filter(i=>i&&typeof i==="object").length,0);
@@ -534,7 +543,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
 
   const getStyle=items=>{ try { const names=(items||[]).map(i=>((typeof i==="object"?i.name:i)||"").toString().toLowerCase()).join(" "); const cats=(items||[]).map(i=>((typeof i==="object"?i.category:i)||"").toString().toLowerCase()).join(" "); if(cats.includes("activewear")||/gym|sport|athletic|yoga|running|workout|leggings|jogger/.test(names)) return "Activewear"; if(/blazer|suit|dress shirt|slacks|oxford|loafer|trousers|button-up|button up|formal|professional/.test(names)) return "Professional"; if(/dress|heels|jumpsuit|going out|club|evening|sequin|satin/.test(names)) return "Going Out"; return "Everyday"; } catch { return "Everyday"; } };
   const styleCounts={ Everyday:0,"Going Out":0,Activewear:0,Professional:0 };
-  Object.values(photoData).forEach(entry=>{ if(entry?.logged){ const s=entry.style&&styleCounts.hasOwnProperty(entry.style)?entry.style:getStyle(entry.items); styleCounts[s]+=1; } });
+  loggedOutfits.forEach(entry=>{ const s=entry.style&&styleCounts.hasOwnProperty(entry.style)?entry.style:getStyle(entry.items); styleCounts[s]+=1; });
   const styleColors={ "Everyday":"#5E6A5C","Going Out":"#3A4438","Activewear":"#8A9688","Professional":"#B0B8AE" };
   const totalStyleOutfits=Object.values(styleCounts).reduce((s,v)=>s+v,0)||1;
   const computedStyleData=Object.entries(styleCounts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({ name,value:Math.round(count/totalStyleOutfits*100),color:styleColors[name]||"#B0B0A8" }));
@@ -770,11 +779,25 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
           <h1 style={{ fontSize:34,fontWeight:700,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Analytics</h1>
           <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0",fontWeight:400 }}>Your wardrobe insights</p>
         </div>
-        <div style={{ display:"flex",alignItems:"center",gap:6,border:`1px solid ${C.border}`,borderRadius:99,padding:"8px 16px",fontSize:13,fontWeight:500,color:C.ink,marginTop:4,flexShrink:0 }}>
+        <button onClick={()=>setShowFilterMenu(true)} style={{ display:"flex",alignItems:"center",gap:6,border:`1px solid ${C.border}`,borderRadius:99,padding:"8px 16px",fontSize:13,fontWeight:500,color:C.ink,marginTop:4,flexShrink:0,background:"#fff",cursor:"pointer",fontFamily:"inherit" }}>
           <Calendar size={13} color={C.ink} strokeWidth={1.5}/>
-          <span>This Month</span>
+          <span>{filterLabel}</span>
           <ChevronDown size={13} color={C.ink} strokeWidth={1.5}/>
-        </div>
+        </button>
+        {showFilterMenu&&(
+          <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:9998,display:"flex",alignItems:"flex-end" }} onClick={()=>setShowFilterMenu(false)}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:"#fff",width:"100%",maxHeight:"65vh",overflow:"auto",padding:"0 0 44px",animation:"slideUp .28s cubic-bezier(.32,.72,0,1)" }}>
+              <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"10px auto 0" }}/>
+              <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",padding:"18px 20px 10px",margin:0,borderBottom:`1px solid ${C.border}` }}>Filter Period</p>
+              {["overall",..._availableMonths].map(m=>(
+                <button key={m} onClick={()=>{ setFilterPeriod(m); setShowFilterMenu(false); }} style={{ width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,textAlign:"left",fontFamily:"inherit",fontSize:15,fontWeight:filterPeriod===m?700:400,color:filterPeriod===m?C.ink:C.sub,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",boxSizing:"border-box" }}>
+                  {_formatPeriod(m)}
+                  {filterPeriod===m&&<Check size={16} color={C.ink} strokeWidth={2.5}/>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ flex:1,overflowY:"auto",background:"#fff" }}>
@@ -1629,8 +1652,8 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
             {profileImage?<img src={profileImage} alt="Profile" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>:<User size={28} color={C.sub} strokeWidth={1.5}/>}
           </button>
           <div>
-            <h1 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 2px",letterSpacing:"-0.03em",lineHeight:1 }}>{username?`@${username}`:userEmail?(userEmail.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase())):"My Wardrobe"}</h1>
-            <p style={{ fontSize:13,color:C.sub,margin:0 }}>{userEmail||"Style enthusiast"}</p>
+            {username&&<p style={{ fontSize:13,color:C.sage,margin:"0 0 2px",fontWeight:400 }}>@{username}</p>}
+            <p style={{ fontSize:13,color:C.sub,margin:0,fontWeight:400 }}>{userEmail||"Style enthusiast"}</p>
           </div>
         </div>
       </div>
@@ -2314,8 +2337,8 @@ export default function App() {
     };
     const _rem=localStorage.getItem("dailyReminderEnabled")!=="false";
     if(!_loggedToday&&_rem){
-      scheduleNotif(10,120,"What are you wearing today? 📸 Log your outfit in seconds.","morning-reminder");
-      scheduleNotif(18,180,"Don't forget to log today's outfit! ✨ Your wardrobe story awaits.","evening-reminder");
+      scheduleNotif(10,120,"What are you wearing today? Log your outfit in seconds.","morning-reminder");
+      scheduleNotif(18,180,"Don't forget to log today's outfit. Your wardrobe story awaits.","evening-reminder");
     }
     return ()=>timers.forEach(clearTimeout);
   },[isSignedIn,_loggedToday]);
