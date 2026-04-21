@@ -195,7 +195,7 @@ class ErrorBoundary extends Component {
   static getDerivedStateFromError(e){ return { error:e }; }
   render(){
     if(this.state.error) return (
-      <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,background:"#fff" }}>
+      <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,background:C.surface }}>
         <div style={{ fontSize:40,marginBottom:16 }}>⚠️</div>
         <div style={{ fontSize:16,fontWeight:700,color:"#3A4438",marginBottom:8,textAlign:"center" }}>Something went wrong</div>
         <div style={{ fontSize:13,color:"rgba(58,68,56,0.65)",textAlign:"center",marginBottom:24 }}>{""+this.state.error}</div>
@@ -221,9 +221,19 @@ function CatIcon({ cat, size=12, color="rgba(58,68,56,0.4)" }){
 }
 
 const C = {
-  sage: "#5E6A5C", green: "#5E6A5C", blush: "#D3C2B2", blushD: "#B89A8A",
-  surface: "#FFFFFF", white: "#FFFFFF", ink: "#3A4438", sub: "rgba(58,68,56,0.65)",
-  border: "rgba(58,68,56,0.3)", red: "#E5635A",
+  sage: "#5E6A5C", green: "#5E6A5C",
+  surface: "#EDECE5",   // warm sage surface — screen backgrounds
+  white: "#FFFFFF",     // card backgrounds
+  offwhite: "#F7F6F0",  // subtle inner surfaces, inputs
+  ink: "#1F2620",       // primary text
+  sub: "#8F978D",       // muted / secondary text
+  border: "#D8D7D0",    // hairline borders
+  red: "#E5635A",
+};
+const F = {
+  sans: '"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif',
+  mono: '"JetBrains Mono","SF Mono",ui-monospace,monospace',
+  serif: '"Cormorant Garamond",Georgia,serif',
 };
 
 const colorKeywords = { "Black":["black","dark","charcoal"],"White":["white","off-white","optic white"],"Cream":["cream","ivory","butter","ecru","eggshell","off white"],"Beige":["beige","khaki","sand","stone","oat","nude","taupe","camel","tan"],"Navy":["navy","dark blue","midnight blue"],"Blue":["blue","denim","teal","cobalt","sky blue","light blue"],"Gray":["gray","grey","slate","silver"],"Brown":["brown","chocolate","cognac","rust","terracotta"],"Green":["green","olive","sage","khaki green","forest","emerald"],"Red":["red","burgundy","wine","crimson","scarlet"],"Yellow":["yellow","gold","mustard","lemon","amber"],"Pink":["pink","blush","salmon","rose","hot pink","mauve"],"Purple":["purple","violet","lavender","lilac"] };
@@ -255,15 +265,13 @@ function CameraCapture({ onCapture, onClose }) {
   const [facing,setFacing]=useState("environment");
   const [error,setError]=useState("");
   const [ready,setReady]=useState(false);
+  const CAM_LABEL={ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub };
 
   useEffect(()=>{
     let s;
     setReady(false); setError("");
     navigator.mediaDevices.getUserMedia({ video:{ facingMode:facing },audio:false })
-      .then(st=>{
-        s=st; setStream(st);
-        if(videoRef.current){ videoRef.current.srcObject=st; }
-      })
+      .then(st=>{ s=st; setStream(st); if(videoRef.current){ videoRef.current.srcObject=st; } })
       .catch(()=>setError("Could not access camera. Please allow camera access in your browser or device settings."));
     return ()=>{ s?.getTracks().forEach(t=>t.stop()); };
   },[facing]);
@@ -280,25 +288,147 @@ function CameraCapture({ onCapture, onClose }) {
   };
 
   return (
-    <div style={{ position:"fixed",inset:0,background:"#000",zIndex:10000,display:"flex",flexDirection:"column" }}>
-      {error?(
-        <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32 }}>
-          <div style={{ fontSize:48,marginBottom:16 }}>📷</div>
-          <p style={{ color:"#fff",textAlign:"center",fontSize:15,lineHeight:1.6,marginBottom:28 }}>{error}</p>
-          <button onClick={onClose} style={{ padding:"12px 32px",borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Go Back</button>
-        </div>
-      ):(
-        <>
-          <video ref={videoRef} autoPlay playsInline muted onCanPlay={()=>setReady(true)} style={{ flex:1,width:"100%",objectFit:"cover",background:"#000" }}/>
-          <div style={{ background:"rgba(58,68,56,0.3)",padding:"20px 32px 36px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-            <button onClick={onClose} style={{ width:52,height:52,borderRadius:"50%",background:"rgba(255,255,255,.15)",border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><X size={22} color="#fff"/></button>
-            <button onClick={handleCapture} disabled={!ready} style={{ width:76,height:76,borderRadius:"50%",background:ready?"#fff":"#888",border:`4px solid ${ready?"rgba(255,255,255,.5)":"#666"}`,cursor:ready?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0 }}>
-              <div style={{ width:60,height:60,borderRadius:"50%",background:ready?"#fff":"#888",border:"2.5px solid #ddd" }}/>
-            </button>
-            <button onClick={()=>{ stream?.getTracks().forEach(t=>t.stop()); setStream(null); setFacing(f=>f==="environment"?"user":"environment"); }} style={{ width:52,height:52,borderRadius:"50%",background:"rgba(255,255,255,.15)",border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:24,flexShrink:0 }}>🔄</button>
+    <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:10000,display:"flex",flexDirection:"column" }}>
+      {/* Section header */}
+      <div style={{ padding:"28px 24px 0",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
+        <span style={{ ...CAM_LABEL }}>§ 05 · Camera</span>
+        <button onClick={onClose} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:"pointer",padding:0 }}>Cancel</button>
+      </div>
+      {/* Title */}
+      <div style={{ padding:"12px 24px 14px",flexShrink:0 }}>
+        <h1 style={{ fontSize:34,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Camera</h1>
+        <p style={{ fontSize:13,color:C.sub,fontStyle:"italic",fontFamily:F.serif,margin:"4px 0 0" }}>Scan a garment</p>
+      </div>
+      {/* Viewfinder */}
+      <div style={{ flex:1,position:"relative",overflow:"hidden",background:"#2A3628",margin:"0 24px" }}>
+        {error ? (
+          <div style={{ height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32 }}>
+            <Camera size={36} color="rgba(255,255,255,0.4)" strokeWidth={1}/>
+            <p style={{ color:"rgba(255,255,255,0.6)",textAlign:"center",fontSize:13,lineHeight:1.6,marginTop:16,marginBottom:0 }}>{error}</p>
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <video ref={videoRef} autoPlay playsInline muted onCanPlay={()=>setReady(true)} style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>
+            {/* Figure placeholder while loading */}
+            {!ready&&(
+              <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center" }}>
+                <svg viewBox="0 0 200 300" width="44%" height="74%" style={{ display:"block" }}>
+                  <circle cx="100" cy="52" r="22" fill="rgba(255,255,255,0.18)"/>
+                  <rect x="82" y="70" width="36" height="14" fill="rgba(255,255,255,0.18)"/>
+                  <path d="M42 88 L82 84 L100 96 L118 84 L158 88 L164 192 L138 196 L130 168 L126 288 L74 288 L70 168 L62 196 L36 192 Z" fill="rgba(255,255,255,0.18)"/>
+                </svg>
+              </div>
+            )}
+            {/* Focus guide rectangle */}
+            <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none" }}>
+              <div style={{ width:"68%",height:"74%",border:"1px solid rgba(255,255,255,0.38)" }}/>
+            </div>
+          </>
+        )}
+      </div>
+      {/* Controls */}
+      <div style={{ background:C.surface,padding:"18px 32px 44px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
+        <button onClick={onClose} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:56 }}>Cancel</button>
+        <button onClick={handleCapture} disabled={!ready} style={{ width:68,height:68,borderRadius:"50%",background:"transparent",border:`3px solid ${ready?C.ink:C.border}`,cursor:ready?"pointer":"default",padding:4,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+          <div style={{ width:"100%",height:"100%",borderRadius:"50%",background:ready?C.ink:C.border }}/>
+        </button>
+        <button onClick={()=>{ stream?.getTracks().forEach(t=>t.stop()); setStream(null); setFacing(f=>f==="environment"?"user":"environment"); }} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:56,textAlign:"right" }}>Flip</button>
+      </div>
+    </div>
+  );
+}
+
+function OutfitReview({ entry, editEntry, selectedDate, onRetake, onSave, onEdit }) {
+  const analysing=entry?.analysing;
+  const items=editEntry?.items||[];
+  const REV_LABEL={ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub };
+
+  // Build per-item attribute groups
+  const itemGroups=items.map(item=>{
+    const rows=[];
+    const catVal=[item.category,item.name?.toLowerCase()].filter(Boolean).join(' / ');
+    if(catVal) rows.push({ label:"Category",value:catVal });
+    if(item.color){ const cv=Array.isArray(item.color)?item.color.join(', '):item.color; if(cv) rows.push({ label:"Color",value:cv }); }
+    if(item.brand) rows.push({ label:"Brand",value:item.brand });
+    return rows;
+  }).filter(g=>g.length>0);
+
+  const outfitRows=[];
+  if(editEntry?.style) outfitRows.push({ label:"Style",value:editEntry.style });
+  if(editEntry?.formalityLevel) outfitRows.push({ label:"Formality",value:editEntry.formalityLevel });
+  if(editEntry?.season) outfitRows.push({ label:"Season",value:editEntry.season });
+
+  const totalAttrs=itemGroups.reduce((s,g)=>s+g.length,0)+outfitRows.length;
+  const multiItem=itemGroups.length>1;
+
+  const AttrRow=({label,value,last})=>(
+    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 18px",borderBottom:last?"none":`1px solid ${C.border}` }}>
+      <span style={{ fontSize:13,color:C.sub,fontWeight:400 }}>{label}</span>
+      <span style={{ fontSize:13,color:C.ink,fontWeight:500,textAlign:"right",maxWidth:"55%" }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:10000,display:"flex",flexDirection:"column" }}>
+      {/* Header */}
+      <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
+        <span style={{ ...REV_LABEL }}>§ 05 · Camera</span>
+      </div>
+      <div style={{ padding:"12px 24px 14px",flexShrink:0 }}>
+        <h1 style={{ fontSize:34,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Camera</h1>
+        <p style={{ fontSize:13,color:C.sub,fontStyle:"italic",fontFamily:F.serif,margin:"4px 0 0" }}>Scan a garment</p>
+      </div>
+      {/* Photo viewfinder */}
+      <div style={{ flexShrink:0,height:200,background:"#2A3628",margin:"0 24px",position:"relative",overflow:"hidden" }}>
+        {entry?.photo&&<img src={entry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>}
+        {analysing&&(
+          <div style={{ position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10 }}>
+            <div style={{ width:26,height:26,borderRadius:"50%",border:"2.5px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin .7s linear infinite" }}/>
+            <span style={{ fontFamily:F.mono,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.65)" }}>Analysing…</span>
+          </div>
+        )}
+      </div>
+      {/* Detected attributes */}
+      <div style={{ flex:1,overflowY:"auto",padding:"16px 24px 0" }}>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+          <span style={{ ...REV_LABEL }}>Detected Attributes</span>
+          <span style={{ ...REV_LABEL }}>{analysing?"…":`${totalAttrs}/${totalAttrs}`}</span>
+        </div>
+        <div style={{ background:C.white,border:`1px solid ${C.border}` }}>
+          {itemGroups.length>0 ? (
+            <>
+              {itemGroups.map((group,gIdx)=>{
+                const isLastGroup=gIdx===itemGroups.length-1;
+                return (
+                  <div key={gIdx}>
+                    {multiItem&&(
+                      <div style={{ padding:"7px 18px",background:C.surface,borderBottom:`1px solid ${C.border}` }}>
+                        <span style={{ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.12em",textTransform:"uppercase",color:C.sub }}>Item {gIdx+1}</span>
+                      </div>
+                    )}
+                    {group.map((row,rIdx)=>(
+                      <AttrRow key={rIdx} label={row.label} value={row.value} last={isLastGroup&&rIdx===group.length-1&&outfitRows.length===0}/>
+                    ))}
+                  </div>
+                );
+              })}
+              {outfitRows.map((row,i)=>(
+                <AttrRow key={i} label={row.label} value={row.value} last={i===outfitRows.length-1}/>
+              ))}
+            </>
+          ) : (
+            <div style={{ padding:"20px 18px",textAlign:"center" }}>
+              <span style={{ fontSize:13,color:C.sub }}>{analysing?"Analysing outfit with AI…":"No items detected — tap Edit to add manually"}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Bottom bar */}
+      <div style={{ padding:"12px 24px 44px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
+        <button onClick={onRetake} style={{ fontFamily:F.mono,fontSize:11,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:C.sub,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:64 }}>Retake</button>
+        <button onClick={onSave} disabled={!!analysing} style={{ height:52,padding:"0 36px",background:analysing?C.border:C.ink,color:analysing?C.sub:"#fff",border:"none",cursor:analysing?"not-allowed":"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700 }}>Save</button>
+        <button onClick={onEdit} disabled={!!analysing} style={{ fontFamily:F.mono,fontSize:11,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:analysing?C.border:C.ink,border:"none",background:"transparent",cursor:analysing?"not-allowed":"pointer",padding:"8px 0",minWidth:64,textAlign:"right" }}>Edit</button>
+      </div>
     </div>
   );
 }
@@ -340,7 +470,7 @@ function StatCard({ icon, number, label, accent=C.sage, onClick }) {
   return (
     <El onClick={onClick} style={{ flex:1,background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}`,cursor:onClick?"pointer":"default",textAlign:"left",fontFamily:"inherit" }}>
       <div style={{ width:38,height:38,borderRadius:0,background:accent+"18",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10 }}>{icon}</div>
-      <div style={{ fontSize:26,fontWeight:900,color:C.ink,lineHeight:1,letterSpacing:"-0.02em" }}>{number}</div>
+      <div style={{ fontSize:26,fontWeight:500,color:C.ink,lineHeight:1,letterSpacing:"-0.02em",fontFamily:F.mono }}>{number}</div>
       <div style={{ fontSize:12,color:C.sub,marginTop:4 }}>{label}</div>
     </El>
   );
@@ -355,8 +485,8 @@ function TabBar({ active, onChange }) {
         const a=active===id;
         return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:56,border:"none",background:"transparent",cursor:"pointer",padding:"4px 2px",borderRadius:0 }}>
           {a
-            ? <div style={{ display:"flex",alignItems:"center",gap:5,background:C.ink,borderRadius:99,padding:"5px 12px" }}><Icon size={16} color="#fff" strokeWidth={1.5}/><span style={{ fontSize:10,fontWeight:700,color:"#fff",letterSpacing:"0.05em",textTransform:"uppercase",whiteSpace:"nowrap" }}>{label}</span></div>
-            : <><Icon size={20} color="rgba(58,68,56,0.4)" strokeWidth={1.5}/><span style={{ fontSize:10,fontWeight:600,color:"rgba(58,68,56,0.4)",letterSpacing:"0.05em",textTransform:"uppercase" }}>{label}</span></>
+            ? <div style={{ display:"flex",alignItems:"center",gap:5,background:C.ink,borderRadius:99,padding:"5px 12px" }}><Icon size={16} color="#fff" strokeWidth={1.5}/><span style={{ fontSize:9,fontWeight:500,color:"#fff",letterSpacing:"0.12em",textTransform:"uppercase",whiteSpace:"nowrap",fontFamily:F.mono }}>{label}</span></div>
+            : <><Icon size={20} color="rgba(58,68,56,0.4)" strokeWidth={1.5}/><span style={{ fontSize:9,fontWeight:500,color:"rgba(31,38,32,0.45)",letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:F.mono }}>{label}</span></>
           }
         </button>;
       })}
@@ -381,7 +511,7 @@ function DailyLogPrompt({ photoData={}, onAddItem, onDismiss, streak=0 }) {
             : <div style={{ width:56,height:56,borderRadius:"50%",background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><Camera size={24} color={C.sage} strokeWidth={1.5}/></div>
           }
           <div>
-            {streak>0&&<div style={{ fontSize:11,fontWeight:700,color:C.sage,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:3 }}>{streak} day streak</div>}
+            {streak>0&&<div style={{ fontSize:10,fontWeight:500,color:C.sage,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:3 }}>{streak} day streak</div>}
             <p style={{ fontSize:13,color:C.sub,margin:0,lineHeight:1.4 }}>{lastPhoto?"Your last look is saved. Add today's.":"Start building your wardrobe story."}</p>
           </div>
         </div>
@@ -398,93 +528,167 @@ function DailyLogPrompt({ photoData={}, onAddItem, onDismiss, streak=0 }) {
 
 function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="", username="" }) {
   const now=new Date();
-  const dayName=now.toLocaleDateString("en-US",{weekday:"long"});
-  const monthName=now.toLocaleDateString("en-US",{month:"short"});
-  const dateLabel=`${dayName}, ${monthName} ${now.getDate()}`;
-  const firstName=userEmail?(userEmail.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase()).split(" ")[0]):"";
-
-  // Streak / last-logged
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const todayKey=toKey(now);
   const loggedToday=!!(photoData[todayKey]?.logged);
   const allLoggedKeys=Object.keys(photoData).filter(k=>photoData[k]?.logged).sort().reverse();
-  const lastLoggedKey=allLoggedKeys[0];
-  let streakLabel="";
-  if(loggedToday){ streakLabel="Outfit logged today"; }
-  else if(lastLoggedKey){
-    const [y,m,d]=lastLoggedKey.split("-").map(Number);
-    const diff=Math.round((now-new Date(y,m-1,d))/(1000*60*60*24));
-    streakLabel=diff===1?"Last outfit: yesterday":`Last outfit: ${diff} days ago`;
-  }
 
-  // Compute most worn colour this month
-  const curY=now.getFullYear(), curM=now.getMonth()+1;
-  const monthItems=Object.entries(photoData)
-    .filter(([key,e])=>{ if(!e?.logged) return false; const [y,m]=key.split("-").map(Number); return y===curY&&m===curM; })
-    .flatMap(([,e])=>(e.items||[]).map(item=>typeof item==="object"?item:{ name:String(item||""),category:"Other" }).filter(item=>item&&item.name&&typeof item.name==="string"));
-  const mColorCounts={};
-  monthItems.forEach(item=>{ const cols=toColors(item.color).filter(c=>colorHex[c]); if(cols.length){ cols.forEach(c=>{ mColorCounts[c]=(mColorCounts[c]||0)+1; }); } else { let col=null; const n=(item.name||"").toLowerCase(); for(const [c,kws] of Object.entries(colorKeywords)){ if(kws.some(kw=>n.includes(kw))){ col=c; break; } } mColorCounts[col||"Other"]=(mColorCounts[col||"Other"]||0)+1; } });
-  const top3Colors=Object.entries(mColorCounts).filter(([k])=>k!=="Other").sort((a,b)=>b[1]-a[1]).slice(0,3);
+  // Show today's outfit if logged, otherwise most recent
+  const displayKey=loggedToday?todayKey:(allLoggedKeys[0]||null);
+  const displayEntry=displayKey?photoData[displayKey]:null;
+  const items=(displayEntry?.items||[]).filter(i=>i&&typeof i==="object"&&i.name);
 
-  const hasAnyOutfits=allLoggedKeys.length>0;
+  // Date display: DD.MM.YY
+  const dateLabel=`${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getFullYear()).slice(2)}`;
+
+  // Auto headline from items
+  const headline=(()=>{
+    if(!items.length) return null;
+    const raw=items.map(i=>i.name?.toLowerCase()).filter(Boolean).join(", ")+".";
+    return raw.charAt(0).toUpperCase()+raw.slice(1);
+  })();
+
+  // Wear counts across all outfits
+  const wearCountMap={};
+  allLoggedKeys.forEach(k=>{ (photoData[k]?.items||[]).filter(i=>i?.name).forEach(i=>{ const key=i.name.trim().toLowerCase(); wearCountMap[key]=(wearCountMap[key]||0)+1; }); });
+
+  // Combo count: how many times this exact item set has been worn
+  const itemSet=new Set(items.map(i=>i.name?.trim().toLowerCase()).filter(Boolean));
+  const comboCount=allLoggedKeys.filter(k=>{
+    const kSet=new Set((photoData[k]?.items||[]).filter(i=>i?.name).map(i=>i.name.trim().toLowerCase()));
+    return itemSet.size===kSet.size&&[...itemSet].every(n=>kSet.has(n));
+  }).length;
+  const ordinal=n=>{const s=["th","st","nd","rd"];const v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);};
+
+  // Avg CPW for today's items
+  const avgItemCPW=(()=>{
+    const priced=items.filter(i=>i.price!=null&&parseFloat(i.price)>0);
+    if(!priced.length) return null;
+    const tot=priced.reduce((s,i)=>{const w=wearCountMap[i.name.trim().toLowerCase()]||1;return s+parseFloat(i.price)/w;},0);
+    return tot/priced.length;
+  })();
+
+  // Similar outfits (≥2 items in common)
+  const similarCount=allLoggedKeys.filter(k=>{
+    if(k===displayKey) return false;
+    const kSet=new Set((photoData[k]?.items||[]).filter(i=>i?.name).map(i=>i.name.trim().toLowerCase()));
+    return[...itemSet].filter(n=>kSet.has(n)).length>=2;
+  }).length;
+
+  // Days since last worn (any item from today's outfit)
+  const lastWornDays=(()=>{
+    if(!itemSet.size) return null;
+    const prev=allLoggedKeys.filter(k=>k!==displayKey&&[...itemSet].some(n=>(photoData[k]?.items||[]).some(i=>i?.name?.trim().toLowerCase()===n)));
+    if(!prev.length) return null;
+    const[y,m,d]=prev[0].split("-").map(Number);
+    return Math.round((now-new Date(y,m-1,d))/(1000*60*60*24));
+  })();
+
+  // Days since last log (for non-today display)
+  const daysSinceLog=(()=>{
+    if(!displayKey||loggedToday) return null;
+    const[y,m,d]=displayKey.split("-").map(Number);
+    return Math.round((now-new Date(y,m-1,d))/(1000*60*60*24));
+  })();
+
+  const ML={fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub};
+  const GS=({cat})=>{const col="#3A4A38";const sh={Top:<path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,Bottom:<path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,Dresses:<path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,Outerwear:<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,Shoes:<path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,Accessories:<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>};return(<svg viewBox="0 0 110 110" width="52%" height="52%">{sh[cat]||sh.Top}</svg>);};
+
+  const intelRows=[
+    {label:"Cost/wear",val:avgItemCPW!=null?`${getCurrencySymbol()}${avgItemCPW.toFixed(2)}`:"—",right:"tracked"},
+    {label:"Similar",val:similarCount>0?`${similarCount} outfits`:"—",right:"pairable"},
+    {label:"Last worn",val:lastWornDays!=null?`${lastWornDays}d ago`:"first time",right:"this combo"},
+  ];
 
   return (
-    <div style={{ flex:1,overflowY:"auto",background:"#fff" }}>
+    <div style={{flex:1,overflowY:"auto",background:C.surface}}>
       {/* Header */}
-      <div style={{ background:"#fff",padding:"28px 24px 20px" }}>
-        <p style={{ fontSize:12,color:C.sub,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 8px" }}>{dateLabel}</p>
-        <h1 style={{ fontSize:34,fontWeight:900,color:C.ink,margin:"0 0 8px",lineHeight:1.1,letterSpacing:"-0.03em" }}>Hello{username?`, ${username}`:firstName?`, ${firstName}`:""}!</h1>
-        {streakLabel
-          ? <div style={{ display:"inline-flex",alignItems:"center",gap:6 }}>
-              {loggedToday?<Check size={14} color={C.sage} strokeWidth={2.5}/>:<CalendarDays size={14} color={C.sub} strokeWidth={1.5}/>}
-              <span style={{ fontSize:13,fontWeight:600,color:loggedToday?C.sage:C.sub }}>{streakLabel}</span>
-            </div>
-          : <p style={{ fontSize:13,color:C.sub,margin:0 }}>Ready to plan today's look?</p>}
+      <div style={{padding:"20px 24px 12px",background:C.surface,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <button onClick={onShowAllItems} style={{border:"none",background:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4}}>
+          <span style={{...ML}}>§ 01 / Home</span>
+        </button>
+        <p style={{fontFamily:F.serif,fontStyle:"italic",fontSize:13,color:C.sub,margin:0}}>{loggedToday?"Today's outfit":daysSinceLog!=null?`Last outfit, ${daysSinceLog}d ago`:"No outfits yet"}</p>
       </div>
 
-      {/* Stats row */}
-      <div style={{ borderTop:"1px solid rgba(58,68,56,0.3)",borderBottom:"1px solid rgba(58,68,56,0.3)" }}>
-        {!hasAnyOutfits?(
-          <div style={{ padding:"32px 24px",textAlign:"center" }}>
-            <div style={{ display:"flex",justifyContent:"center",marginBottom:14 }}><Shirt size={44} color={C.sub} strokeWidth={1}/></div>
-            <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,margin:"0 0 6px",letterSpacing:"-0.02em" }}>Start tracking your style</h2>
-            <p style={{ fontSize:13,color:C.sub,margin:"0 0 20px",lineHeight:1.6 }}>Log your first outfit to unlock wardrobe stats, colour trends, and cost-per-wear tracking.</p>
-            <button onClick={onAddItem} style={{ height:48,padding:"0 24px",borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Log First Outfit</button>
+      {/* Main area — surface background so tiles float as white cards */}
+      <div style={{margin:"0 16px",background:C.surface,border:`1px solid ${C.border}`}}>
+        {/* App bar row */}
+        <div style={{padding:"9px 14px",borderBottom:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{width:8,height:8,background:C.sage,flexShrink:0}}/>
+            <span style={{fontSize:12,fontWeight:700,color:C.ink,letterSpacing:"0.01em"}}>Stylewrap</span>
           </div>
-        ):(
-          <div style={{ display:"flex" }}>
-            <div style={{ flex:1,padding:"20px 24px" }}>
-              {top3Colors.length===0
-                ? <div style={{ display:"flex",alignItems:"center",height:36,marginBottom:10 }}><Palette size={20} color={C.sub} strokeWidth={1.5}/></div>
-                : <div style={{ display:"flex",gap:5,marginBottom:10 }}>
-                    {top3Colors.map(([name])=>(
-                      <div key={name} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
-                        <div style={{ width:"100%",height:26,background:colorHex[name],border:(name==="White"||name==="Cream")?`1px solid ${C.border}`:"none" }}/>
-                        <div style={{ fontSize:8,fontWeight:700,color:C.ink,textAlign:"center",lineHeight:1.2 }}>{name}</div>
-                      </div>
-                    ))}
-                  </div>
-              }
-              <div style={{ fontSize:11,fontWeight:700,color:C.sub,letterSpacing:"0.06em",textTransform:"uppercase" }}>Palette of Month</div>
+          <span style={{fontFamily:F.mono,fontSize:11,color:C.sub,letterSpacing:"0.04em"}}>{dateLabel}</span>
+        </div>
+
+        {displayEntry?(
+          <>
+            {/* Outfit label + headline — on surface */}
+            <div style={{padding:"16px 16px 14px"}}>
+              <span style={{...ML,color:C.sage}}>Outfit / {String(allLoggedKeys.indexOf(displayKey)+1).padStart(2,"0")}</span>
+              <h2 style={{fontFamily:F.serif,fontSize:30,fontWeight:700,color:C.ink,margin:"6px 0 12px",letterSpacing:"-0.01em",lineHeight:1.15}}>{headline||"Outfit logged"}</h2>
+              {/* Tags */}
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {displayEntry.style&&<span style={{fontSize:11,color:C.ink,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.style}</span>}
+                {displayEntry.season&&<span style={{fontSize:11,color:C.ink,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.season}</span>}
+                {comboCount>0&&<span style={{fontSize:11,color:C.ink,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{ordinal(comboCount)} wear</span>}
+              </div>
             </div>
-            <div style={{ width:1,background:"rgba(58,68,56,0.3)",flexShrink:0 }}/>
-            <button onClick={onGoToFavorites} style={{ flex:1,padding:"20px 24px",background:"transparent",border:"none",textAlign:"left",cursor:"pointer",fontFamily:"inherit" }}>
-              <div style={{ fontSize:36,fontWeight:900,color:C.ink,letterSpacing:"-0.04em",lineHeight:1,marginBottom:6 }}>{favourites.length}</div>
-              <div style={{ fontSize:11,fontWeight:700,color:C.sub,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:6 }}>Favourites</div>
-              <div style={{ fontSize:12,fontWeight:700,color:C.ink,textDecoration:"underline",textUnderlineOffset:3 }}>View all →</div>
-            </button>
+
+            {/* Item tiles — white cards on surface, with gaps */}
+            {items.length>0&&(
+              <div style={{display:"flex",gap:8,padding:"0 8px 8px",overflowX:"auto",scrollbarWidth:"none"}}>
+                {items.slice(0,4).map((item,i)=>{
+                  const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
+                  return(
+                    <div key={i} style={{flex:"0 0 calc(33.333% - 6px)",minWidth:"calc(33.333% - 6px)",background:C.white,border:`1px solid ${C.border}`}}>
+                      <div style={{width:"100%",height:48,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+                        {item.itemPhoto?<img src={item.itemPhoto} alt={item.name} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>:<GS cat={item.category}/>}
+                      </div>
+                      <div style={{padding:"7px 10px 10px"}}>
+                        <span style={{fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.1em",color:C.sage}}>{String(i+1).padStart(2,"0")}</span>
+                        <div style={{fontSize:13,fontWeight:700,color:C.ink,marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
+                        <div style={{fontSize:10,color:C.sub,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{[item.brand,`${wears}×`].filter(Boolean).join(" · ")}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* TODAY'S INTEL — white card on surface */}
+            <div style={{margin:"0 8px 8px",background:C.white,border:`1px solid ${C.border}`}}>
+              <div style={{padding:"9px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{...ML}}>Today's Intel</span>
+                <span style={{...ML}}>{intelRows.filter(r=>r.val!=="—").length} insights</span>
+              </div>
+              {intelRows.map((r,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",padding:"11px 14px",borderBottom:i<intelRows.length-1?`1px solid ${C.border}`:"none",gap:8}}>
+                  <span style={{fontSize:12,color:C.sub,flex:"0 0 76px"}}>{r.label}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:C.ink,flex:1}}>{r.val}</span>
+                  <span style={{fontSize:11,color:C.sage}}>{r.right}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ):(
+          <div style={{padding:"40px 20px",textAlign:"center"}}>
+            <Shirt size={36} color={C.sub} strokeWidth={1} style={{margin:"0 auto 14px",display:"block"}}/>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,marginBottom:6}}>No outfits logged yet</div>
+            <div style={{fontSize:13,color:C.sub,lineHeight:1.5}}>Log your first outfit to see your daily summary here.</div>
           </div>
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ padding:"20px 24px",borderBottom:"1px solid rgba(58,68,56,0.3)" }}>
-        <div style={{ fontSize:12,fontWeight:700,color:C.sub,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:14 }}>Quick Actions</div>
-        <div style={{ display:"flex",gap:10 }}>
-          <button onClick={onAddItem} style={{ flex:1,height:52,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><Camera size={16} color={C.ink} strokeWidth={1.5}/><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>Log Outfit</span></button>
-          <button onClick={onShowAllItems} style={{ flex:1,height:52,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",fontFamily:"inherit" }}><Layers size={16} color={C.ink} strokeWidth={1.5}/><span style={{ fontSize:14,fontWeight:700,color:C.ink }}>All Items</span></button>
+      {/* CTA bar */}
+      <button onClick={onAddItem} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",margin:"12px 0 0",padding:"0 32px",height:64,background:C.ink,border:"none",cursor:"pointer",fontFamily:"inherit",boxSizing:"border-box"}}>
+        <div style={{textAlign:"left"}}>
+          <div style={{...ML,color:"rgba(255,255,255,0.45)",marginBottom:3}}>Log</div>
+          <div style={{fontSize:15,fontWeight:700,color:"#fff"}}>{loggedToday?"Edit today's outfit":"Confirm today's outfit"}</div>
         </div>
-      </div>
+        <ChevronRight size={20} color="rgba(255,255,255,0.7)" strokeWidth={2}/>
+      </button>
+
     </div>
   );
 }
@@ -505,6 +709,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   const [selectedWearItem,setSelectedWearItem]=useState(null);
   const [filterPeriod,setFilterPeriod]=useState("overall");
   const [showFilterMenu,setShowFilterMenu]=useState(false);
+  const [periodTab,setPeriodTab]=useState("all");
 
   // Available months (months with logged data + current month)
   const _now=new Date();
@@ -569,7 +774,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   );
 
   if(view==="items"){
-    const allCategories=["All",...[...new Set(wearArr.map(i=>i.category))].sort()];
+    const allCategories=["All",...[...new Set(wearArr.map(i=>i.category).filter(Boolean))].sort()];
     const filteredItems=wearArr.filter(i=>{
       const matchesCat=itemCatFilter==="All"||i.category===itemCatFilter;
       const matchesSearch=i.name.toLowerCase().includes(itemSearch.toLowerCase());
@@ -583,74 +788,222 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
     const datesWorn=selectedWearItem?Object.entries(photoData)
       .filter(([,e])=>e?.logged&&(e.items||[]).some(i=>(i.name||"").trim().toLowerCase()===(selectedWearItem.name||"").trim().toLowerCase()))
       .map(([k])=>k).sort().reverse():[];
+
+    // Inline SVG garment shapes — fallback when no item photo
+    const GarmentShape=({ category })=>{
+      const col="#3A4A38";
+      const shapes={
+        "Top":      <path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,
+        "Bottom":   <path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,
+        "Dresses":  <path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,
+        "Outerwear":<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,
+        "Shoes":    <path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,
+        "Accessories":<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>,
+        "Swimwear": <path d="M35 15 L75 15 L78 28 L90 95 L20 95 L32 28 Z" fill={col}/>,
+      };
+      return (
+        <svg viewBox="0 0 110 110" width="60%" height="60%" style={{ display:"block" }}>
+          {shapes[category]||shapes["Top"]}
+        </svg>
+      );
+    };
+
     return (
       <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
-        <div style={{ background:C.white,padding:"16px 16px 0",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
-          <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:12 }}>
-            <button onClick={()=>setView("main")} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><ChevronLeft size={20} color={C.sage}/></button>
-            <div style={{ flex:1 }}><h1 style={{ fontSize:22,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.02em" }}>All Items</h1><p style={{ fontSize:12,color:C.sub,margin:0 }}>{sortedItems.length} of {wearArr.length}</p></div>
+        {/* Header */}
+        <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+            <button onClick={()=>setView("main")} style={{ border:"none",background:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4 }}>
+              <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ 02 · Wardrobe</span>
+            </button>
+            <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>{wearArr.length} Items</span>
           </div>
-          <div style={{ position:"relative",marginBottom:10 }}>
-            <Search size={16} color={C.sub} style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)" }}/>
-            <input value={itemSearch} onChange={e=>setItemSearch(e.target.value)} placeholder="Search items…" style={{ width:"100%",height:38,paddingLeft:36,paddingRight:12,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:14,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
+          <h1 style={{ fontSize:34,fontWeight:800,color:C.ink,margin:"0 0 16px",letterSpacing:"-0.03em",lineHeight:1 }}>Your library</h1>
+        </div>
+        {/* Filters */}
+        <div style={{ flexShrink:0,padding:"0 24px" }}>
+          <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none",msOverflowStyle:"none" }}>
+            {allCategories.map(c=>(
+              <button key={c} onClick={()=>setItemCatFilter(c)} style={{ flexShrink:0,height:32,padding:"0 16px",borderRadius:0,border:`1px solid ${itemCatFilter===c?C.ink:C.border}`,background:itemCatFilter===c?C.ink:C.white,color:itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.01em" }}>{c}</button>
+            ))}
           </div>
-          <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:8,scrollbarWidth:"none" }}>
-            {allCategories.map(c=><button key={c} onClick={()=>setItemCatFilter(c)} style={{ flexShrink:0,height:30,padding:"0 12px",borderRadius:0,border:itemCatFilter===c?"none":`1.5px solid ${C.border}`,background:itemCatFilter===c?C.sage:C.white,color:itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{c}</button>)}
-          </div>
-          <div style={{ display:"flex",gap:6,paddingBottom:12 }}>
+          <div style={{ display:"flex",gap:6,paddingBottom:12,borderBottom:`1px solid ${C.border}` }}>
             {[{id:"most",label:"Most Worn"},{id:"least",label:"Least Worn"},{id:"az",label:"A–Z"}].map(s=>(
-              <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ height:26,padding:"0 10px",borderRadius:0,border:itemSort===s.id?"none":`1px solid ${C.border}`,background:itemSort===s.id?"#5E6A5C":"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>{s.label}</button>
+              <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ height:24,padding:"0 10px",borderRadius:0,border:itemSort===s.id?`1px solid ${C.ink}`:`1px solid ${C.border}`,background:itemSort===s.id?C.ink:"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:F.mono,letterSpacing:"0.06em",textTransform:"uppercase" }}>{s.label}</button>
             ))}
           </div>
         </div>
-        <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
-          {wearArr.length===0
-            ? <div style={{ textAlign:"center",padding:"48px 24px" }}><div style={{ width:72,height:72,borderRadius:16,background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px" }}><Shirt size={36} color={C.ink} strokeWidth={1.5}/></div><div style={{ fontSize:16,fontWeight:700,color:C.ink,marginBottom:6 }}>No items yet</div><div style={{ fontSize:13,color:C.sub }}>Log an outfit on the Calendar screen to see your items here.</div></div>
-            : sortedItems.length===0
-              ? <div style={{ textAlign:"center",padding:"40px 24px" }}><div style={{ fontSize:32,marginBottom:10 }}>🔍</div><div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>No items match</div><div style={{ fontSize:13,color:C.sub }}>Try a different search or category</div></div>
-              : sortedItems.map((item,idx)=>(
-                  <button key={idx} onClick={()=>setSelectedWearItem(item)} style={{ width:"100%",background:C.white,borderRadius:0,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
-                    <div style={{ width:44,height:44,borderRadius:0,background:"#fff",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{item.lastPhoto?<img src={item.lastPhoto} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"contain" }}/>:catEmoji(item.category)}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{item.name}</div>
-                      <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.count} {item.count===1?"wear":"wears"}</div>
+        {/* Grid */}
+        <div style={{ flex:1,overflowY:"auto",padding:"12px 12px 32px" }}>
+          {wearArr.length===0 ? (
+            <div style={{ textAlign:"center",padding:"48px 24px" }}>
+              <Shirt size={36} color={C.sub} strokeWidth={1.5} style={{ margin:"0 auto 16px",display:"block" }}/>
+              <div style={{ fontSize:16,fontWeight:700,color:C.ink,marginBottom:6 }}>No items yet</div>
+              <div style={{ fontSize:13,color:C.sub }}>Log an outfit on the Calendar screen to see your items here.</div>
+            </div>
+          ) : sortedItems.length===0 ? (
+            <div style={{ textAlign:"center",padding:"40px 24px" }}>
+              <div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>No items match</div>
+              <div style={{ fontSize:13,color:C.sub }}>Try a different category</div>
+            </div>
+          ) : (
+            <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
+              {sortedItems.map((item,idx)=>(
+                <button key={idx} onClick={()=>setSelectedWearItem({...item,_idx:idx+1})} style={{ background:C.white,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",padding:0,display:"flex",flexDirection:"column",overflow:"hidden" }}>
+                  {/* Photo / silhouette tile */}
+                  <div style={{ width:"100%",aspectRatio:"1/1",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0 }}>
+                    {item.lastPhoto
+                      ? <img src={item.lastPhoto} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
+                      : <GarmentShape category={item.category}/>
+                    }
+                  </div>
+                  {/* Info */}
+                  <div style={{ padding:"8px 10px 10px",flex:1 }}>
+                    <div style={{ display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:3 }}>
+                      <span style={{ fontFamily:F.mono,fontSize:9,color:C.sub,letterSpacing:"0.06em" }}>{String(idx+1).padStart(2,"0")}</span>
+                      <span style={{ fontFamily:F.mono,fontSize:9,color:C.sub,letterSpacing:"0.04em" }}>{item.count}×</span>
                     </div>
-                    <span style={{ fontSize:11,fontWeight:700,color:C.sage,background:C.sage+"14",padding:"3px 10px",borderRadius:0 }}>{item.category}</span>
-                    <ChevronRight size={14} color={C.border}/>
-                  </button>
-                ))
-          }
+                    <div style={{ fontSize:12,fontWeight:600,color:C.ink,lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" }}>{item.name}</div>
+                    <div style={{ fontSize:11,color:C.sub,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{item.brand||item.category||""}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        {selectedWearItem&&(
-          <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",flexDirection:"column",justifyContent:"flex-end" }} onClick={()=>setSelectedWearItem(null)}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,padding:"8px 20px 44px",maxHeight:"70vh",display:"flex",flexDirection:"column" }}>
-              <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 16px",flexShrink:0 }}/>
-              <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:20,flexShrink:0 }}>
-                <div style={{ width:52,height:52,borderRadius:0,background:"#fff",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,overflow:"hidden" }}>{selectedWearItem.lastPhoto?<img src={selectedWearItem.lastPhoto} alt={selectedWearItem.name} style={{ width:"100%",height:"100%",objectFit:"contain" }}/>:catEmoji(selectedWearItem.category)}</div>
-                <div><div style={{ fontSize:18,fontWeight:900,color:C.ink,letterSpacing:"-0.02em" }}>{selectedWearItem.name}</div><div style={{ fontSize:13,color:C.sub }}>{selectedWearItem.category} · {selectedWearItem.count} {selectedWearItem.count===1?"wear":"wears"}</div></div>
+        {/* Item detail — full-screen overlay */}
+        {selectedWearItem&&(()=>{
+          const sw=selectedWearItem;
+          const cpwVal=sw.price!=null&&sw.count>0?(sw.price/sw.count):null;
+          const lastDays=(()=>{ if(!datesWorn.length) return null; const [y,m,d]=datesWorn[0].split("-").map(Number); const diff=Math.round((new Date()-new Date(y,m-1,d))/(1000*60*60*24)); return diff; })();
+          const firstWorn=(()=>{ if(!datesWorn.length) return null; const [y,m,d]=datesWorn[datesWorn.length-1].split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",year:"numeric"}); })();
+
+          // Wear rhythm — last 12 weeks
+          const todayDate=new Date(); todayDate.setHours(0,0,0,0);
+          const wornSet=new Set(datesWorn);
+          const rhythmCells=[];
+          for(let i=83;i>=0;i--){
+            const dd=new Date(todayDate); dd.setDate(todayDate.getDate()-i);
+            const k=`${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,"0")}-${String(dd.getDate()).padStart(2,"0")}`;
+            rhythmCells.push(wornSet.has(k));
+          }
+
+          // Frequently paired
+          const pairedCounts={};
+          datesWorn.forEach(dk=>{ const e=photoData[dk]; if(!e?.items) return; e.items.forEach(it=>{ const k=(it.name||"").trim().toLowerCase(); if(!k||k===sw.name.trim().toLowerCase()) return; pairedCounts[k]=(pairedCounts[k]||0)+1; }); });
+          const pairedItems=Object.entries(pairedCounts).sort(([,a],[,b])=>b-a).slice(0,6).map(([name,cnt])=>{ const found=wearArr.find(w=>w.name.trim().toLowerCase()===name)||{name,category:"Other",count:0}; return {...found,pairCount:cnt}; });
+
+          const MLABEL={ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub };
+          const AttrRow=({label,value,last,valueColor})=>(
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 16px",borderBottom:last?"none":`1px solid ${C.border}` }}>
+              <span style={{ fontSize:12,color:C.sub }}>{label}</span>
+              <span style={{ fontSize:12,color:valueColor||C.ink,fontWeight:500 }}>{value}</span>
+            </div>
+          );
+
+          const isTop5=wearArr.findIndex(w=>w.name.trim().toLowerCase()===sw.name.trim().toLowerCase())<5;
+          const totalItems=wearArr.length;
+          return (
+            <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:9999,display:"flex",flexDirection:"column",overflowY:"auto" }}>
+              {/* Top nav */}
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px 12px",background:C.surface,flexShrink:0 }}>
+                <button onClick={()=>setSelectedWearItem(null)} style={{ border:"none",background:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4 }}>
+                  <ChevronLeft size={14} color={C.sub} strokeWidth={2}/>
+                  <span style={{ fontFamily:F.mono,fontSize:10,letterSpacing:"0.08em",color:C.sub }}>Wardrobe</span>
+                </button>
+                <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.12em",textTransform:"uppercase",color:C.sage }}>Item {String(sw._idx||1).padStart(2,"0")} / {totalItems}</span>
+                <span style={{ fontFamily:F.mono,fontSize:13,color:C.sub,letterSpacing:"0.1em" }}>···</span>
               </div>
-              {(selectedWearItem.brand||selectedWearItem.price!=null||selectedWearItem.color)&&(
-                <div style={{ display:"flex",gap:8,marginBottom:16,flexShrink:0,flexWrap:"wrap" }}>
-                  {toColors(selectedWearItem.color).length>0&&<div style={{ background:C.surface,border:`1px solid ${C.border}`,padding:"6px 12px",display:"flex",alignItems:"center",gap:8 }}><div style={{ display:"flex",gap:4 }}>{toColors(selectedWearItem.color).map(c=><div key={c} style={{ width:12,height:12,borderRadius:"50%",background:colorHex[c]||"#B0B0A8",border:(c==="White"||c==="Cream")?`1px solid ${C.border}`:"none",flexShrink:0 }}/>)}</div><div><div style={{ fontSize:10,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2 }}>Colour</div><div style={{ fontSize:13,fontWeight:700,color:C.ink }}>{toColors(selectedWearItem.color).join(", ")}</div></div></div>}
-                  {selectedWearItem.brand&&<div style={{ background:C.surface,border:`1px solid ${C.border}`,padding:"6px 12px" }}><div style={{ fontSize:10,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2 }}>Brand</div><div style={{ fontSize:13,fontWeight:700,color:C.ink }}>{selectedWearItem.brand}</div></div>}
-                  {selectedWearItem.price!=null&&<div style={{ background:C.surface,border:`1px solid ${C.border}`,padding:"6px 12px" }}><div style={{ fontSize:10,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2 }}>Price</div><div style={{ fontSize:13,fontWeight:700,color:C.ink }}>${selectedWearItem.price.toFixed(2)}</div></div>}
-                  {selectedWearItem.price!=null&&<div style={{ background:C.sage+"14",border:`1px solid ${C.sage}44`,padding:"6px 12px" }}><div style={{ fontSize:10,fontWeight:700,color:C.sage,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2 }}>Cost / Wear</div><div style={{ fontSize:13,fontWeight:700,color:C.sage }}>${(selectedWearItem.price/selectedWearItem.count).toFixed(2)}</div></div>}
+
+              {/* Image hero */}
+              <div style={{ margin:"0 16px",background:C.white,border:`1px solid ${C.border}`,position:"relative",flexShrink:0 }}>
+                <div style={{ width:"100%",aspectRatio:"4/3",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden" }}>
+                  {sw.lastPhoto
+                    ? <img src={sw.lastPhoto} alt={sw.name} style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
+                    : <GarmentShape category={sw.category}/>
+                  }
+                </div>
+                {isTop5&&(
+                  <div style={{ position:"absolute",top:10,left:10,background:C.ink,padding:"4px 8px",display:"flex",alignItems:"center",gap:4 }}>
+                    <span style={{ fontSize:8,color:"#fff" }}>★</span>
+                    <span style={{ fontFamily:F.mono,fontSize:9,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",color:"#fff" }}>Top 5</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Identity */}
+              <div style={{ padding:"16px 20px 4px",flexShrink:0 }}>
+                <div style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub,marginBottom:6 }}>{sw.category||"Item"} · N°{String(sw._idx||"?").padStart(2,"0")}</div>
+                <h1 style={{ fontSize:26,fontWeight:800,color:C.ink,margin:"0 0 5px",letterSpacing:"-0.02em",lineHeight:1.15 }}>{sw.name}</h1>
+                <div style={{ fontSize:13,color:C.sub }}>{[sw.brand,firstWorn?`acquired ${firstWorn}`:null].filter(Boolean).join(" · ")}</div>
+              </div>
+
+              {/* Stats row */}
+              <div style={{ display:"flex",padding:"16px 20px 20px",gap:24,flexShrink:0 }}>
+                {[
+                  { val:cpwVal!=null?`${getCurrencySymbol()}${cpwVal.toFixed(2)}`:"—", label:"CPW" },
+                  { val:`${sw.count}×`, label:"Worn" },
+                  { val:lastDays!=null?`${lastDays}d`:"—", label:"Last" },
+                ].map((s,i)=>(
+                  <div key={i} style={{ display:"flex",flexDirection:"column",gap:4 }}>
+                    <div style={{ fontSize:24,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1 }}>{s.val}</div>
+                    <div style={{ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* § ATTRIBUTES */}
+              <div style={{ margin:"0 16px 12px",background:C.white,border:`1px solid ${C.border}`,flexShrink:0 }}>
+                <div style={{ padding:"10px 16px",borderBottom:`1px solid ${C.border}` }}>
+                  <span style={{ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ Attributes</span>
+                </div>
+                {sw.category&&<AttrRow label="Category" value={sw.category}/>}
+                {toColors(sw.color).length>0&&<AttrRow label="Color" value={toColors(sw.color).join(" · ")}/>}
+                {sw.brand&&<AttrRow label="Brand" value={sw.brand}/>}
+                {sw.price!=null&&<AttrRow label="Price" value={`${getCurrencySymbol()}${Number(sw.price).toFixed(2)}`}/>}
+                {cpwVal!=null&&<AttrRow label="Cost per wear" value={`${getCurrencySymbol()}${cpwVal.toFixed(2)}`} valueColor={C.sage} last/>}
+                {!sw.category&&!sw.color&&!sw.brand&&!sw.price&&<div style={{ padding:"14px 16px" }}><span style={{ fontSize:13,color:C.sub }}>No attributes recorded</span></div>}
+              </div>
+
+              {/* § WEAR RHYTHM */}
+              <div style={{ margin:"0 16px 12px",background:C.white,border:`1px solid ${C.border}`,flexShrink:0 }}>
+                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:`1px solid ${C.border}` }}>
+                  <span style={{ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ Wear Rhythm</span>
+                  <span style={{ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>12 Weeks</span>
+                </div>
+                <div style={{ padding:"14px 16px" }}>
+                  <div style={{ display:"grid",gridTemplateColumns:"repeat(12,1fr)",gridAutoFlow:"column",gridTemplateRows:"repeat(7,1fr)",gap:2 }}>
+                    {rhythmCells.map((worn,i)=>(
+                      <div key={i} style={{ width:"100%",aspectRatio:"1/1",background:worn?C.sage:C.surface,opacity:worn?1:0.7 }}/>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* § FREQUENTLY PAIRED */}
+              {pairedItems.length>0&&(
+                <div style={{ margin:"0 16px 40px",background:C.white,border:`1px solid ${C.border}`,flexShrink:0 }}>
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:`1px solid ${C.border}` }}>
+                    <span style={{ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ Frequently Paired</span>
+                    <span style={{ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>{pairedItems.length} of {Object.keys(pairedCounts).length}</span>
+                  </div>
+                  <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:0 }}>
+                    {pairedItems.slice(0,3).map((pi,i)=>(
+                      <div key={i} style={{ borderRight:i<2?`1px solid ${C.border}`:"none" }}>
+                        <div style={{ width:"100%",aspectRatio:"1/1",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden" }}>
+                          {pi.lastPhoto
+                            ? <img src={pi.lastPhoto} alt={pi.name} style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
+                            : <GarmentShape category={pi.category}/>
+                          }
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px",flexShrink:0 }}>Worn on</p>
-              <div style={{ overflowY:"auto",flex:1 }}>
-                {datesWorn.length===0
-                  ? <div style={{ textAlign:"center",padding:20,color:C.sub,fontSize:13 }}>No dates found</div>
-                  : datesWorn.map((key,i)=>{
-                      const [y,m,d]=key.split("-").map(Number);
-                      const label=new Date(y,m-1,d).toLocaleDateString("en-US",{weekday:"short",month:"long",day:"numeric",year:"numeric"});
-                      return <div key={i} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:i<datesWorn.length-1?`1px solid ${C.border}`:"none" }}><Calendar size={14} color={C.sage}/><span style={{ fontSize:14,color:C.ink }}>{label}</span></div>;
-                    })
-                }
-              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     );
   }
@@ -663,7 +1016,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
         <div style={{ flex:1,overflowY:"auto",padding:16 }}>
           <div style={{ background:C.white,borderRadius:0,padding:20,marginBottom:12,display:"flex",alignItems:"center",gap:16 }}>
             <div style={{ fontSize:44 }}>{selectedPiece.image}</div>
-            <div><div style={{ fontSize:26,fontWeight:900,color:C.ink,letterSpacing:"-0.03em" }}>{selectedPiece.wears} wears</div><div style={{ fontSize:13,color:C.sub }}>{pct}% of outfit appearances</div></div>
+            <div><div style={{ fontSize:26,fontWeight:500,color:C.ink,letterSpacing:"-0.02em",fontFamily:F.mono }}>{selectedPiece.wears} wears</div><div style={{ fontSize:13,color:C.sub }}>{pct}% of outfit appearances</div></div>
           </div>
           <div style={{ background:C.white,borderRadius:0,padding:16,border:`1px solid ${C.border}` }}>
             <div style={{ fontSize:13,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8 }}>Category</div>
@@ -686,7 +1039,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             <div style={{ background:C.ink,borderRadius:0,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:12,color:"rgba(255,255,255,.8)",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em" }}>Average Cost / Wear</div>
-                <div style={{ fontSize:36,fontWeight:900,color:"#fff",lineHeight:1.1,marginTop:4,letterSpacing:"-0.03em" }}>${avgCPW}</div>
+                <div style={{ fontSize:36,fontWeight:500,color:"#fff",lineHeight:1.1,marginTop:4,letterSpacing:"-0.02em",fontFamily:F.mono }}>${avgCPW}</div>
                 <div style={{ fontSize:12,color:"rgba(255,255,255,.7)",marginTop:2 }}>{pricedItems.length} items tracked</div>
               </div>
               <DollarSign size={44} color="rgba(255,255,255,.8)" strokeWidth={1.5}/>
@@ -694,13 +1047,13 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
           )}
           {priced.length>0&&(
             <div style={{ marginBottom:16 }}>
-              <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Tracked Items</p>
+              <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:10 }}>Tracked Items</p>
               {priced.map((item,i)=>(
                 <div key={i} style={{ background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}` }}>
                   <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:10 }}>
                     <div style={{ width:42,height:42,borderRadius:0,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{catEmoji(item.category)}</div>
                     <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:700,color:C.ink }}>{item.label}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>${item.price.toFixed(2)} · {item.wears} wear{item.wears!==1?"s":""}</div></div>
-                    <div style={{ textAlign:"right" }}><div style={{ fontSize:20,fontWeight:900,color:C.sage,letterSpacing:"-0.02em" }}>${item.cpw.toFixed(2)}</div><div style={{ fontSize:10,color:C.sub }}>per wear</div></div>
+                    <div style={{ textAlign:"right" }}><div style={{ fontSize:20,fontWeight:500,color:C.sage,letterSpacing:"-0.01em",fontFamily:F.mono }}>${item.cpw.toFixed(2)}</div><div style={{ fontSize:10,color:C.sub }}>per wear</div></div>
                   </div>
                   <div style={{ height:4,borderRadius:99,background:C.border,marginBottom:10,overflow:"hidden" }}><div style={{ height:"100%",width:`${Math.min((item.wears/maxWears)*100,100)}%`,background:C.sage,borderRadius:99 }}/></div>
                   <div style={{ display:"flex",gap:8 }}>
@@ -713,7 +1066,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
           )}
           {unpriced.length>0&&(
             <div>
-              <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Add Price to Track ({unpriced.length} items)</p>
+              <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:10 }}>Add Price to Track ({unpriced.length} items)</p>
               {unpriced.map((item,i)=>(
                 <button key={i} onClick={()=>{ setCpwAddModal(item); setCpwPriceInput(""); }} style={{ width:"100%",background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1.5px dashed ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",display:"flex",alignItems:"center",gap:12 }}>
                   <div style={{ width:42,height:42,borderRadius:0,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{catEmoji(item.category)}</div>
@@ -735,7 +1088,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               </div>
               <label style={{ display:"block",fontSize:13,fontWeight:700,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em" }}>Item Price ($)</label>
               <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} placeholder="0.00" style={{ width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
-              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:0,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>Cost per wear</span><span style={{ fontSize:22,fontWeight:800,color:C.sage }}>${(parseFloat(cpwPriceInput)/cpwAddModal.wears).toFixed(2)}</span></div>}
+              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:0,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>Cost per wear</span><span style={{ fontSize:22,fontWeight:500,color:C.sage,fontFamily:F.mono }}>${(parseFloat(cpwPriceInput)/cpwAddModal.wears).toFixed(2)}</span></div>}
               <button onClick={()=>{ if(!cpwPriceInput||parseFloat(cpwPriceInput)<=0) return; setCpwPrices(p=>({...p,[cpwAddModal.key]:parseFloat(cpwPriceInput)})); setCpwAddModal(null); }} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:!cpwPriceInput||parseFloat(cpwPriceInput)<=0?C.border:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Save Price</button>
             </div>
           </div>
@@ -747,7 +1100,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               <h2 style={{ fontSize:20,fontWeight:800,color:C.ink,marginBottom:6 }}>Edit Price</h2>
               <p style={{ fontSize:14,color:C.sub,marginBottom:20 }}>{cpwEditItem.label}</p>
               <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} style={{ width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
-              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:0,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>New cost per wear</span><span style={{ fontSize:22,fontWeight:800,color:C.sage }}>${(parseFloat(cpwPriceInput)/cpwEditItem.wears).toFixed(2)}</span></div>}
+              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:0,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>New cost per wear</span><span style={{ fontSize:22,fontWeight:500,color:C.sage,fontFamily:F.mono }}>${(parseFloat(cpwPriceInput)/cpwEditItem.wears).toFixed(2)}</span></div>}
               <button onClick={()=>{ setCpwPrices(p=>({...p,[cpwEditItem.key]:parseFloat(cpwPriceInput)})); setCpwEditItem(null); }} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Update Price</button>
             </div>
           </div>
@@ -767,172 +1120,253 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
     );
   }
 
-  const D = "1px solid rgba(58,68,56,0.3)"; // section divider
-  const iconBox = { width:44,height:44,borderRadius:12,background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 };
+  // Period-filtered analytics data
+  const _curY=new Date().getFullYear();
+  const _todayStr=(()=>{const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;})();
+  const _pf=dk=>{if(periodTab==="all")return true;const[y,m]=dk.split("-").map(Number);if(periodTab==="q1")return y===_curY&&m>=1&&m<=3;if(periodTab==="q2")return y===_curY&&m>=4&&m<=6;if(periodTab==="q3")return y===_curY&&m>=7&&m<=9;if(periodTab==="ytd")return y===_curY&&dk<=_todayStr;return true;};
+  const pEntries=Object.entries(photoData).filter(([k,v])=>v?.logged&&_pf(k));
+  const pDates=pEntries.map(([k])=>k).sort();
+  const pOutfitCount=pEntries.length;
+  const pAllItems=pEntries.flatMap(([,e])=>(e.items||[]).filter(i=>i&&typeof i==="object"&&i.name));
+  const pUniqueNames=new Set(pAllItems.map(i=>i.name.trim().toLowerCase()));
+  const pGarments=pUniqueNames.size;
+  const pDays=pDates.length>0?Math.max(1,Math.round((new Date()-new Date(pDates[0]))/(1000*60*60*24))+1):0;
+  const pItemMap={};
+  pAllItems.forEach(item=>{const k=item.name.trim().toLowerCase();if(!pItemMap[k])pItemMap[k]={name:item.name,category:item.category||"Other",count:0,price:null,brand:item.brand||null,photo:item.itemPhoto||null};pItemMap[k].count++;const p=parseFloat(item.price);if(!isNaN(p)&&p>0)pItemMap[k].price=p;if(item.itemPhoto&&!pItemMap[k].photo)pItemMap[k].photo=item.itemPhoto;});
+  const pCPWVals=Object.values(pItemMap).filter(v=>v.price!=null).map(v=>v.price/v.count);
+  const pAvgCPW=pCPWVals.length>0?(pCPWVals.reduce((s,v)=>s+v,0)/pCPWVals.length):null;
+  const pWornNames=new Set(pAllItems.map(i=>i.name.trim().toLowerCase()));
+  const pUtil=wearArr.length>0?Math.round(pWornNames.size/wearArr.length*100):0;
+  const pLowUse=Object.values(pItemMap).filter(v=>v.count<=1).length;
+  const pNewItems=(()=>{if(periodTab==="all")return 0;const prior=new Set(Object.entries(photoData).filter(([k,v])=>v?.logged&&!_pf(k)&&k<(pDates[0]||"9")).flatMap(([,e])=>(e.items||[]).filter(i=>i?.name).map(i=>i.name.trim().toLowerCase())));return[...pWornNames].filter(n=>!prior.has(n)).length;})();
+  const pTotalWears=pAllItems.length;
+  const pCO2=pTotalWears>0?(pTotalWears*0.4).toFixed(1):"—";
+  const linePoints=(()=>{if(!pDates.length)return[];const dc={};pDates.forEach(d=>{dc[d]=(dc[d]||0)+1;});const sorted=Object.entries(dc).sort(([a],[b])=>a.localeCompare(b));let cum=0;return sorted.map(([,c])=>{cum+=c;return cum;});})();
+  const pColorCounts={};
+  pAllItems.forEach(item=>{toColors(item.color).forEach(c=>{const k=colorHex[c]?c:"Other";pColorCounts[k]=(pColorCounts[k]||0)+1;});});
+  const pColorTotal=Object.values(pColorCounts).reduce((s,v)=>s+v,0)||1;
+  const pColorData=Object.entries(pColorCounts).filter(([n])=>n!=="Other").sort(([,a],[,b])=>b-a).concat(pColorCounts["Other"]?[["Other",pColorCounts["Other"]]]:[]).map(([name,cnt])=>({name,pct:Math.round(cnt/pColorTotal*100),hex:colorHex[name]||"#B0AFA9"})).slice(0,5);
+  const pItemArr=Object.values(pItemMap).sort((a,b)=>b.count-a.count);
+  const pMaxWears=pItemArr[0]?.count||1;
+  const pMostWorn=pItemArr.slice(0,5);
+  const pLeastWorn=[...pItemArr].sort((a,b)=>a.count-b.count).slice(0,5);
+  const pStyleCounts={};
+  pEntries.forEach(([,e])=>{const s=e.style&&["Everyday","Going Out","Activewear","Professional"].includes(e.style)?e.style:getStyle(e.items);pStyleCounts[s]=(pStyleCounts[s]||0)+1;});
+  const pStyleTotal=Object.values(pStyleCounts).reduce((s,v)=>s+v,0)||1;
+  const pStyleData=Object.entries(pStyleCounts).sort(([,a],[,b])=>b-a).map(([name,cnt])=>({name,pct:Math.round(cnt/pStyleTotal*100),count:cnt}));
+  const topStyle=pStyleData[0];
+  const ML={fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub};
+  const GS=({cat,size=24})=>{const col="#3A4A38";const sh={Top:<path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,Bottom:<path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,Dresses:<path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,Outerwear:<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,Shoes:<path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,Accessories:<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>};return(<svg viewBox="0 0 110 110" width={size} height={size}>{sh[cat]||sh.Top}</svg>);};
 
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff" }}>
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface}}>
       {/* Header */}
-      <div style={{ padding:"28px 24px 20px",background:"#fff",flexShrink:0,display:"flex",alignItems:"flex-start",justifyContent:"space-between" }}>
-        <div>
-          {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
-          <h1 style={{ fontSize:34,fontWeight:700,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Analytics</h1>
-          <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0",fontWeight:400 }}>Your wardrobe insights</p>
+      <div style={{padding:"28px 24px 0",background:C.surface,flexShrink:0}}>
+        {onBack&&<button onClick={onBack} style={{display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 8px",fontFamily:"inherit"}}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+          <div>
+            <span style={{...ML}}>§ 01 / Overview</span>
+            <h1 style={{fontSize:34,fontWeight:800,color:C.ink,margin:"6px 0 4px",letterSpacing:"-0.03em",lineHeight:1}}>Analytics</h1>
+            <p style={{fontSize:11,color:C.sub,margin:0,fontFamily:F.mono,letterSpacing:"0.03em"}}>
+              {pDays>0?`${pDays}d · `:""}{pGarments} garments tracked · <span style={{color:C.sage,cursor:"pointer"}} onClick={()=>setView("items")}>{pOutfitCount} outfits</span>
+            </p>
+          </div>
+          <button onClick={()=>setView("items")} style={{border:`1px solid ${C.border}`,background:C.white,padding:"6px 12px",cursor:"pointer",fontFamily:F.mono,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",color:C.sub,marginTop:4,flexShrink:0}}>Library</button>
         </div>
-        <button onClick={()=>setShowFilterMenu(true)} style={{ display:"flex",alignItems:"center",gap:6,border:`1px solid ${C.border}`,borderRadius:99,padding:"8px 16px",fontSize:13,fontWeight:500,color:C.ink,marginTop:4,flexShrink:0,background:"#fff",cursor:"pointer",fontFamily:"inherit" }}>
-          <Calendar size={13} color={C.ink} strokeWidth={1.5}/>
-          <span>{filterLabel}</span>
-          <ChevronDown size={13} color={C.ink} strokeWidth={1.5}/>
-        </button>
-        {showFilterMenu&&(
-          <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:9998,display:"flex",alignItems:"flex-end" }} onClick={()=>setShowFilterMenu(false)}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:"#fff",width:"100%",maxHeight:"65vh",overflow:"auto",padding:"0 0 44px",animation:"slideUp .28s cubic-bezier(.32,.72,0,1)" }}>
-              <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"10px auto 0" }}/>
-              <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",padding:"18px 20px 10px",margin:0,borderBottom:`1px solid ${C.border}` }}>Filter Period</p>
-              {["overall",..._availableMonths].map(m=>(
-                <button key={m} onClick={()=>{ setFilterPeriod(m); setShowFilterMenu(false); }} style={{ width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,textAlign:"left",fontFamily:"inherit",fontSize:15,fontWeight:filterPeriod===m?700:400,color:filterPeriod===m?C.ink:C.sub,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",boxSizing:"border-box" }}>
-                  {_formatPeriod(m)}
-                  {filterPeriod===m&&<Check size={16} color={C.ink} strokeWidth={2.5}/>}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={{ flex:1,overflowY:"auto",background:"#fff" }}>
-        {/* Stat row: Total Outfits | Total Items — always visible */}
-        <div style={{ borderTop:D,borderBottom:D,display:"flex" }}>
-          <div style={{ flex:1,padding:"20px 24px" }}>
-            <div style={iconBox}><CalendarDays size={20} color={C.ink} strokeWidth={1.5}/></div>
-            <div style={{ fontSize:36,fontWeight:700,color:C.ink,letterSpacing:"-0.04em",lineHeight:1,marginTop:16 }}>{totalOutfits}</div>
-            <div style={{ fontSize:13,color:C.sub,marginTop:5,fontWeight:400 }}>Total Outfits</div>
-          </div>
-          <div style={{ width:1,background:"rgba(58,68,56,0.15)",flexShrink:0 }}/>
-          <button onClick={()=>totalOutfits>0&&setView("items")} style={{ flex:1,padding:"20px 24px",background:"transparent",border:"none",textAlign:"left",cursor:totalOutfits>0?"pointer":"default",fontFamily:"inherit" }}>
-            <div style={iconBox}><Shirt size={20} color={C.ink} strokeWidth={1.5}/></div>
-            <div style={{ fontSize:36,fontWeight:700,color:C.ink,letterSpacing:"-0.04em",lineHeight:1,marginTop:16 }}>{totalItemsCount}</div>
-            <div style={{ fontSize:13,color:C.sub,marginTop:5,fontWeight:400 }}>Total Items</div>
-            {totalOutfits>0&&<div style={{ fontSize:12,fontWeight:600,color:C.ink,marginTop:8 }}>Tap to view →</div>}
-          </button>
-        </div>
-
-        {/* Avg Cost/Wear row */}
-        <button onClick={()=>totalOutfits>0&&setView("cpw")} style={{ width:"100%",borderTop:"none",borderLeft:"none",borderRight:"none",borderBottom:D,padding:"18px 24px",background:"transparent",textAlign:"left",cursor:totalOutfits>0?"pointer":"default",fontFamily:"inherit",display:"flex",alignItems:"center",gap:14,boxSizing:"border-box" }}>
-          <div style={iconBox}><DollarSign size={20} color={C.ink} strokeWidth={1.5}/></div>
-          <div style={{ flex:1 }}>
-            <div style={{ fontSize:13,color:C.sub,fontWeight:500,marginBottom:4 }}>Avg Cost/Wear</div>
-            <div style={{ fontSize:22,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1 }}>{avgCPW==="—"?"—":`$${avgCPW}`}</div>
-          </div>
-          {totalOutfits>0&&<span style={{ fontSize:13,fontWeight:500,color:C.ink,whiteSpace:"nowrap" }}>Tap to manage →</span>}
-        </button>
-
-        {/* Most Worn Pieces */}
-        <div style={{ borderBottom:D,padding:"18px 24px" }}>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:totalOutfits>0?18:0 }}>
-            <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-              <div style={iconBox}><TrendingUp size={20} color={C.ink} strokeWidth={1.5}/></div>
-              <span style={{ fontSize:15,fontWeight:600,color:C.ink }}>Most Worn Pieces</span>
-            </div>
-            {totalOutfits>0&&<button onClick={()=>setView("items")} style={{ background:"none",border:"none",fontSize:13,fontWeight:500,color:C.ink,cursor:"pointer",fontFamily:"inherit",padding:0 }}>View All →</button>}
-          </div>
-          {totalOutfits===0 ? (
-            <div style={{ padding:"36px 0 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:10 }}>
-              <div style={{ width:72,height:72,borderRadius:"50%",background:"rgba(58,68,56,0.07)",display:"flex",alignItems:"center",justifyContent:"center" }}><Shirt size={30} color={C.sub} strokeWidth={1}/></div>
-              <div style={{ fontSize:16,fontWeight:600,color:C.ink,marginTop:4 }}>No outfits logged yet</div>
-              <div style={{ fontSize:13,color:C.sub,textAlign:"center",lineHeight:1.6 }}>Start logging your outfits to see your insights</div>
-              {onAddItem&&<button onClick={onAddItem} style={{ marginTop:12,height:50,padding:"0 32px",border:"none",background:C.ink,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",borderRadius:8 }}>Log Your First Outfit</button>}
-            </div>
-          ) : computedMostWorn.map((p,i)=>(
-            <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:"transparent",border:"none",borderBottom:i<computedMostWorn.length-1?`1px solid ${C.border}`:"none",padding:"12px 0",display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
-              <div style={{ width:44,height:44,background:"rgba(58,68,56,0.07)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{p.image}</div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{p.name}</div>
-                <div style={{ fontSize:12,color:C.sub,marginTop:3 }}>{p.wears} wear{p.wears!==1?"s":""}{totalWears>0?` · ${((p.wears/totalWears)*100).toFixed(0)}%`:""}</div>
-              </div>
-              <ChevronRight size={15} color={C.sub}/>
+        {/* Period tabs */}
+        <div style={{display:"flex",gap:0,marginTop:14,borderBottom:`1px solid ${C.border}`}}>
+          {[{k:"q1",l:"Q1"},{k:"q2",l:"Q2"},{k:"q3",l:"Q3"},{k:"ytd",l:"YTD"},{k:"all",l:"All"}].map(t=>(
+            <button key={t.k} onClick={()=>setPeriodTab(t.k)} style={{flex:1,height:32,border:"none",borderBottom:periodTab===t.k?`2px solid ${C.ink}`:"2px solid transparent",background:periodTab===t.k?C.ink:"transparent",fontFamily:F.mono,fontSize:9,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",color:periodTab===t.k?"#fff":C.sub,cursor:"pointer",padding:0,marginBottom:-1,transition:"background .15s"}}>
+              {t.l}
             </button>
           ))}
         </div>
+      </div>
 
-        {totalOutfits>0&&<>
-          {/* Least Worn Pieces */}
-          <div style={{ borderBottom:D,padding:"18px 24px" }}>
-            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:18 }}>
-              <div style={iconBox}><TrendingUp size={20} color={C.ink} strokeWidth={1.5} style={{ transform:"rotate(180deg)" }}/></div>
-              <div>
-                <div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Least Worn Pieces</div>
-                <div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Items that need more love</div>
+      <div style={{flex:1,overflowY:"auto"}}>
+        {/* 4 stat cards */}
+        <div style={{display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",padding:"16px 16px 0",msOverflowStyle:"none"}}>
+          {[
+            {label:"Cost / Wear",val:pAvgCPW!=null?`${getCurrencySymbol()}${pAvgCPW.toFixed(2)}`:"—",sub:"avg across tracked items",onClick:()=>pOutfitCount>0&&setView("cpw")},
+            {label:"Utilization",val:pUtil>0?`${pUtil}%`:"—",sub:`${pWornNames.size} of ${wearArr.length} worn`,onClick:null},
+            {label:"New · Unworn",val:(pNewItems>0||pLowUse>0)?`${pNewItems} · ${pLowUse}`:"—",sub:"new items · low-use",onClick:null},
+            {label:"CO₂ Avoided",val:pCO2!=="—"?`${pCO2}kg`:"—",sub:"re-wear impact",onClick:null},
+          ].map((s,i)=>(
+            <div key={i} onClick={s.onClick||undefined} style={{flexShrink:0,width:138,background:C.white,border:`1px solid ${C.border}`,padding:"14px 14px 12px",cursor:s.onClick?"pointer":"default"}}>
+              <div style={{...ML,marginBottom:8}}>{s.label}</div>
+              <div style={{fontSize:22,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1,fontFamily:F.mono}}>{s.val}</div>
+              <div style={{fontSize:10,color:C.sub,marginTop:6,lineHeight:1.3}}>{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {pOutfitCount===0?(
+          <div style={{textAlign:"center",padding:"48px 24px"}}>
+            <Shirt size={36} color={C.sub} strokeWidth={1} style={{margin:"0 auto 16px",display:"block"}}/>
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,marginBottom:6}}>No outfits logged{periodTab!=="all"?" this period":""}</div>
+            <div style={{fontSize:13,color:C.sub}}>Log outfits on the Calendar tab to see your insights</div>
+          </div>
+        ):(
+          <>
+            {/* § 02 / VOLUME — cumulative line chart */}
+            {linePoints.length>1&&(
+              <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+                <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
+                  <span style={{...ML}}>§ 02 / Volume</span>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Wears across the period</div>
+                </div>
+                <div style={{padding:"14px 16px 16px"}}>
+                  {(()=>{
+                    const W=340,H=80,padB=4,padT=4;
+                    const max=Math.max(...linePoints)||1;
+                    const pts=linePoints.map((v,i)=>[(i/(linePoints.length-1))*W,padT+(H-padT-padB)-(v/max)*(H-padT-padB)]);
+                    const d=pts.map((p,i)=>`${i===0?"M":"L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+                    return(<svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block",height:80}}>
+                      <line x1={0} x2={W} y1={H-padB} y2={H-padB} stroke={C.border} strokeWidth="0.5"/>
+                      <path d={d} stroke={C.sage} strokeWidth="1.5" fill="none" vectorEffect="non-scaling-stroke"/>
+                      <circle cx={pts[pts.length-1][0]} cy={pts[pts.length-1][1]} r="2" fill={C.sage}/>
+                    </svg>);
+                  })()}
+                </div>
               </div>
-            </div>
-            {computedLeastWorn.map((p,i)=>(
-              <button key={i} onClick={()=>{ setSelectedPiece(p); setView("piece"); }} style={{ width:"100%",background:"transparent",border:"none",borderBottom:i<computedLeastWorn.length-1?`1px solid ${C.border}`:"none",padding:"12px 0",display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left",fontFamily:"inherit" }}>
-                <div style={{ width:44,height:44,background:"rgba(58,68,56,0.07)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{p.image}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:14,fontWeight:600,color:C.ink }}>{p.name}</div>
-                  <div style={{ fontSize:12,color:C.sub,marginTop:3 }}>{p.wears} wear{p.wears!==1?"s":""}{totalWears>0?` · ${((p.wears/totalWears)*100).toFixed(0)}%`:""}</div>
-                </div>
-                <ChevronRight size={15} color={C.sub}/>
-              </button>
-            ))}
-          </div>
+            )}
 
-          {/* Colour Palette */}
-          <div style={{ borderBottom:D,padding:"18px 24px" }}>
-            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:18 }}>
-              <div style={iconBox}><Palette size={20} color={C.ink} strokeWidth={1.5}/></div>
-              <span style={{ fontSize:15,fontWeight:600,color:C.ink }}>Colour Palette</span>
-            </div>
-            {computedColorData.length>0?(
-              <>
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart><Pie data={computedColorData} cx="50%" cy="50%" innerRadius={55} outerRadius={82} paddingAngle={3} dataKey="value">{computedColorData.map((e,i)=><Cell key={i} fill={e.color} stroke={e.color==="#E8E8E8"||e.color==="#B0B0A8"?C.border:"none"}/>)}</Pie></PieChart>
-                </ResponsiveContainer>
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px 8px",marginTop:16 }}>
-                  {computedColorData.map((e,i)=>(
-                    <div key={i} style={{ display:"flex",alignItems:"center",gap:8 }}>
-                      <div style={{ width:13,height:13,borderRadius:"50%",background:e.color,border:e.color==="#E8E8E8"||e.color==="#B0B0A8"?`1px solid ${C.border}`:"none",flexShrink:0 }}/>
-                      <span style={{ fontSize:13,color:C.ink,flex:1 }}>{e.name}</span>
-                      <span style={{ fontSize:13,fontWeight:600,color:C.ink }}>{e.value}%</span>
-                    </div>
-                  ))}
+            {/* § 03 / PALETTE — colour bar rows */}
+            {pColorData.length>0&&(
+              <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+                <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
+                  <span style={{...ML}}>§ 03 / Palette</span>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Color distribution</div>
                 </div>
-                <div style={{ display:"flex",gap:6,marginTop:20,width:"50%" }}>
-                  {computedColorData.slice(0,5).map((e,i)=>(
-                    <div key={i} style={{ flex:1,border:`1px solid ${C.border}`,overflow:"hidden",borderRadius:4 }}>
-                      <div style={{ height:32,background:e.color }}/>
-                      <div style={{ padding:"4px 5px" }}>
-                        <div style={{ fontSize:9,fontWeight:600,color:C.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{e.name}</div>
-                        <div style={{ fontSize:8,color:C.sub,fontFamily:"monospace" }}>{e.color.toUpperCase()}</div>
-                      </div>
+                {pColorData.map((c,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:i<pColorData.length-1?`1px solid ${C.border}`:"none",gap:10}}>
+                    <div style={{width:10,height:10,flexShrink:0,background:c.hex,border:(c.hex==="#E8E8E8"||c.name==="White")?`1px solid ${C.border}`:"none"}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,color:C.ink,marginBottom:4}}>{c.name}</div>
+                      <div style={{height:1,background:C.border,position:"relative"}}><div style={{position:"absolute",left:0,top:-0.5,height:2,width:`${c.pct}%`,background:C.ink}}/></div>
                     </div>
-                  ))}
-                </div>
-              </>
-            ):<div style={{ fontSize:13,color:C.sub,padding:"8px 0" }}>No colour data yet</div>}
-          </div>
-
-          {/* Style Distribution */}
-          <div style={{ padding:"18px 24px",paddingBottom:48 }}>
-            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:18 }}>
-              <div style={iconBox}><Layers size={20} color={C.ink} strokeWidth={1.5}/></div>
-              <span style={{ fontSize:15,fontWeight:600,color:C.ink }}>Style Distribution</span>
-            </div>
-            {computedStyleData.length>0?(
-              <div style={{ display:"flex",alignItems:"flex-end",gap:10 }}>
-                {computedStyleData.map((e,i)=>(
-                  <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-                    <span style={{ fontSize:12,fontWeight:600,color:C.ink }}>{e.value}%</span>
-                    <div style={{ width:"100%",height:120,display:"flex",alignItems:"flex-end" }}>
-                      <div style={{ width:"100%",height:`${Math.max(e.value,4)}%`,background:e.color,borderRadius:"3px 3px 0 0" }}/>
-                    </div>
-                    <span style={{ fontSize:10,fontWeight:500,color:C.sub,textAlign:"center",lineHeight:1.3 }}>{e.name}</span>
+                    <span style={{fontFamily:F.mono,fontSize:11,color:C.sub,minWidth:28,textAlign:"right"}}>{c.pct}%</span>
                   </div>
                 ))}
               </div>
-            ):<div style={{ fontSize:13,color:C.sub,padding:"8px 0" }}>No style data yet</div>}
-          </div>
-        </>}
+            )}
+
+            {/* § 04 / TOP 5 — Most worn */}
+            <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+              <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
+                <span style={{...ML}}>§ 04 / Top 5</span>
+                <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Most-worn</div>
+                <div style={{fontSize:11,color:C.sub,marginTop:2}}>Your heavy lifters</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"24px 1fr 36px 50px",gap:"0 8px",padding:"6px 14px",borderBottom:`1px solid ${C.border}`}}>
+                {["N°","Garment","Wears","Share"].map((h,i)=><span key={i} style={{...ML,fontSize:8,textAlign:i>=2?"right":"left"}}>{h}</span>)}
+              </div>
+              {pMostWorn.map((item,i)=>{
+                const sharePct=pTotalWears>0?((item.count/pTotalWears)*100).toFixed(2):0;
+                const photo=item.photo||(itemLastInfo[item.name?.trim().toLowerCase()]?.itemPhoto)||(itemLastInfo[item.name?.trim().toLowerCase()]?.photo)||null;
+                return(
+                  <div key={i} style={{display:"grid",gridTemplateColumns:"24px 1fr 36px 50px",gap:"0 8px",padding:"10px 14px",borderBottom:i<pMostWorn.length-1?`1px solid ${C.border}`:"none",alignItems:"center"}}>
+                    <span style={{fontFamily:F.mono,fontSize:10,color:C.sub}}>{String(i+1).padStart(2,"0")}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+                      <div style={{width:28,height:28,background:C.surface,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+                        {photo?<img src={photo} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>:<GS cat={item.category}/>}
+                      </div>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:600,color:C.ink,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
+                        {item.brand&&<div style={{fontSize:10,color:C.sage}}>{item.brand}</div>}
+                      </div>
+                    </div>
+                    <span style={{fontFamily:F.mono,fontSize:11,color:C.ink,textAlign:"right"}}>{item.count}×</span>
+                    <div style={{textAlign:"right"}}>
+                      <span style={{fontFamily:F.mono,fontSize:10,color:C.sage}}>{sharePct}%</span>
+                      <div style={{height:1,background:C.border,marginTop:3,position:"relative"}}><div style={{position:"absolute",left:0,top:-0.5,height:2,width:`${(item.count/pMaxWears)*100}%`,background:C.sage}}/></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* § 04 / BOTTOM 5 — Least worn */}
+            <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+              <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
+                <span style={{...ML}}>§ 04 / Bottom 5</span>
+                <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Least-worn</div>
+                <div style={{fontSize:11,color:C.sub,marginTop:2}}>Waiting their turn</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"24px 1fr 36px 50px",gap:"0 8px",padding:"6px 14px",borderBottom:`1px solid ${C.border}`}}>
+                {["N°","Garment","Wears","Share"].map((h,i)=><span key={i} style={{...ML,fontSize:8,textAlign:i>=2?"right":"left"}}>{h}</span>)}
+              </div>
+              {pLeastWorn.map((item,i)=>{
+                const sharePct=pTotalWears>0?((item.count/pTotalWears)*100).toFixed(2):0;
+                const photo=item.photo||(itemLastInfo[item.name?.trim().toLowerCase()]?.itemPhoto)||(itemLastInfo[item.name?.trim().toLowerCase()]?.photo)||null;
+                return(
+                  <div key={i} style={{display:"grid",gridTemplateColumns:"24px 1fr 36px 50px",gap:"0 8px",padding:"10px 14px",borderBottom:i<pLeastWorn.length-1?`1px solid ${C.border}`:"none",alignItems:"center"}}>
+                    <span style={{fontFamily:F.mono,fontSize:10,color:C.sub}}>{String(pItemArr.length-pLeastWorn.length+i+1).padStart(2,"0")}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+                      <div style={{width:28,height:28,background:C.surface,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+                        {photo?<img src={photo} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>:<GS cat={item.category}/>}
+                      </div>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:600,color:C.ink,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
+                        {item.brand&&<div style={{fontSize:10,color:C.sage}}>{item.brand}</div>}
+                      </div>
+                    </div>
+                    <span style={{fontFamily:F.mono,fontSize:11,color:C.ink,textAlign:"right"}}>{item.count}×</span>
+                    <div style={{textAlign:"right"}}>
+                      <span style={{fontFamily:F.mono,fontSize:10,color:C.sub}}>{sharePct}%</span>
+                      <div style={{height:1,background:C.border,marginTop:3,position:"relative"}}><div style={{position:"absolute",left:0,top:-0.5,height:2,width:`${(item.count/pMaxWears)*100}%`,background:C.border}}/></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* § 05 / STYLE — style distribution */}
+            {pStyleData.length>0&&(
+              <div style={{margin:"12px 16px 32px",background:C.white,border:`1px solid ${C.border}`}}>
+                <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+                  <div>
+                    <span style={{...ML}}>§ 05 / Style</span>
+                    <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Style distribution</div>
+                    <div style={{fontSize:11,color:C.sub,marginTop:2}}>Share of {pOutfitCount} logged outfits</div>
+                  </div>
+                  <span style={{...ML}}>{pStyleData.length} tags</span>
+                </div>
+                {pStyleData.map((s,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:i<pStyleData.length-1?`1px solid ${C.border}`:"none",gap:10}}>
+                    <div style={{width:10,height:10,background:styleColors[s.name]||C.border,flexShrink:0}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,color:C.ink,marginBottom:4}}>{s.name}</div>
+                      <div style={{height:1,background:C.border,position:"relative"}}><div style={{position:"absolute",left:0,top:-0.5,height:2,width:`${s.pct}%`,background:C.ink}}/></div>
+                    </div>
+                    <span style={{fontFamily:F.mono,fontSize:11,color:C.sub,minWidth:28,textAlign:"right"}}>{s.pct}%</span>
+                  </div>
+                ))}
+                {/* Stacked ratio bar */}
+                <div style={{padding:"12px 16px",borderTop:`1px solid ${C.border}`}}>
+                  <span style={{...ML,display:"block",marginBottom:8}}>§ Ratio</span>
+                  <div style={{height:12,display:"flex",overflow:"hidden",border:`1px solid ${C.border}`}}>
+                    {pStyleData.map((s,i)=><div key={i} style={{flex:s.pct,background:styleColors[s.name]||C.border}}/>)}
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                    {["0%","50%","100%"].map(l=><span key={l} style={{fontFamily:F.mono,fontSize:8,color:C.sub}}>{l}</span>)}
+                  </div>
+                </div>
+                {/* Italic insight */}
+                {topStyle&&(
+                  <div style={{padding:"10px 16px 16px",borderTop:`1px solid ${C.border}`}}>
+                    <span style={{...ML,display:"block",marginBottom:8}}>§ Read</span>
+                    <p style={{fontFamily:F.serif,fontStyle:"italic",fontSize:14,color:C.sage,margin:"0 0 14px",lineHeight:1.6}}>{topStyle.name} leads your wardrobe story{periodTab!=="all"?" this period":""}.</p>
+                    <div style={{display:"flex",gap:24}}>
+                      <div><div style={{fontSize:22,fontWeight:700,color:C.ink,fontFamily:F.mono,lineHeight:1}}>{topStyle.pct}%</div><span style={{...ML,marginTop:4,display:"block"}}>{topStyle.name}</span></div>
+                      <div><div style={{fontSize:22,fontWeight:700,color:C.ink,fontFamily:F.mono,lineHeight:1}}>{pStyleData.length}</div><span style={{...ML,marginTop:4,display:"block"}}>Styles</span></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -960,6 +1394,20 @@ const BRANDS = [
   "Anthropologie","Calvin Klein","Coach","Free People","J.Crew","Kate Spade",
   "Michael Kors","Ralph Lauren","Tommy Hilfiger","Tory Burch",
 ].sort((a,b)=>a.localeCompare(b));
+
+const CURRENCIES=[
+  {code:"USD",symbol:"$",label:"US Dollar"},{code:"GBP",symbol:"£",label:"British Pound"},
+  {code:"EUR",symbol:"€",label:"Euro"},{code:"AUD",symbol:"A$",label:"Australian Dollar"},
+  {code:"CAD",symbol:"C$",label:"Canadian Dollar"},{code:"JPY",symbol:"¥",label:"Japanese Yen"},
+  {code:"CHF",symbol:"Fr",label:"Swiss Franc"},{code:"CNY",symbol:"¥",label:"Chinese Yuan"},
+  {code:"INR",symbol:"₹",label:"Indian Rupee"},{code:"SEK",symbol:"kr",label:"Swedish Krona"},
+  {code:"NOK",symbol:"kr",label:"Norwegian Krone"},{code:"DKK",symbol:"kr",label:"Danish Krone"},
+  {code:"NZD",symbol:"NZ$",label:"New Zealand Dollar"},{code:"SGD",symbol:"S$",label:"Singapore Dollar"},
+  {code:"HKD",symbol:"HK$",label:"Hong Kong Dollar"},{code:"ZAR",symbol:"R",label:"South African Rand"},
+  {code:"BRL",symbol:"R$",label:"Brazilian Real"},{code:"MXN",symbol:"$",label:"Mexican Peso"},
+  {code:"KRW",symbol:"₩",label:"South Korean Won"},{code:"AED",symbol:"د.إ",label:"UAE Dirham"},
+];
+const getCurrencySymbol=()=>{ const code=localStorage.getItem("preferredCurrency")||"GBP"; return CURRENCIES.find(c=>c.code===code)?.symbol||"£"; };
 
 // Normalise a brand string to canonical casing — matches against BRANDS list first, then title-cases
 const toCanonicalBrand=n=>{ if(!n||typeof n!=="string") return n; const l=n.toLowerCase().trim(); return BRANDS.find(b=>b.toLowerCase()===l)||n.trim().replace(/\b\w/g,c=>c.toUpperCase()); };
@@ -1065,6 +1513,8 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
   const [selectedItemIdxs,setSelectedItemIdxs]=useState(new Set());
   const [toast,setToast]=useState(null);
   const [showCamera,setShowCamera]=useState(false);
+  const [showReview,setShowReview]=useState(false);
+  const [showDetail,setShowDetail]=useState(false);
   const [photoUploading,setPhotoUploading]=useState(false);
   const [calMonth,setCalMonth]=useState(()=>new Date().getMonth());
   const [calYear,setCalYear]=useState(()=>new Date().getFullYear());
@@ -1073,8 +1523,10 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
   useEffect(()=>{
     if(!initialDate) return;
     const [y,m,d]=initialDate.split("-").map(Number);
-    setSelectedDate(new Date(y,m-1,d));
-    setShowModal(true);
+    const nd=new Date(y,m-1,d);
+    setSelectedDate(nd);
+    const ik=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    if(photoData[ik]?.logged){ setShowDetail(true); } else { setShowModal(true); }
     onClearInitialDate&&onClearInitialDate();
   },[initialDate]);
   const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1108,7 +1560,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       const base64=finalCompressed.split(",")[1];
       const dateKey=toKey(selectedDate);
       setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:finalCompressed,items:[],style:null,analysing:true }}));
-      setShowModal(true);
+      setShowReview(true); setShowModal(false);
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
       // Convert bg-removed data-URL to a Blob for storage upload
       const blob=await fetch(finalCompressed).then(r=>r.blob());
@@ -1143,10 +1595,9 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           const itemPhotoUrl=await uploadItemPhoto(source,dateKey,idx);
           itemsWithPhotos.push(itemPhotoUrl?{...itemData,itemPhoto:itemPhotoUrl}:itemData);
         }
-        setPhotoData(p=>({...p,[dateKey]:{logged:true,photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}));
+        setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{logged:true,photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}; });
         setEditEntry({style,formalityLevel,season,items:itemsWithPhotos.map(item=>({...item}))});
         track("outfit_created", { date_key: dateKey, items_count: items.length, style, season });
-        // onboarding_completed fires only on the very first outfit
         if(Object.keys(photoData).length===0) track("onboarding_completed", { items_count: items.length });
         supabase.auth.getSession().then(({data:{session}})=>{
           if(session) syncOutfit(session.user.id, dateKey, finalPhoto, style, season, itemsWithPhotos);
@@ -1154,56 +1605,185 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         setToast(`Outfit analysed — ${items.length} item${items.length!==1?"s":""} found`);
         setTimeout(()=>setToast(null),3000);
       }else{
-        setPhotoData(p=>({...p,[dateKey]:{...p[dateKey],photo:finalPhoto,analysing:false}}));
+        setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],photo:finalPhoto,analysing:false}}; });
         setEditEntry({style:null,formalityLevel:null,season:null,items:[]});
         setToast("Analysis complete — review and add items manually");
         setTimeout(()=>setToast(null),3000);
       }
-      setEditMode(true);
     };
     r.readAsDataURL(file);
   };
 
+  const toRoman=(n)=>{
+    const v=[1000,900,500,400,100,90,50,40,10,9,5,4,1],s=["M","CM","D","CD","C","XC","L","XL","X","IX","V","IV","I"];
+    let r="";v.forEach((val,i)=>{while(n>=val){r+=s[i];n-=val;}});return r;
+  };
+
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const isCurMonth=calMonth===today.getMonth()&&calYear===today.getFullYear();
+  const isPastMonth=calYear<today.getFullYear()||(calYear===today.getFullYear()&&calMonth<today.getMonth());
+  const countUpTo=isPastMonth?daysInMonth:isCurMonth?today.getDate():0;
+  let wornCount=0,restCount=0;
+  for(let d=1;d<=countUpTo;d++){
+    const k=`${calYear}-${String(calMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    if(photoData[k]?.logged) wornCount++; else restCount++;
+  }
+  const logPct=countUpTo>0?Math.round(wornCount/countUpTo*100):0;
+
+  const prevMonth=()=>{ if(calMonth===0){ setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); };
+  const nextMonth=()=>{ if(calMonth===11){ setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); };
+
   const renderMonth=(mIdx,yr)=>{
-    const year=yr??today.getFullYear(),days=new Date(year,mIdx+1,0).getDate(),first=new Date(year,mIdx,1).getDay();
+    const year=yr??today.getFullYear(),days=new Date(year,mIdx+1,0).getDate();
+    const firstDay=new Date(year,mIdx,1).getDay(),offset=(firstDay+6)%7; // Monday-first
+    const CELL={ borderTop:"none",borderLeft:"none",borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}`,cursor:"pointer",padding:"7px 7px 6px",display:"flex",flexDirection:"column",alignItems:"flex-start",justifyContent:"space-between",aspectRatio:"1",fontFamily:"inherit",minHeight:52 };
     const cells=[];
-    for(let i=0;i<first;i++) cells.push(<div key={`e${i}`}/>);
+    for(let i=0;i<offset;i++) cells.push(<div key={`e${i}`} style={{ borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}`,aspectRatio:"1" }}/>);
     for(let d=1;d<=days;d++){
       const date=new Date(year,mIdx,d),key=toKey(date);
       const isToday=date.toDateString()===today.toDateString(),hasPhoto=!!(photoData[key]?.logged);
-      cells.push(<button key={d} onClick={()=>{ setSelectedDate(date); setShowModal(true); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); }} style={{ aspectRatio:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:"none",background:"transparent",cursor:"pointer",padding:0,gap:2 }}>
-        <span style={{ width:30,height:30,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:isToday?700:hasPhoto?600:400,background:"transparent",border:isToday?`1px solid #888`:hasPhoto?`1px solid transparent`:"none",borderBottom:isToday?`1px solid transparent`:"",color:isToday?C.ink:hasPhoto?C.ink:C.sub }}>{d}</span>
-        {hasPhoto&&!isToday&&<div style={{ width:5,height:5,borderRadius:"50%",background:C.green }}/>}
-      </button>);
+      cells.push(
+        <button key={d} onClick={()=>{ setSelectedDate(date); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); if(photoData[key]?.logged){ setShowDetail(true); } else { setShowModal(true); } }}
+          style={{ ...CELL,background:isToday?C.ink:"transparent" }}>
+          <div>
+            <div style={{ fontFamily:F.mono,fontSize:13,fontWeight:500,color:isToday?"#fff":C.ink,lineHeight:1 }}>{d}</div>
+            {isToday&&<div style={{ fontFamily:F.mono,fontSize:7,fontWeight:500,letterSpacing:"0.1em",color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginTop:2 }}>TDY</div>}
+          </div>
+          {hasPhoto&&<div style={{ width:6,height:6,background:isToday?"rgba(255,255,255,0.55)":C.ink,flexShrink:0 }}/>}
+        </button>
+      );
     }
     return cells;
   };
 
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff",position:"relative" }}>
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface,position:"relative" }}>
       {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:toast.startsWith("AI error")?"#E5635A":C.sage,color:"#fff",borderRadius:0,padding:"10px 14px",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 16px rgba(0,0,0,.18)" }}><Check size={15} color="#fff"/>{toast}</div>}
-      <div style={{ background:"#fff",padding:"28px 24px 20px",flexShrink:0 }}>
-        {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
-        <h1 style={{ fontSize:34,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Outfit Calendar</h1>
-        <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0" }}>Track your daily outfits</p>
+
+      {/* Section header row */}
+      <div style={{ padding:"28px 24px 0",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
+        <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ 04 · Calendar</span>
+        <div style={{ display:"flex",alignItems:"center",gap:4 }}>
+          <button onClick={prevMonth} style={{ border:"none",background:"transparent",cursor:"pointer",padding:"4px 6px",fontFamily:F.mono,fontSize:13,color:C.sub,lineHeight:1 }}>{"<"}</button>
+          <span style={{ fontFamily:F.mono,fontSize:12,color:C.sub,letterSpacing:"0.04em" }}>{months[calMonth]}</span>
+          <button onClick={nextMonth} style={{ border:"none",background:"transparent",cursor:"pointer",padding:"4px 6px",fontFamily:F.mono,fontSize:13,color:C.sub,lineHeight:1 }}>{">"}</button>
+        </div>
       </div>
+
+      {/* Title + stats */}
+      <div style={{ padding:"14px 24px 20px",flexShrink:0 }}>
+        <h1 style={{ fontSize:38,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1.05 }}>{months[calMonth]} {toRoman(calYear)}</h1>
+        {countUpTo>0
+          ? <p style={{ fontSize:13,color:C.sub,margin:"6px 0 0",fontWeight:400 }}>{wornCount} worn · {restCount} rest · {logPct}% logged</p>
+          : <p style={{ fontSize:13,color:C.sub,margin:"6px 0 0",fontWeight:400 }}>No entries yet</p>
+        }
+      </div>
+
       <div style={{ flex:1,overflowY:"auto" }}>
-        <div style={{ borderTop:"1px solid rgba(58,68,56,0.3)",padding:"20px 16px 32px" }}>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
-            <button onClick={()=>{ if(calMonth===0){ setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }} style={{ width:36,height:36,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={18} color={C.ink}/></button>
-            <div style={{ textAlign:"center" }}>
-              <h2 style={{ fontSize:18,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.02em" }}>{months[calMonth]} {calYear}</h2>
-              {(calMonth!==today.getMonth()||calYear!==today.getFullYear())&&<button onClick={()=>{ setCalMonth(today.getMonth()); setCalYear(today.getFullYear()); }} style={{ fontSize:11,color:C.sub,background:"none",border:"none",cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"2px 0",textDecoration:"underline",textUnderlineOffset:2 }}>Today</button>}
-            </div>
-            <button onClick={()=>{ if(calMonth===11){ setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }} style={{ width:36,height:36,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronRight size={18} color={C.ink}/></button>
-          </div>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4 }}>
-            {["S","M","T","W","T","F","S"].map((d,i)=><div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.sub,height:24 }}>{d}</div>)}
-          </div>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2 }}>{renderMonth(calMonth,calYear)}</div>
+        {/* Day headers */}
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderTop:`1px solid ${C.border}`,borderLeft:`1px solid ${C.border}`,margin:"0 24px" }}>
+          {["M","T","W","T","F","S","S"].map((d,i)=>(
+            <div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.mono,fontSize:10,fontWeight:500,color:C.sub,height:28,letterSpacing:"0.06em",borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}` }}>{d}</div>
+          ))}
+        </div>
+        {/* Calendar grid */}
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderLeft:`1px solid ${C.border}`,margin:"0 24px 32px" }}>
+          {renderMonth(calMonth,calYear)}
         </div>
       </div>
       {showCamera&&<CameraCapture onCapture={handleCameraCapture} onClose={()=>setShowCamera(false)}/>}
+      {showReview&&selectedDate&&(
+        <OutfitReview
+          entry={photoData[toKey(selectedDate)]}
+          editEntry={editEntry}
+          selectedDate={selectedDate}
+          onRetake={()=>{
+            const dk=toKey(selectedDate);
+            setPhotoData(p=>{ const n={...p}; delete n[dk]; return n; });
+            setShowReview(false); setEditEntry(null); setEditMode(false);
+            setShowModal(true); setTimeout(()=>setShowSourcePicker(true),50);
+          }}
+          onSave={()=>{ setShowReview(false); setEditEntry(null); setEditMode(false); }}
+          onEdit={()=>{ setShowReview(false); setShowModal(true); setEditMode(true); }}
+        />
+      )}
+      {showDetail&&selectedDate&&(()=>{
+        const dk=toKey(selectedDate);
+        const entry=photoData[dk];
+        if(!entry?.logged) return null;
+        const items=entry.items||[];
+        const REV_LABEL={ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub };
+        const itemGroups=items.map(item=>{
+          const rows=[];
+          const catVal=[item.category,item.name?.toLowerCase()].filter(Boolean).join(' / ');
+          if(catVal) rows.push({ label:"Category",value:catVal });
+          if(item.color){ const cv=Array.isArray(item.color)?item.color.join(', '):item.color; if(cv) rows.push({ label:"Color",value:cv }); }
+          if(item.brand) rows.push({ label:"Brand",value:item.brand });
+          if(item.price) rows.push({ label:"Price",value:`${getCurrencySymbol()}${item.price}` });
+          return rows;
+        }).filter(g=>g.length>0);
+        const outfitRows=[];
+        if(entry.style) outfitRows.push({ label:"Style",value:entry.style });
+        if(entry.formalityLevel) outfitRows.push({ label:"Formality",value:entry.formalityLevel });
+        if(entry.season) outfitRows.push({ label:"Season",value:entry.season });
+        if(entry.notes) outfitRows.push({ label:"Notes",value:entry.notes });
+        const totalAttrs=itemGroups.reduce((s,g)=>s+g.length,0)+outfitRows.length;
+        const multiItem=itemGroups.length>1;
+        const AttrRow=({label,value,last})=>(
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 18px",borderBottom:last?"none":`1px solid ${C.border}` }}>
+            <span style={{ fontSize:13,color:C.sub,fontWeight:400 }}>{label}</span>
+            <span style={{ fontSize:13,color:C.ink,fontWeight:500,textAlign:"right",maxWidth:"55%" }}>{value}</span>
+          </div>
+        );
+        const dateLabel=selectedDate.toLocaleDateString("en-GB",{ weekday:"long",day:"numeric",month:"long" });
+        return (
+          <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:10000,display:"flex",flexDirection:"column" }}>
+            <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
+              <span style={{ ...REV_LABEL }}>§ 04 · Calendar</span>
+            </div>
+            <div style={{ padding:"12px 24px 14px",flexShrink:0 }}>
+              <h1 style={{ fontSize:28,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>{dateLabel}</h1>
+            </div>
+            <div style={{ flexShrink:0,height:200,background:"#2A3628",margin:"0 24px",position:"relative",overflow:"hidden" }}>
+              {entry.photo&&<img src={entry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>}
+              {!entry.photo&&<div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center" }}><span style={{ fontFamily:F.mono,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)" }}>No photo</span></div>}
+            </div>
+            <div style={{ flex:1,overflowY:"auto",padding:"16px 24px 0" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+                <span style={{ ...REV_LABEL }}>Detected Attributes</span>
+                <span style={{ ...REV_LABEL }}>{totalAttrs}/{totalAttrs}</span>
+              </div>
+              <div style={{ background:C.white,border:`1px solid ${C.border}` }}>
+                {itemGroups.length>0||outfitRows.length>0 ? (
+                  <>
+                    {itemGroups.map((group,gIdx)=>{
+                      const isLastGroup=gIdx===itemGroups.length-1;
+                      return (
+                        <div key={gIdx}>
+                          {multiItem&&<div style={{ padding:"7px 18px",background:C.surface,borderBottom:`1px solid ${C.border}` }}><span style={{ fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.12em",textTransform:"uppercase",color:C.sub }}>Item {gIdx+1}</span></div>}
+                          {group.map((row,rIdx)=>(
+                            <AttrRow key={rIdx} label={row.label} value={row.value} last={isLastGroup&&rIdx===group.length-1&&outfitRows.length===0}/>
+                          ))}
+                        </div>
+                      );
+                    })}
+                    {outfitRows.map((row,i)=>(
+                      <AttrRow key={i} label={row.label} value={row.value} last={i===outfitRows.length-1}/>
+                    ))}
+                  </>
+                ) : (
+                  <div style={{ padding:"20px 18px",textAlign:"center" }}><span style={{ fontSize:13,color:C.sub }}>No attributes — tap Edit to add details</span></div>
+                )}
+              </div>
+            </div>
+            <div style={{ padding:"12px 24px 44px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
+              <button onClick={()=>{ track("outfit_deleted",{date_key:dk}); setPhotoData(p=>{ const n={...p}; delete n[dk]; return n; }); setShowDetail(false); }} style={{ fontFamily:F.mono,fontSize:11,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:C.red,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:64 }}>Delete</button>
+              <button onClick={()=>{ setShowDetail(false); setEditEntry({ style:entry.style||null,formalityLevel:entry.formalityLevel||null,season:entry.season||null,notes:entry.notes||"",items:(entry.items||[]).map(item=>typeof item==="object"&&item?{...item}:{name:String(item||""),category:"Other",color:null}) }); setEditMode(true); setShowModal(true); }} style={{ height:52,padding:"0 36px",background:C.ink,color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700 }}>Edit</button>
+              <button onClick={()=>setShowDetail(false)} style={{ fontFamily:F.mono,fontSize:11,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:C.sub,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:64,textAlign:"right" }}>Close</button>
+            </div>
+          </div>
+        );
+      })()}
       <Modal isOpen={showModal&&!!selectedDate} onClose={()=>{ setShowModal(false); setShowSourcePicker(false); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); }} title={selectedDate?selectedDate.toLocaleDateString("en-US",{ weekday:"long",month:"long",day:"numeric" }):""}>
         {selectedDate&&(()=>{
           const entry=photoData[toKey(selectedDate)];
@@ -1224,19 +1804,19 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
               const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
               const saveEdit=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); setPhotoData(p=>({...p,[toKey(selectedDate)]:{...p[toKey(selectedDate)],style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season,notes:editEntry.notes||"",items:cleanItems}})); setEditMode(false); setEditEntry(null); };
               return (<>
-                <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Style</p>
+                <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:10 }}>Style</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:16 }}>
                   {STYLES.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,style:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.style===s?"none":`1.5px solid ${C.border}`,background:editEntry.style===s?C.sage:C.white,color:editEntry.style===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
                 </div>
-                <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Formality</p>
+                <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:10 }}>Formality</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:16 }}>
                   {FORMALITY.map(f=><button key={f} onClick={()=>setEditEntry(e=>({...e,formalityLevel:f}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.formalityLevel===f?"none":`1.5px solid ${C.border}`,background:editEntry.formalityLevel===f?"#5E6A5C":C.white,color:editEntry.formalityLevel===f?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{f}</button>)}
                 </div>
-                <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Season</p>
+                <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:10 }}>Season</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:20 }}>
                   {SEASONS.map(s=><button key={s} onClick={()=>setEditEntry(e=>({...e,season:s}))} style={{ padding:"6px 14px",borderRadius:0,border:editEntry.season===s?"none":`1.5px solid ${C.border}`,background:editEntry.season===s?"#5E6A5C":C.white,color:editEntry.season===s?"#fff":C.ink,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>{s}</button>)}
                 </div>
-                <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10 }}>Items</p>
+                <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:10 }}>Items</p>
                 {editEntry.items.map((item,i)=>(
                   <div key={i} style={{ background:"rgba(58,68,56,0.04)",borderRadius:0,padding:12,marginBottom:10,border:`1px solid rgba(58,68,56,0.15)` }}>
                     <div style={{ display:"flex",alignItems:"center",marginBottom:8,gap:8 }}>
@@ -1255,7 +1835,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                     <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
                       <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Price</span>
                       <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
-                        <span style={{ padding:"0 8px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>£</span>
+                        <span style={{ padding:"0 8px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>{getCurrencySymbol()}</span>
                         <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                       </div>
                     </div>
@@ -1268,7 +1848,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                   </div>
                 ))}
                 <button onClick={addItem} style={{ width:"100%",height:44,borderRadius:0,border:`1.5px dashed ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:16 }}><Plus size={16}/>Add Item</button>
-                <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8 }}>Notes</p>
+                <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:8 }}>Notes</p>
                 <textarea value={editEntry.notes||""} onChange={e=>setEditEntry(prev=>({...prev,notes:e.target.value}))} placeholder="Any notes about this outfit…" style={{ width:"100%",minHeight:72,padding:"10px 14px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:14,color:C.ink,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
                 <PrimaryBtn onClick={saveEdit} style={{ marginBottom:10 }}>Save Changes</PrimaryBtn>
                 <button onClick={()=>{ setEditMode(false); setEditEntry(null); }} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
@@ -1284,13 +1864,13 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
             return (<>
               {entry.photo?<div style={{ display:"flex",justifyContent:"center",marginBottom:entry.style?10:14 }}><div style={{ width:"55%",borderRadius:0,overflow:"hidden",aspectRatio:"3/4" }}><img src={entry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/></div></div>:<div style={{ background:C.sage+"14",borderRadius:0,padding:16,textAlign:"center",marginBottom:entry.style?10:14 }}><div style={{ fontSize:32 }}>👔</div><div style={{ fontSize:13,fontWeight:600,color:C.sage,marginTop:4 }}>Outfit logged</div></div>}
               {(entry.style||entry.formalityLevel||entry.season)&&<div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:14 }}>{entry.style&&<span style={{ fontSize:12,fontWeight:700,color:C.sage,background:C.sage+"18",padding:"5px 14px",borderRadius:0,border:`1px solid ${C.sage}30` }}>{entry.style}</span>}{entry.formalityLevel&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#5E6A5C",padding:"5px 14px",borderRadius:0 }}>{entry.formalityLevel}</span>}{entry.season&&<span style={{ fontSize:12,fontWeight:700,color:"#fff",background:"#5E6A5C",padding:"5px 14px",borderRadius:0 }}>{entry.season}</span>}</div>}
-              {entry.notes&&<div style={{ background:C.surface,borderRadius:0,padding:"10px 14px",border:`1px solid ${C.border}`,marginBottom:14 }}><p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 4px" }}>Notes</p><p style={{ fontSize:13,color:C.ink,margin:0,lineHeight:1.5 }}>{entry.notes}</p></div>}
+              {entry.notes&&<div style={{ background:C.surface,borderRadius:0,padding:"10px 14px",border:`1px solid ${C.border}`,marginBottom:14 }}><p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"0 0 4px" }}>Notes</p><p style={{ fontSize:13,color:C.ink,margin:0,lineHeight:1.5 }}>{entry.notes}</p></div>}
               <div style={{ marginBottom:16 }}>
                 <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-                  <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:0 }}>What I wore</p>
+                  <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:0 }}>What I wore</p>
                   {selectedItemIdxs.size>0&&<button onClick={removeSelected} style={{ fontSize:12,fontWeight:700,color:C.red,background:"#FEF0EF",border:"none",borderRadius:0,padding:"4px 12px",cursor:"pointer",fontFamily:"inherit" }}>Remove {selectedItemIdxs.size} selected</button>}
                 </div>
-                {entry.analysing?(<div style={{background:C.surface,borderRadius:0,padding:20,display:"flex",flexDirection:"column",alignItems:"center",gap:10,border:`1px solid ${C.border}`}}><div style={{width:24,height:24,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style><span style={{fontSize:13,color:C.sub,fontWeight:600}}>Analysing outfit with AI…</span></div>):cats.length>0?<div style={{ display:"flex",flexDirection:"column",gap:12 }}>{cats.map(cat=>(<div key={cat}><div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}><CatIcon cat={cat} size={13} color={C.sub}/><span style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em" }}>{cat}</span></div>{grouped[cat].map((item,i)=>{ const hex=item.color&&colorHex[item.color]?colorHex[item.color]:null; const isSel=selectedItemIdxs.has(item._idx); const isFav=favourites.some(f=>(f.name||"").trim().toLowerCase()===(item.name||"").trim().toLowerCase()); const wearCount=knownItems[(item.name||"").trim().toLowerCase()]?.count;
+                {entry.analysing?(<div style={{background:C.surface,borderRadius:0,padding:20,display:"flex",flexDirection:"column",alignItems:"center",gap:10,border:`1px solid ${C.border}`}}><div style={{width:24,height:24,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style><span style={{fontSize:13,color:C.sub,fontWeight:600}}>Analysing outfit with AI…</span></div>):cats.length>0?<div style={{ display:"flex",flexDirection:"column",gap:12 }}>{cats.map(cat=>(<div key={cat}><div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}><CatIcon cat={cat} size={13} color={C.sub}/><span style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono }}>{cat}</span></div>{grouped[cat].map((item,i)=>{ const hex=item.color&&colorHex[item.color]?colorHex[item.color]:null; const isSel=selectedItemIdxs.has(item._idx); const isFav=favourites.some(f=>(f.name||"").trim().toLowerCase()===(item.name||"").trim().toLowerCase()); const wearCount=knownItems[(item.name||"").trim().toLowerCase()]?.count;
 return <div key={i} style={{ width:"100%",background:isSel?C.sage+"14":C.surface,borderRadius:0,padding:"9px 12px",marginBottom:4,border:isSel?`1.5px solid ${C.sage}`:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8 }}><div onClick={()=>toggleItem(item._idx)} style={{ width:18,height:18,borderRadius:"50%",border:isSel?"none":`1.5px solid ${C.border}`,background:isSel?C.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer" }}>{isSel&&<span style={{ color:"#fff",fontSize:11,lineHeight:1 }}>✓</span>}</div>{hex&&<div style={{ width:12,height:12,background:hex,flexShrink:0,border:item.color==="White"?`1px solid ${C.border}`:"none" }}/>}<span onClick={()=>toggleItem(item._idx)} style={{ fontSize:13,color:C.ink,fontWeight:500,flex:1,cursor:"pointer" }}>{item.name||String(item)}</span>{wearCount>1&&<span style={{ fontSize:10,fontWeight:700,color:C.sage,background:C.sage+"18",borderRadius:0,padding:"2px 7px",flexShrink:0 }}>{wearCount}x</span>}{item.color&&<span style={{ fontSize:11,color:C.sub }}>{item.color}</span>}<button onClick={e=>{ e.stopPropagation(); onToggleFavourite&&onToggleFavourite(item); }} style={{ background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,display:"flex",alignItems:"center" }}><Heart size={16} color={isFav?C.red:"#ccc"} fill={isFav?C.red:"none"}/></button></div>; })}</div>))}</div>:<div style={{ background:C.surface,borderRadius:0,padding:"10px 14px",border:`1px solid ${C.border}` }}><span style={{ fontSize:13,color:C.sub }}>No items added yet — tap Edit Outfit to add what you wore</span></div>}
               </div>
               <button onClick={()=>{ setEditEntry({ style:entry.style||null, formalityLevel:entry.formalityLevel||null, season:entry.season||null, notes:entry.notes||"", items:(entry.items||[]).map(item=>typeof item==="object"&&item?{...item}:{ name:String(item||""),category:"Other",color:null }) }); setEditMode(true); setSelectedItemIdxs(new Set()); }} style={{ width:"100%",height:50,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,color:C.ink,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10 }}><Pencil size={16} color={C.sage}/>Edit Outfit</button>
@@ -1320,83 +1900,143 @@ return <div key={i} style={{ width:"100%",background:isSel?C.sage+"14":C.surface
 }
 
 function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, onGoToDate }) {
-  const catEmoji=cat=>cat==="Top"?"👕":cat==="Bottom"?"👖":cat==="Shoes"?"👟":cat==="Outerwear"?"🧥":cat==="Accessories"?"💍":cat==="Dresses"?"👗":cat==="Swimwear"?"👙":"👔";
   const removeFav=(name)=>setFavourites(prev=>prev.filter(f=>(f.name||"").trim().toLowerCase()!==(name||"").trim().toLowerCase()));
-  const [swipedFav,setSwipedFav]=useState(null);
-  const touchStartX=useRef(null);
+  const [selectedFav,setSelectedFav]=useState(null);
 
-  // For each fav, find the most recent date it was worn
-  const lastWornDate=(favName)=>{
-    const key=(favName||"").trim().toLowerCase();
-    const dates=Object.entries(photoData)
-      .filter(([,e])=>e?.logged&&(e.items||[]).some(i=>(i.name||"").trim().toLowerCase()===key))
-      .map(([d])=>d).sort().reverse();
-    if(!dates[0]) return null;
-    const [y,m,d]=dates[0].split("-").map(Number);
-    return { key:dates[0], label:new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",day:"numeric"}) };
+  // Build wear count + last photo for each favourite from photoData
+  const allLoggedEntries=Object.entries(photoData).filter(([,e])=>e?.logged).sort(([a],[b])=>b.localeCompare(a));
+  const getFavMeta=(favName)=>{
+    const k=(favName||"").trim().toLowerCase();
+    let photo=null; let wears=0;
+    allLoggedEntries.forEach(([,entry])=>{
+      (entry.items||[]).forEach(item=>{
+        if(!item||typeof item!=="object") return;
+        if((item.name||"").trim().toLowerCase()===k){
+          wears++;
+          if(!photo) photo=item.itemPhoto||null;
+        }
+      });
+    });
+    return { photo, wears };
   };
 
-  const favHeader = (count) => (
-    <div style={{ background:"#fff",padding:"28px 24px 20px",flexShrink:0 }}>
-      {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
-      <div style={{ display:"flex",alignItems:"flex-end",justifyContent:"space-between" }}>
-        <div>
-          <h1 style={{ fontSize:34,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Favourites</h1>
-          <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0" }}>Your saved pieces</p>
-        </div>
-        {count>0&&<span style={{ fontSize:13,fontWeight:700,color:C.sub,marginBottom:2 }}>{count} item{count!==1?"s":""}</span>}
-      </div>
-    </div>
-  );
+  const GarmentShape=({ category })=>{
+    const col="#3A4A38";
+    const shapes={
+      "Top":      <path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,
+      "Bottom":   <path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,
+      "Dresses":  <path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,
+      "Outerwear":<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,
+      "Shoes":    <path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,
+      "Accessories":<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>,
+      "Swimwear": <path d="M35 15 L75 15 L78 28 L90 95 L20 95 L32 28 Z" fill={col}/>,
+    };
+    return (
+      <svg viewBox="0 0 110 110" width="60%" height="60%" style={{ display:"block" }}>
+        {shapes[category]||shapes["Top"]}
+      </svg>
+    );
+  };
 
-  if(favourites.length===0) return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",background:"#fff" }}>
-      {favHeader(0)}
-      <div style={{ borderTop:"1px solid rgba(58,68,56,0.3)",flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32 }}>
-        <Heart size={52} color={C.sub} strokeWidth={1} style={{ marginBottom:16 }}/>
-        <h2 style={{ fontSize:18,fontWeight:900,color:C.ink,margin:"0 0 8px",letterSpacing:"-0.01em" }}>No Favourites Yet</h2>
-        <p style={{ fontSize:13,color:C.sub,textAlign:"center",margin:0,lineHeight:1.6 }}>Tap the heart on any item in your calendar outfit log to save it here.</p>
-      </div>
-    </div>
-  );
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff" }}>
-      {favHeader(favourites.length)}
-      <div style={{ flex:1,overflowY:"auto",borderTop:"1px solid rgba(58,68,56,0.3)" }}>
-        {favourites.map((fav,i)=>{
-          const favColors=toColors(fav.color).filter(c=>colorHex[c]);
-          const worn=lastWornDate(fav.name);
-          const favItemPhoto=(()=>{ const k=(fav.name||"").trim().toLowerCase(); const sorted=Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)); for(const [,entry] of sorted){ if(!entry?.logged) continue; const match=(entry.items||[]).find(item=>item&&typeof item==="object"&&(item.name||"").trim().toLowerCase()===k); if(match) return match.itemPhoto||entry.photo||null; } return null; })();
-          return (
-            <div key={i} style={{ position:"relative",overflow:"hidden",borderBottom:"1px solid rgba(58,68,56,0.3)" }}>
-              <button onClick={()=>{ removeFav(fav.name); setSwipedFav(null); }} style={{ position:"absolute",right:0,top:0,bottom:0,width:80,background:C.red,display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer" }}><Trash2 size={20} color="#fff"/></button>
-              <div
-                onTouchStart={e=>{ touchStartX.current=e.touches[0].clientX; }}
-                onTouchEnd={e=>{ const dx=e.changedTouches[0].clientX-(touchStartX.current||0); if(dx<-50) setSwipedFav(fav.name); else if(dx>20) setSwipedFav(null); }}
-                style={{ background:"#fff",padding:"16px 24px",transform:swipedFav===fav.name?"translateX(-80px)":"translateX(0)",transition:"transform .2s ease",position:"relative" }}
-              >
-              <div style={{ display:"flex",alignItems:"center",gap:14 }}>
-                <div style={{ width:50,height:50,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,overflow:"hidden" }}>{favItemPhoto?<img src={favItemPhoto} alt={fav.name} style={{ width:"100%",height:"100%",objectFit:"contain" }}/>:catEmoji(fav.category)}</div>
-                <div style={{ flex:1,minWidth:0 }}>
-                  <div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>{fav.name}</div>
-                  <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
-                    <span style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.06em" }}>{fav.category}</span>
-                    {favColors.length>0&&<div style={{ display:"flex",gap:3 }}>{favColors.map(c=><div key={c} style={{ width:10,height:10,borderRadius:"50%",background:colorHex[c],border:(c==="White"||c==="Cream")?`1px solid ${C.border}`:"none" }}/>)}</div>}
-                    {fav.price&&<span style={{ fontSize:11,color:C.sub }}>£{fav.price}</span>}
-                  </div>
-                </div>
-                <button onClick={()=>removeFav(fav.name)} style={{ background:"none",border:"none",cursor:"pointer",padding:6,flexShrink:0 }}><Heart size={20} color={C.red} fill={C.red}/></button>
-              </div>
-              {worn&&onGoToDate&&(
-                <button onClick={()=>onGoToDate(worn.key)} style={{ marginTop:12,width:"100%",height:34,borderRadius:0,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.ink,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
-                  <Calendar size={12} color={C.ink}/>Last worn {worn.label} — tap to view
-                </button>
-              )}
-              </div>
-            </div>
-          );
-        })}
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
+      {/* Header */}
+      <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+          {onBack
+            ? <button onClick={onBack} style={{ border:"none",background:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4 }}><span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ 03 · Favourites</span></button>
+            : <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ 03 · Favourites</span>
+          }
+          <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>{favourites.length} Items</span>
+        </div>
+        <h1 style={{ fontSize:34,fontWeight:800,color:C.ink,margin:"0 0 16px",letterSpacing:"-0.03em",lineHeight:1 }}>Your favourites</h1>
       </div>
+
+      {/* Divider */}
+      <div style={{ height:1,background:C.border,flexShrink:0,margin:"0 0 0 0" }}/>
+
+      {/* Grid */}
+      <div style={{ flex:1,overflowY:"auto",padding:"12px 12px 32px" }}>
+        {favourites.length===0 ? (
+          <div style={{ textAlign:"center",padding:"64px 24px" }}>
+            <Heart size={36} color={C.sub} strokeWidth={1} style={{ margin:"0 auto 16px",display:"block" }}/>
+            <div style={{ fontSize:16,fontWeight:700,color:C.ink,marginBottom:6 }}>No favourites yet</div>
+            <div style={{ fontSize:13,color:C.sub,lineHeight:1.5 }}>Tap the heart on any item in your outfit log to save it here.</div>
+          </div>
+        ) : (
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
+            {favourites.map((fav,idx)=>{
+              const { photo, wears }=getFavMeta(fav.name);
+              return (
+                <button key={idx} onClick={()=>setSelectedFav({...fav,_idx:idx+1,_photo:photo,_wears:wears})} style={{ background:C.white,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",padding:0,display:"flex",flexDirection:"column",overflow:"hidden" }}>
+                  <div style={{ width:"100%",aspectRatio:"1/1",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0 }}>
+                    {photo
+                      ? <img src={photo} alt={fav.name} style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
+                      : <GarmentShape category={fav.category}/>
+                    }
+                  </div>
+                  <div style={{ padding:"8px 10px 10px",flex:1 }}>
+                    <div style={{ display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:3 }}>
+                      <span style={{ fontFamily:F.mono,fontSize:9,color:C.sub,letterSpacing:"0.06em" }}>{String(idx+1).padStart(2,"0")}</span>
+                      <span style={{ fontFamily:F.mono,fontSize:9,color:C.sub,letterSpacing:"0.04em" }}>{wears}×</span>
+                    </div>
+                    <div style={{ fontSize:12,fontWeight:600,color:C.ink,lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" }}>{fav.name}</div>
+                    <div style={{ fontSize:11,color:C.sub,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{fav.brand||fav.category||""}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Item detail overlay */}
+      {selectedFav&&(()=>{
+        const sf=selectedFav;
+        const wornDates=allLoggedEntries.filter(([,e])=>(e.items||[]).some(i=>(i.name||"").trim().toLowerCase()===(sf.name||"").trim().toLowerCase())).map(([k])=>k);
+        const lastWorn=(()=>{ if(!wornDates.length) return null; const [y,m,d]=wornDates[0].split("-").map(Number); const diff=Math.round((new Date()-new Date(y,m-1,d))/(1000*60*60*24)); return diff; })();
+        return (
+          <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:9999,display:"flex",flexDirection:"column",overflowY:"auto" }}>
+            <div style={{ padding:"20px 20px 0",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
+              <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>Favourites · N°{String(sf._idx).padStart(2,"0")}</span>
+              <button onClick={()=>setSelectedFav(null)} style={{ border:"none",background:"transparent",cursor:"pointer",padding:4 }}><X size={20} color={C.sub}/></button>
+            </div>
+            <div style={{ padding:"12px 20px 20px",borderBottom:`1px solid ${C.border}` }}>
+              <h2 style={{ fontSize:26,fontWeight:800,color:C.ink,margin:"0 0 4px",letterSpacing:"-0.02em",lineHeight:1.1 }}>{sf.name}</h2>
+              <span style={{ fontFamily:F.mono,fontSize:10,letterSpacing:"0.1em",textTransform:"uppercase",color:C.sub }}>{sf.category}</span>
+            </div>
+            {/* Image */}
+            <div style={{ width:"100%",height:220,background:C.white,display:"flex",alignItems:"center",justifyContent:"center",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
+              {sf._photo
+                ? <img src={sf._photo} alt={sf.name} style={{ height:"100%",width:"100%",objectFit:"contain" }}/>
+                : <GarmentShape category={sf.category}/>
+              }
+            </div>
+            {/* Stats */}
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
+              {[{l:"Worn",v:`${sf._wears}×`},{l:"Last worn",v:lastWorn!=null?`${lastWorn}d ago`:"—"}].map(({l,v},i)=>(
+                <div key={i} style={{ padding:"14px 16px",borderRight:i===0?`1px solid ${C.border}`:"none" }}>
+                  <div style={{ fontFamily:F.mono,fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:C.sub,marginBottom:4 }}>{l}</div>
+                  <div style={{ fontSize:18,fontWeight:700,color:C.ink }}>{v}</div>
+                </div>
+              ))}
+            </div>
+            {/* Attributes */}
+            {[{label:"Category",value:sf.category},{label:"Brand",value:sf.brand||"—"},{label:"Price",value:sf.price?`${getCurrencySymbol()}${sf.price}`:"—"},{label:"Colour",value:sf.color||(Array.isArray(sf.color)?sf.color.join(", "):"—")}].map(({label,value},i,arr)=>(
+              <div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 20px",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none",background:C.white }}>
+                <span style={{ fontSize:12,color:C.sub }}>{label}</span>
+                <span style={{ fontSize:12,color:C.ink,fontWeight:500 }}>{value||"—"}</span>
+              </div>
+            ))}
+            {/* Remove button */}
+            <div style={{ padding:"20px 20px 40px",marginTop:"auto" }}>
+              <button onClick={()=>{ removeFav(sf.name); setSelectedFav(null); }} style={{ width:"100%",height:48,background:"transparent",border:`1px solid ${C.border}`,color:C.sub,fontSize:12,fontWeight:600,fontFamily:F.mono,letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+                <Heart size={14} color={C.sub}/> Remove from favourites
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1412,7 +2052,7 @@ function AuthScreen({ onAuth, initialView="landing" }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const inputStyle = { width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" };
+  const inputStyle = { width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.offwhite,fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit" };
   const focusStyle = (e) => e.target.style.borderColor = C.sage;
   const blurStyle  = (e) => e.target.style.borderColor = C.border;
 
@@ -1500,20 +2140,20 @@ function AuthScreen({ onAuth, initialView="landing" }) {
 
       <ErrorMsg/>
 
-      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Username</p>
+      <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"0 0 8px" }}>Username</p>
       <div style={{ position:"relative" }}>
         <span style={{ position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",fontSize:15,color:C.sub,fontWeight:600,pointerEvents:"none",userSelect:"none" }}>@</span>
         <input value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,""))} placeholder="yourname" maxLength={20} style={{...inputStyle,paddingLeft:32}} onFocus={focusStyle} onBlur={blurStyle}/>
       </div>
       <p style={{ fontSize:11,color:C.sub,margin:"6px 0 0",lineHeight:1.5 }}>3–20 characters · letters, numbers, underscores · cannot be changed later</p>
 
-      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"18px 0 8px" }}>Email Address</p>
+      <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"18px 0 8px" }}>Email Address</p>
       <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
 
-      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"18px 0 8px" }}>Password</p>
+      <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"18px 0 8px" }}>Password</p>
       <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
 
-      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"18px 0 8px" }}>Confirm Password</p>
+      <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"18px 0 8px" }}>Confirm Password</p>
       <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="••••••••" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} onKeyDown={e=>e.key==="Enter"&&handleSignUp()}/>
 
       <button onClick={handleSignUp} disabled={loading} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:28,opacity:loading?0.7:1 }}>{loading?"Creating account…":"Create Account"}</button>
@@ -1543,10 +2183,10 @@ function AuthScreen({ onAuth, initialView="landing" }) {
 
       <ErrorMsg/>
 
-      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Email Address</p>
+      <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"0 0 8px" }}>Email Address</p>
       <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
 
-      <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"18px 0 8px" }}>Password</p>
+      <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"18px 0 8px" }}>Password</p>
       <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} onKeyDown={e=>e.key==="Enter"&&handleSignIn()}/>
 
       <div style={{ display:"flex",justifyContent:"flex-end",marginTop:14,marginBottom:4 }}>
@@ -1577,7 +2217,7 @@ function AuthScreen({ onAuth, initialView="landing" }) {
         <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 6px",textAlign:"center",letterSpacing:"-0.03em" }}>Reset Password</h2>
         <p style={{ fontSize:14,color:C.sub,margin:"0 0 28px",textAlign:"center" }}>Enter your email and we'll send you a reset link.</p>
         <ErrorMsg/>
-        <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>Email Address</p>
+        <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"0 0 8px" }}>Email Address</p>
         <input type="email" value={recoverEmail} onChange={e=>setRecoverEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendLink()} placeholder="you@example.com" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle}/>
         <button onClick={sendLink} disabled={loading} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:recoverEmail?C.ink:C.border,color:recoverEmail?"#fff":C.sub,fontSize:16,fontWeight:700,cursor:recoverEmail?"pointer":"not-allowed",fontFamily:"inherit",marginTop:24,opacity:loading?0.7:1 }}>{loading?"Sending…":"Send Reset Link"}</button>
       </div>
@@ -1597,12 +2237,24 @@ function AuthScreen({ onAuth, initialView="landing" }) {
   );
 }
 
-function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignOut, userEmail="", username="" }) {
+function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignOut, userEmail="", username="", photoData={}, favourites=[], memberSince="" }) {
   const [profileImage, setProfileImage] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [showUnitsPicker, setShowUnitsPicker] = useState(false);
+  const [currency, setCurrency] = useState(()=>localStorage.getItem("preferredCurrency")||"USD");
+  const [tempUnit, setTempUnit] = useState(()=>localStorage.getItem("preferredTempUnit")||"F");
   const galleryRef = useRef(null);
   const cameraRef = useRef(null);
+
+  const selectCurrency = (code) => {
+    setCurrency(code);
+    localStorage.setItem("preferredCurrency", code);
+  };
+  const selectTempUnit = (unit) => {
+    setTempUnit(unit);
+    localStorage.setItem("preferredTempUnit", unit);
+  };
 
   const handleImageFile = (file) => {
     if (!file) return;
@@ -1612,8 +2264,34 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
     setShowPicker(false);
   };
 
+  // Stats from photoData
+  const loggedEntries = Object.values(photoData).filter(d => d?.logged && d?.items?.length);
+  const totalOutfits = loggedEntries.length;
+  const allItems = loggedEntries.flatMap(e => e.items || []);
+  const uniqueNames = new Set(allItems.map(i => i.name?.trim().toLowerCase()).filter(Boolean));
+  const totalGarments = uniqueNames.size;
+  const itemMap = {};
+  allItems.forEach(item => {
+    const key = item.name?.trim().toLowerCase();
+    if (!key) return;
+    if (!itemMap[key]) itemMap[key] = { price: parseFloat(item.price)||0, wears: 0 };
+    itemMap[key].wears++;
+  });
+  const cpwItems = Object.values(itemMap).filter(s => s.wears > 0 && s.price > 0);
+  const avgCPW = cpwItems.length ? (cpwItems.reduce((s, i) => s + i.price / i.wears, 0) / cpwItems.length).toFixed(2) : null;
+
+  // Display name
+  const displayName = username || userEmail.split("@")[0] || "Style enthusiast";
+
+  // Notifications status
+  const reminderEnabled = localStorage.getItem("dailyReminderEnabled") !== "false";
+
+  const LABEL = { fontFamily:F.mono, fontSize:9, fontWeight:500, letterSpacing:"0.14em", textTransform:"uppercase", color:C.sub };
+  const ROW_BTN = { width:"100%", padding:"16px 18px", border:"none", background:"transparent", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", fontFamily:"inherit", textAlign:"left", boxSizing:"border-box" };
+  const ROW_VAL = { display:"flex", alignItems:"center", gap:6 };
+
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff" }}>
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
       <input ref={galleryRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handleImageFile(e.target.files[0])}/>
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e=>handleImageFile(e.target.files[0])}/>
 
@@ -1627,7 +2305,42 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
               <p style={{ fontSize:14,color:C.sub,margin:0 }}>You will be signed out of your account.</p>
             </div>
             <button onClick={onSignOut} style={{ width:"100%",height:54,border:`1px solid ${C.red}`,background:"transparent",color:C.red,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><LogOut size={18}/>Sign Out</button>
-            <button onClick={()=>setShowSignOutConfirm(false)} style={{ width:"100%",height:54,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={()=>setShowSignOutConfirm(false)} style={{ width:"100%",height:54,border:`1px solid ${C.border}`,background:"transparent",color:C.ink,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {showUnitsPicker && (
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={()=>setShowUnitsPicker(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.white,width:"100%",maxHeight:"72vh",display:"flex",flexDirection:"column",animation:"slideUp .28s cubic-bezier(.32,.72,0,1)" }}>
+            <div style={{ padding:"12px 24px 0",flexShrink:0 }}>
+              <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"0 auto 16px" }}/>
+              {/* Temperature */}
+              <div style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub,marginBottom:10 }}>Temperature</div>
+              <div style={{ display:"flex",gap:8,marginBottom:20 }}>
+                {[{unit:"F",label:"°F  Fahrenheit"},{unit:"C",label:"°C  Celsius"}].map(({unit,label})=>(
+                  <button key={unit} onClick={()=>selectTempUnit(unit)} style={{ flex:1,height:48,border:`1.5px solid ${tempUnit===unit?C.sage:C.border}`,background:tempUnit===unit?C.sage:"transparent",color:tempUnit===unit?"#fff":C.ink,fontFamily:F.mono,fontSize:13,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
+                    {tempUnit===unit&&<Check size={13} color="#fff" strokeWidth={2.5}/>}{label}
+                  </button>
+                ))}
+              </div>
+              {/* Currency */}
+              <div style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub,marginBottom:0 }}>Currency</div>
+            </div>
+            <div style={{ overflowY:"auto",flex:1,paddingBottom:44 }}>
+              {CURRENCIES.map(c=>(
+                <button key={c.code} onClick={()=>selectCurrency(c.code)} style={{ width:"100%",padding:"14px 24px",border:"none",borderBottom:`1px solid ${C.border}`,background:"transparent",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+                    <span style={{ fontFamily:F.mono,fontSize:14,fontWeight:500,color:C.ink,minWidth:36 }}>{c.symbol}</span>
+                    <div>
+                      <div style={{ fontSize:14,fontWeight:500,color:C.ink }}>{c.label}</div>
+                      <div style={{ fontFamily:F.mono,fontSize:10,color:C.sub,letterSpacing:"0.06em",marginTop:1 }}>{c.code}</div>
+                    </div>
+                  </div>
+                  {currency===c.code && <Check size={16} color={C.sage} strokeWidth={2}/>}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -1637,37 +2350,108 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
           <div onClick={e=>e.stopPropagation()} style={{ background:"#fff",width:"100%",padding:"8px 24px 44px" }}>
             <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
             <h2 style={{ fontSize:20,fontWeight:800,color:C.ink,margin:"0 0 20px",letterSpacing:"-0.02em" }}>Change Profile Photo</h2>
-            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>galleryRef.current?.click(),100); }} style={{ width:"100%",height:54,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.ink,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:10 }}><Camera size={18} color={C.ink}/>Camera Roll</button>
-            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>cameraRef.current?.click(),100); }} style={{ width:"100%",height:54,border:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.ink,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:10 }}><Camera size={18} color={C.ink}/>Camera</button>
+            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>galleryRef.current?.click(),100); }} style={{ width:"100%",height:54,border:`1px solid ${C.border}`,background:"transparent",color:C.ink,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:10 }}><Camera size={18} color={C.ink}/>Camera Roll</button>
+            <button onClick={()=>{ setShowPicker(false); setTimeout(()=>cameraRef.current?.click(),100); }} style={{ width:"100%",height:54,border:`1px solid ${C.border}`,background:"transparent",color:C.ink,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:14,padding:"0 18px",fontFamily:"inherit",marginBottom:10 }}><Camera size={18} color={C.ink}/>Camera</button>
             <button onClick={()=>setShowPicker(false)} style={{ width:"100%",height:48,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ background:"#fff",padding:"28px 24px 20px",flexShrink:0 }}>
-        {onBack&&<button onClick={onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
-        <div style={{ display:"flex",alignItems:"center",gap:16 }}>
-          <button onClick={()=>setShowPicker(true)} style={{ width:64,height:64,borderRadius:"50%",background:C.surface,border:"1px solid rgba(58,68,56,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,cursor:"pointer",padding:0,overflow:"hidden",flexShrink:0 }}>
-            {profileImage?<img src={profileImage} alt="Profile" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>:<User size={28} color={C.sub} strokeWidth={1.5}/>}
+      <div style={{ flex:1,overflowY:"auto" }}>
+        {/* Section label + Edit */}
+        <div style={{ padding:"28px 24px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
+          <span style={{ ...LABEL }}>§ 05 · Profile</span>
+          <button onClick={()=>setShowPicker(true)} style={{ ...LABEL, border:"none", background:"transparent", cursor:"pointer", padding:0, color:C.sage }}>Edit</button>
+        </div>
+
+        {/* Avatar + name block */}
+        <div style={{ padding:"0 24px 24px",display:"flex",alignItems:"center",gap:20 }}>
+          <button onClick={()=>setShowPicker(true)} style={{ width:88,height:88,borderRadius:0,background:C.sage,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,overflow:"hidden",flexShrink:0 }}>
+            {profileImage
+              ? <img src={profileImage} alt="Profile" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>
+              : <span style={{ fontFamily:F.sans,fontSize:30,fontWeight:600,color:"#fff",lineHeight:1 }}>{displayName.charAt(0).toUpperCase()}</span>
+            }
           </button>
           <div>
-            {username&&<p style={{ fontSize:13,color:C.sage,margin:"0 0 2px",fontWeight:400 }}>@{username}</p>}
-            <p style={{ fontSize:13,color:C.sub,margin:0,fontWeight:400 }}>{userEmail||"Style enthusiast"}</p>
+            <div style={{ fontSize:22,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1.1,marginBottom:6 }}>{displayName}</div>
+            {memberSince && <div style={{ ...LABEL }}>Member Since {memberSince}</div>}
           </div>
         </div>
-      </div>
 
-      {/* Menu */}
-      <div style={{ flex:1,overflowY:"auto",borderTop:"1px solid rgba(58,68,56,0.3)" }}>
-        {[{ icon:<Bell size={18} color={C.ink}/>,label:"Notifications",sub:"Push alerts",action:onNotifications },{ icon:<Shield size={18} color={C.ink}/>,label:"Privacy",sub:"Data & permissions",action:onPrivacy },{ icon:<Phone size={18} color={C.ink}/>,label:"Settings",sub:"App preferences",action:onSettings }].map((item,i)=>(
-          <button key={i} onClick={item.action} style={{ width:"100%",background:"#fff",padding:"18px 24px",borderBottom:"1px solid rgba(58,68,56,0.3)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,fontFamily:"inherit",border:"none",borderBottom:"1px solid rgba(58,68,56,0.3)",boxSizing:"border-box" }}>
-            <div style={{ width:38,height:38,borderRadius:8,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{item.icon}</div>
-            <div style={{ flex:1 }}><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>{item.label}</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>{item.sub}</div></div>
-            <ChevronRight size={16} color={C.sub}/>
+        {/* Hairline divider */}
+        <div style={{ height:1,background:C.border,margin:"0 24px" }}/>
+
+        {/* Stats row */}
+        <div style={{ display:"flex",padding:"20px 24px",gap:0 }}>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:F.mono,fontSize:34,fontWeight:500,color:C.ink,letterSpacing:"-0.03em",lineHeight:1 }}>{totalGarments}</div>
+            <div style={{ ...LABEL,marginTop:6 }}>Garments</div>
+          </div>
+          <div style={{ width:1,background:C.border,flexShrink:0,margin:"4px 0" }}/>
+          <div style={{ flex:1,paddingLeft:20 }}>
+            <div style={{ fontFamily:F.mono,fontSize:34,fontWeight:500,color:C.ink,letterSpacing:"-0.03em",lineHeight:1 }}>{totalOutfits}</div>
+            <div style={{ ...LABEL,marginTop:6 }}>Outfits</div>
+          </div>
+          <div style={{ width:1,background:C.border,flexShrink:0,margin:"4px 0" }}/>
+          <div style={{ flex:1,paddingLeft:20 }}>
+            <div style={{ fontFamily:F.mono,fontSize:34,fontWeight:500,color:C.ink,letterSpacing:"-0.03em",lineHeight:1 }}>{avgCPW?`$${avgCPW}`:"—"}</div>
+            <div style={{ ...LABEL,marginTop:6 }}>CPW</div>
+          </div>
+        </div>
+
+        {/* Hairline divider */}
+        <div style={{ height:1,background:C.border }}/>
+
+        {/* Settings card */}
+        <div style={{ padding:"20px 24px 0" }}>
+          <div style={{ background:C.white,border:`1px solid ${C.border}` }}>
+            {/* Appearance */}
+            <div style={{ padding:"16px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}` }}>
+              <span style={{ fontSize:15,color:C.ink,fontWeight:500 }}>Appearance</span>
+              <div style={ROW_VAL}>
+                <span style={{ fontFamily:F.mono,fontSize:12,color:C.sub }}>Light</span>
+                <span style={{ fontFamily:F.mono,fontSize:13,color:C.sub,letterSpacing:"-0.02em" }}>⇄</span>
+              </div>
+            </div>
+            {/* Units */}
+            <button onClick={()=>setShowUnitsPicker(true)} style={{ ...ROW_BTN,borderBottom:`1px solid ${C.border}` }}>
+              <span style={{ fontSize:15,color:C.ink,fontWeight:500 }}>Units</span>
+              <div style={ROW_VAL}>
+                <span style={{ fontFamily:F.mono,fontSize:12,color:C.sub }}>°{tempUnit} · {currency}</span>
+                <ChevronRight size={15} color={C.sub} strokeWidth={1.5}/>
+              </div>
+            </button>
+            {/* Notifications */}
+            <button onClick={onNotifications} style={{ ...ROW_BTN,borderBottom:`1px solid ${C.border}` }}>
+              <span style={{ fontSize:15,color:C.ink,fontWeight:500 }}>Notifications</span>
+              <div style={ROW_VAL}>
+                <span style={{ fontFamily:F.mono,fontSize:12,color:C.sub }}>{reminderEnabled?"Daily":"Off"}</span>
+                <ChevronRight size={15} color={C.sub} strokeWidth={1.5}/>
+              </div>
+            </button>
+            {/* Privacy */}
+            <button onClick={onPrivacy} style={{ ...ROW_BTN,borderBottom:`1px solid ${C.border}` }}>
+              <span style={{ fontSize:15,color:C.ink,fontWeight:500 }}>Privacy</span>
+              <div style={ROW_VAL}>
+                <ChevronRight size={15} color={C.sub} strokeWidth={1.5}/>
+              </div>
+            </button>
+            {/* Account */}
+            <button onClick={onSettings} style={{ ...ROW_BTN }}>
+              <span style={{ fontSize:15,color:C.ink,fontWeight:500 }}>Account</span>
+              <div style={ROW_VAL}>
+                <ChevronRight size={15} color={C.sub} strokeWidth={1.5}/>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Sign out */}
+        <div style={{ padding:"12px 24px 40px" }}>
+          <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",padding:"16px 18px",border:`1px solid ${C.border}`,background:"transparent",color:C.red,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit" }}>
+            <LogOut size={16} color={C.red} strokeWidth={1.5}/>Sign Out
           </button>
-        ))}
-        <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",padding:"18px 24px",border:"none",borderTop:"1px solid rgba(58,68,56,0.3)",background:"transparent",color:C.red,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",marginTop:8,boxSizing:"border-box" }}><LogOut size={18}/> Sign Out</button>
+        </div>
       </div>
     </div>
   );
@@ -1709,7 +2493,7 @@ function SettingsScreen({ onBack, username="" }) {
     setMsg("Date of birth saved successfully.");
   };
   const inputStyle={width:"100%",height:48,padding:"0 14px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,fontSize:14,color:C.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12};
-  const labelStyle={fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",display:"block",marginBottom:6};
+  const labelStyle={fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,display:"block",marginBottom:6};
 
   const handleChangePassword=async()=>{
     setErr(""); setMsg("");
@@ -1893,7 +2677,7 @@ function NotificationsScreen({ onBack }) {
         <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Notifications</h1>
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
-        <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px" }}>Push Notifications</p>
+        <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"0 0 10px" }}>Push Notifications</p>
         <div style={{ background:C.white,borderRadius:0,border:`1px solid ${C.border}`,overflow:"hidden" }}>
           <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}` }}>
             <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Push Notifications</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Receive alerts and updates</div></div>
@@ -1973,7 +2757,7 @@ function PrivacyScreen({ onBack, cameraEnabled, onCameraToggle }) {
         <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>Privacy</h1>
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
-        <p style={{ fontSize:11,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 10px" }}>Privacy and Permissions</p>
+        <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"0 0 10px" }}>Privacy and Permissions</p>
         <div style={{ background:C.white,borderRadius:0,border:`1px solid ${C.border}`,overflow:"hidden" }}>
           <div style={{ padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}` }}>
             <div style={{ flex:1,marginRight:12 }}>
@@ -2069,14 +2853,14 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
   const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
   const handleSave=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); setPhotoData(p=>({...p,[todayKey]:{logged:true,photo:photoUrl||photo,items:cleanItems,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season}})); setStep("done"); };
 
-  const D = "1px solid rgba(58,68,56,0.3)";
+  const D = `1px solid ${C.border}`;
 
   return (
-    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#fff" }}>
+    <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
       {toast&&<div style={{ position:"fixed",top:16,left:12,right:12,zIndex:99999,background:C.red,color:"#fff",borderRadius:0,padding:"10px 14px",fontSize:13,fontWeight:600,boxShadow:"0 4px 16px rgba(0,0,0,.12)" }}>{toast}</div>}
 
       {/* Header */}
-      <div style={{ background:"#fff",padding:"28px 24px 20px",borderBottom:D,flexShrink:0 }}>
+      <div style={{ background:C.surface,padding:"28px 24px 20px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
         <button onClick={step==="done"?onBack:step==="edit"?()=>setStep("pick"):onBack} style={{ display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 10px",fontFamily:"inherit" }}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>
         <h1 style={{ fontSize:28,fontWeight:700,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Log Today's Outfit</h1>
         <p style={{ fontSize:13,color:C.sub,margin:"5px 0 0",fontWeight:400 }}>{step==="pick"?"Upload a photo to get started":step==="analysing"?"Analysing with AI…":step==="edit"?"Review and edit detected items":"Outfit logged!"}</p>
@@ -2173,11 +2957,17 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
                       ); })}
                     </div>
                   )}
-                  <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-                    <span style={{ fontSize:12,fontWeight:500,color:C.sub }}>Price</span>
+                  <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:8 }}>
+                    <span style={{ fontSize:12,fontWeight:500,color:C.sub,minWidth:34 }}>Price</span>
                     <div style={{ display:"flex",alignItems:"center",flex:1,height:36,border:`1px solid ${C.border}`,overflow:"hidden" }}>
-                      <span style={{ padding:"0 10px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>£</span>
+                      <span style={{ padding:"0 10px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>{getCurrencySymbol()}</span>
                       <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
+                    </div>
+                  </div>
+                  <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+                    <span style={{ fontSize:12,fontWeight:500,color:C.sub,minWidth:34 }}>Brand</span>
+                    <div style={{ flex:1,height:36,border:`1px solid ${C.border}`,overflow:"visible" }}>
+                      <BrandPicker value={item.brand||""} onChange={v=>updateItem(i,"brand",v)}/>
                     </div>
                   </div>
                 </div>
@@ -2212,6 +3002,7 @@ export default function App() {
   const [currentUser,setCurrentUser]=useState(null);
   const [currentEmail,setCurrentEmail]=useState("");
   const [currentUsername,setCurrentUsername]=useState("");
+  const [memberSince,setMemberSince]=useState("");
   const [tab,setTab]=useState("home");
   const [subScreen,setSubScreen]=useState(null);
   const [wardrobeInitialView,setWardrobeInitialView]=useState("main");
@@ -2244,6 +3035,8 @@ export default function App() {
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
         setCurrentUsername(profile?.Username||session.user.user_metadata?.username||"");
+        const _d=session.user.created_at?new Date(session.user.created_at):null;
+        if(_d) setMemberSince(`${String(_d.getMonth()+1).padStart(2,"0")}\u00B7${_d.getFullYear()}`);
         setPhotoData(profile?.photo_data||{});
         setFavourites(profile?.favourites||[]);
         setIsSignedIn(true);
@@ -2380,14 +3173,14 @@ export default function App() {
       case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} onBack={canGoBack?goBack:null} initialView={wardrobeInitialView} onAddItem={()=>setSubScreen("addItem")}/>;
       case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null} initialDate={calendarOpenDate} onClearInitialDate={()=>setCalendarOpenDate(null)} cameraEnabled={cameraEnabled}/>;
       case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} photoData={photoData} onGoToDate={dateKey=>{ setCalendarOpenDate(dateKey); navigateTo("calendar"); }} onBack={canGoBack?goBack:null}/>;
-      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
+      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} photoData={photoData} favourites={favourites} memberSince={memberSince} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setMemberSince(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
       default:          return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
     }
   };
 
   return (
     <>
-      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:${C.surface}}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
+      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;font-family:${F.sans};background:${C.surface};-webkit-font-smoothing:antialiased}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
       <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {needsPasswordReset
           ? (() => {
@@ -2405,17 +3198,17 @@ export default function App() {
                 window.location.hash = "";
                 setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); setAuthGoToSignIn(true); setNeedsPasswordReset(false);
               };
-              const inputStyle = { width:"100%",height:52,padding:"0 16px",border:`1.5px solid rgba(58,68,56,0.3)`,background:"#fff",fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",borderRadius:0 };
+              const inputStyle = { width:"100%",height:52,padding:"0 16px",border:`1.5px solid ${C.border}`,background:C.white,fontSize:15,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",borderRadius:0 };
               return (
-                <div style={{ flex:1,display:"flex",flexDirection:"column",background:"#fff",padding:"48px 32px 32px",overflowY:"auto",justifyContent:"center" }}>
+                <div style={{ flex:1,display:"flex",flexDirection:"column",background:C.surface,padding:"48px 32px 32px",overflowY:"auto",justifyContent:"center" }}>
                   <h2 style={{ fontSize:26,fontWeight:900,color:C.ink,margin:"0 0 32px",textAlign:"left",letterSpacing:"-0.03em" }}>Change Password</h2>
                   {resetPwError&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",padding:"10px 14px",fontSize:13,color:"#C0392B",marginBottom:16 }}>{resetPwError}</div>}
-                  <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 8px" }}>New Password</p>
-                  <input type="password" value={resetPwNew} onChange={e=>setResetPwNew(e.target.value)} placeholder="Min. 8 characters" style={inputStyle} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor="rgba(58,68,56,0.3)"}/>
-                  <p style={{ fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:"0.1em",margin:"20px 0 8px" }}>Confirm New Password</p>
-                  <input type="password" value={resetPwConfirm} onChange={e=>setResetPwConfirm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doReset()} placeholder="Repeat password" style={inputStyle} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor="rgba(58,68,56,0.3)"}/>
+                  <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"0 0 8px" }}>New Password</p>
+                  <input type="password" value={resetPwNew} onChange={e=>setResetPwNew(e.target.value)} placeholder="Min. 8 characters" style={inputStyle} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
+                  <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,margin:"20px 0 8px" }}>Confirm New Password</p>
+                  <input type="password" value={resetPwConfirm} onChange={e=>setResetPwConfirm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doReset()} placeholder="Repeat password" style={inputStyle} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
                   <button disabled={resetPwLoading} onClick={doReset} style={{ width:"100%",height:54,border:"none",background:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:24,opacity:resetPwLoading?0.7:1 }}>{resetPwLoading?"Updating…":"Change Password"}</button>
-                  <button onClick={async()=>{ await supabase.auth.signOut(); window.location.hash=""; setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); setAuthGoToSignIn(true); setNeedsPasswordReset(false); }} style={{ width:"100%",height:54,border:`1px solid rgba(58,68,56,0.3)`,background:"transparent",color:C.sub,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginTop:12 }}>Cancel</button>
+                  <button onClick={async()=>{ await supabase.auth.signOut(); window.location.hash=""; setResetPwNew(""); setResetPwConfirm(""); setResetPwError(""); setAuthGoToSignIn(true); setNeedsPasswordReset(false); }} style={{ width:"100%",height:54,border:`1px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginTop:12 }}>Cancel</button>
                 </div>
               );
             })()

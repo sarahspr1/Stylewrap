@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(node -e \"const l = require\\(''c:/Users/sarah/Desktop/alfa_project/alfaproject/node_modules/lucide-react''\\); console.log\\(''Hanger'' in l\\);\")",
+      "Bash(npm run:*)"
     ]
   }
 }
