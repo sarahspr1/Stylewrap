@@ -2175,18 +2175,18 @@ function AuthScreen({ onAuth, initialView="landing" }) {
       setError(friendlyAuthError(authError.message));
       return;
     }
-    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites,Username").eq("id", data.user.id).maybeSingle();
+    const { data: profile } = await supabase.from("users").select("photo_data,favourites,username").eq("id", data.user.id).maybeSingle();
     if (!profile) {
       // First sign-in after email confirmation — create profile using username stored in metadata
       const uname = data.user.user_metadata?.username || "";
-      await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], Username: uname });
+      await supabase.from("users").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username: uname });
       setLoading(false);
       onAuth(data.user.email, {}, [], data.user.id, uname);
       return;
     }
     setLoading(false);
     await track("user_signed_in");
-    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.Username||data.user.user_metadata?.username||"");
+    onAuth(data.user.email, profile?.photo_data||{}, profile?.favourites||[], data.user.id, profile?.username||data.user.user_metadata?.username||"");
   };
 
   const handleSignUp = async () => {
@@ -2196,12 +2196,12 @@ function AuthScreen({ onAuth, initialView="landing" }) {
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    const { data: taken } = await supabase.from("profiles").select("id").eq("Username", username).maybeSingle();
+    const { data: taken } = await supabase.from("users").select("id").eq("username", username).maybeSingle();
     if (taken) { setLoading(false); setError("That username is already taken. Please choose another."); return; }
     const { data, error: authError } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: window.location.origin, data:{ username } } });
     if (authError) { setLoading(false); setError(friendlyAuthError(authError.message)); return; }
     if (!data.session) { setLoading(false); setView("confirm-email"); return; }
-    await supabase.from("profiles").insert({ id: data.user.id, photo_data:{}, favourites:[], Username: username });
+    await supabase.from("users").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username });
     await track("user_signed_up", { username });
     setLoading(false);
     onAuth(data.user.email, {}, [], data.user.id, username);
@@ -3117,12 +3117,12 @@ export default function App() {
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
         console.log("[session restore] user id:", session.user.id);
-        const {data:profile,error:profileErr}=await supabase.from("profiles").select("photo_data,favourites,Username").eq("id",session.user.id).single();
+        const {data:profile,error:profileErr}=await supabase.from("users").select("photo_data,favourites,username").eq("id",session.user.id).single();
         if(profileErr) console.error("[session restore] profile load error:", profileErr);
         console.log("[session restore] profile loaded:", profile ? `photo_data keys: ${Object.keys(profile.photo_data||{}).length}` : "null");
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
-        setCurrentUsername(profile?.Username||session.user.user_metadata?.username||"");
+        setCurrentUsername(profile?.username||session.user.user_metadata?.username||"");
         const _d=session.user.created_at?new Date(session.user.created_at):null;
         if(_d) setMemberSince(`${String(_d.getMonth()+1).padStart(2,"0")}\u00B7${_d.getFullYear()}`);
         setPhotoData(profile?.photo_data||{});
@@ -3170,14 +3170,14 @@ export default function App() {
     if(!currentUser||!dataSyncReady.current) return;
     const isAnyAnalysing=Object.values(photoData).some(v=>v?.analysing);
     if(isAnyAnalysing) return;
-    supabase.from("profiles").upsert({id:currentUser,photo_data:photoData})
+    supabase.from("users").update({photo_data:photoData}).eq("id",currentUser)
       .then(({error})=>{ if(error) console.error("[save photoData]",error); });
   },[photoData,currentUser]);
 
   // Auto-save favourites → Supabase
   useEffect(()=>{
     if(!currentUser||!dataSyncReady.current) return;
-    supabase.from("profiles").upsert({id:currentUser,favourites})
+    supabase.from("users").update({favourites}).eq("id",currentUser)
       .then(({error})=>{ if(error) console.error("[save favourites]",error); });
   },[favourites,currentUser]);
 
