@@ -222,8 +222,8 @@ function CatIcon({ cat, size=12, color="rgba(58,68,56,0.4)" }){
 
 const C = {
   sage: "#5E6A5C", green: "#5E6A5C",
-  surface: "#EDECE5",   // warm sage surface — screen backgrounds
-  white: "#FFFFFF",     // card backgrounds
+  surface: "#FFFFFF",   // warm sage surface — screen backgrounds
+  white: "#EDECE5",     // card backgrounds
   offwhite: "#F7F6F0",  // subtle inner surfaces, inputs
   ink: "#1F2620",       // primary text
   sub: "#8F978D",       // muted / secondary text
@@ -601,32 +601,33 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
   ];
 
   return (
-    <div style={{flex:1,overflowY:"auto",background:C.surface}}>
-      {/* Header */}
-      <div style={{padding:"20px 24px 12px",background:C.surface,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <button onClick={onShowAllItems} style={{border:"none",background:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4}}>
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface}}>
+      {/* Nav */}
+      <div style={{padding:"16px 20px 10px",background:C.surface,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <button onClick={onShowAllItems} style={{border:"none",background:"transparent",cursor:"pointer",padding:0}}>
           <span style={{...ML}}>§ 01 / Home</span>
         </button>
-        <p style={{fontFamily:F.serif,fontStyle:"italic",fontSize:13,color:C.sub,margin:0}}>{loggedToday?"Today's outfit":daysSinceLog!=null?`Last outfit, ${daysSinceLog}d ago`:"No outfits yet"}</p>
+        <span style={{fontFamily:F.mono,fontSize:10,color:C.sub,letterSpacing:"0.08em"}}>{dateLabel}</span>
       </div>
 
-      {/* Main area — surface background so tiles float as white cards */}
-      <div style={{margin:"0 16px",background:C.surface,border:`1px solid ${C.border}`}}>
-        {/* App bar row */}
-        <div style={{padding:"9px 14px",borderBottom:`1px solid ${C.border}`,background:C.white,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <div style={{width:8,height:8,background:C.sage,flexShrink:0}}/>
-            <span style={{fontSize:12,fontWeight:700,color:C.ink,letterSpacing:"0.01em"}}>Stylewrap</span>
+      {/* Main card — fills remaining height, scrollable */}
+      <div style={{flex:1,overflowY:"auto",margin:"0 8px 8px",background:C.surface,border:`1px solid ${C.border}`}}>
+
+        {/* CTA */}
+        <button onClick={onAddItem} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"0 14px",height:48,background:C.ink,border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontFamily:"inherit",boxSizing:"border-box"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{...ML,color:"rgba(255,255,255,0.45)"}}>Log</span>
+            <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>{loggedToday?"Edit today's outfit":"Confirm today's outfit"}</span>
           </div>
-          <span style={{fontFamily:F.mono,fontSize:11,color:C.sub,letterSpacing:"0.04em"}}>{dateLabel}</span>
-        </div>
+          <ChevronRight size={16} color="rgba(255,255,255,0.6)" strokeWidth={2}/>
+        </button>
 
         {displayEntry?(
           <>
-            {/* Outfit label + headline — on surface */}
-            <div style={{padding:"16px 16px 14px"}}>
+            {/* Outfit label + headline */}
+            <div style={{padding:"14px 14px 12px"}}>
               <span style={{...ML,color:C.sage}}>Outfit / {String(allLoggedKeys.indexOf(displayKey)+1).padStart(2,"0")}</span>
-              <h2 style={{fontFamily:F.serif,fontSize:30,fontWeight:700,color:C.ink,margin:"6px 0 12px",letterSpacing:"-0.01em",lineHeight:1.15}}>{headline||"Outfit logged"}</h2>
+              <h2 style={{fontFamily:F.serif,fontSize:28,fontWeight:700,color:C.ink,margin:"6px 0 10px",letterSpacing:"-0.01em",lineHeight:1.15}}>{headline||"Outfit logged"}</h2>
               {/* Tags */}
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {displayEntry.style&&<span style={{fontSize:11,color:C.ink,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.style}</span>}
@@ -635,19 +636,19 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
               </div>
             </div>
 
-            {/* Item tiles — white cards on surface, with gaps */}
+            {/* Item tiles */}
             {items.length>0&&(
-              <div style={{display:"flex",gap:8,padding:"0 8px 8px",overflowX:"auto",scrollbarWidth:"none"}}>
-                {items.slice(0,4).map((item,i)=>{
+              <div style={{display:"flex",gap:8,padding:"0 8px 8px"}}>
+                {items.slice(0,3).map((item,i)=>{
                   const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
                   return(
-                    <div key={i} style={{flex:"0 0 calc(33.333% - 6px)",minWidth:"calc(33.333% - 6px)",background:C.white,border:`1px solid ${C.border}`}}>
-                      <div style={{width:"100%",height:48,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+                    <div key={i} style={{flex:"1 1 0",minWidth:0,background:C.white,border:`1px solid ${C.border}`}}>
+                      <div style={{width:"100%",height:72,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
                         {item.itemPhoto?<img src={item.itemPhoto} alt={item.name} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>:<GS cat={item.category}/>}
                       </div>
-                      <div style={{padding:"7px 10px 10px"}}>
+                      <div style={{padding:"6px 8px 8px"}}>
                         <span style={{fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.1em",color:C.sage}}>{String(i+1).padStart(2,"0")}</span>
-                        <div style={{fontSize:13,fontWeight:700,color:C.ink,marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:C.ink,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
                         <div style={{fontSize:10,color:C.sub,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{[item.brand,`${wears}×`].filter(Boolean).join(" · ")}</div>
                       </div>
                     </div>
@@ -656,7 +657,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
               </div>
             )}
 
-            {/* TODAY'S INTEL — white card on surface */}
+            {/* TODAY'S INTEL */}
             <div style={{margin:"0 8px 8px",background:C.white,border:`1px solid ${C.border}`}}>
               <div style={{padding:"9px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <span style={{...ML}}>Today's Intel</span>
@@ -679,16 +680,6 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
           </div>
         )}
       </div>
-
-      {/* CTA bar */}
-      <button onClick={onAddItem} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",margin:"12px 0 0",padding:"0 32px",height:64,background:C.ink,border:"none",cursor:"pointer",fontFamily:"inherit",boxSizing:"border-box"}}>
-        <div style={{textAlign:"left"}}>
-          <div style={{...ML,color:"rgba(255,255,255,0.45)",marginBottom:3}}>Log</div>
-          <div style={{fontSize:15,fontWeight:700,color:"#fff"}}>{loggedToday?"Edit today's outfit":"Confirm today's outfit"}</div>
-        </div>
-        <ChevronRight size={20} color="rgba(255,255,255,0.7)" strokeWidth={2}/>
-      </button>
-
     </div>
   );
 }
@@ -718,7 +709,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   const _formatPeriod=key=>{ if(key==="overall") return "Overall"; const [y,m]=key.split("-"); return new Date(Number(y),Number(m)-1,1).toLocaleDateString("en-US",{month:"long",year:"numeric"}); };
   const filterLabel=_formatPeriod(filterPeriod);
 
-  const loggedOutfits=Object.entries(photoData).filter(([key,e])=>e&&e.logged&&(filterPeriod==="overall"||key.startsWith(filterPeriod))).map(([,e])=>e);
+  const loggedOutfits=Object.entries(photoData).filter(([key,e])=>e&&e.logged&&(filterPeriod==="overall"||key.startsWith(filterPeriod))).flatMap(([,e])=>e.outfit2?[e,e.outfit2]:[e]);
   const totalOutfits=loggedOutfits.length;
   // Total item instances across all outfits (any valid object counts)
   const totalItemsCount=loggedOutfits.reduce((sum,e)=>sum+(e.items||[]).filter(i=>i&&typeof i==="object").length,0);
@@ -728,7 +719,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   allLoggedObjs.forEach(item=>{ const k=(item.name||"").toLowerCase().trim(); if(!k) return; if(!wearCounts[k]) wearCounts[k]={ name:item.name,category:item.category||"Other",count:0 }; wearCounts[k].count+=1; });
   // Map each item name → { photo, dateKey } from its most recent logged outfit
   const itemLastInfo={};
-  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; (entry.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(!k) return; if(!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey, itemPhoto:item.itemPhoto||null, brand:null, price:null, color:null }; if(item.brand&&!itemLastInfo[k].brand) itemLastInfo[k].brand=toCanonicalBrand(item.brand); if(item.price!=null&&itemLastInfo[k].price==null){ const p=parseFloat(item.price); if(!isNaN(p)) itemLastInfo[k].price=p; } if(item.color&&!itemLastInfo[k].color) itemLastInfo[k].color=item.color; }); });
+  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; [...(entry.items||[]),...(entry.outfit2?.items||[])].forEach(item=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(!k) return; if(!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey, itemPhoto:item.itemPhoto||null, brand:null, price:null, color:null }; if(item.brand&&!itemLastInfo[k].brand) itemLastInfo[k].brand=toCanonicalBrand(item.brand); if(item.price!=null&&itemLastInfo[k].price==null){ const p=parseFloat(item.price); if(!isNaN(p)) itemLastInfo[k].price=p; } if(item.color&&!itemLastInfo[k].color) itemLastInfo[k].color=item.color; }); });
   const getItemPhoto=(key)=>{ const info=itemLastInfo[key]; if(!info) return null; if(info.itemPhoto) return info.itemPhoto; if(info.photo) return info.photo; if(currentUser&&info.dateKey) return supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${info.dateKey}.jpg`).data.publicUrl; return null; };
   const wearArr=Object.values(wearCounts).map(w=>{ const k=w.name.toLowerCase().trim(); const meta=itemLastInfo[k]||{}; return {...w,lastPhoto:getItemPhoto(k),brand:meta.brand||null,price:meta.price??null,color:meta.color||null}; }).sort((a,b)=>b.count-a.count);
   const totalWears=wearArr.reduce((s,p)=>s+p.count,0);
@@ -1231,25 +1222,49 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               </div>
             )}
 
-            {/* § 03 / PALETTE — colour bar rows */}
-            {pColorData.length>0&&(
-              <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
-                <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
-                  <span style={{...ML}}>§ 03 / Palette</span>
-                  <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Color distribution</div>
-                </div>
-                {pColorData.map((c,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:i<pColorData.length-1?`1px solid ${C.border}`:"none",gap:10}}>
-                    <div style={{width:10,height:10,flexShrink:0,background:c.hex,border:(c.hex==="#E8E8E8"||c.name==="White")?`1px solid ${C.border}`:"none"}}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,color:C.ink,marginBottom:4}}>{c.name}</div>
-                      <div style={{height:1,background:C.border,position:"relative"}}><div style={{position:"absolute",left:0,top:-0.5,height:2,width:`${c.pct}%`,background:C.ink}}/></div>
-                    </div>
-                    <span style={{fontFamily:F.mono,fontSize:11,color:C.sub,minWidth:28,textAlign:"right"}}>{c.pct}%</span>
+            {/* § 03 / PALETTE — colour distribution */}
+            {pColorData.length>0&&(()=>{
+              // Build SVG donut segments
+              const total=pColorData.reduce((s,c)=>s+c.pct,0)||1;
+              const cx=60,cy=60,r=48,inner=28,strokeW=r-inner;
+              const rMid=(r+inner)/2;
+              let cumAngle=-Math.PI/2;
+              const segments=pColorData.map(c=>{
+                const angle=(c.pct/total)*2*Math.PI;
+                const x1=cx+rMid*Math.cos(cumAngle),y1=cy+rMid*Math.sin(cumAngle);
+                cumAngle+=angle;
+                const x2=cx+rMid*Math.cos(cumAngle),y2=cy+rMid*Math.sin(cumAngle);
+                const large=angle>Math.PI?1:0;
+                return {d:`M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${rMid} ${rMid} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`,hex:c.hex,name:c.name,stroke:strokeW};
+              });
+              return (
+                <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+                  <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
+                    <span style={{...ML}}>§ 03 / Palette</span>
+                    <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Color distribution</div>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div style={{display:"flex",alignItems:"center",padding:"16px 16px",gap:16}}>
+                    {/* Legend */}
+                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:0}}>
+                      {pColorData.map((c,i)=>(
+                        <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:i<pColorData.length-1?`1px solid ${C.border}`:"none"}}>
+                          <div style={{width:12,height:12,flexShrink:0,background:c.hex,border:(c.hex==="#FFFFFF"||c.hex==="#F5F0E8")?`1px solid ${C.border}`:"none"}}/>
+                          <span style={{flex:1,fontSize:12,color:C.ink}}>{c.name}</span>
+                          <span style={{fontFamily:F.mono,fontSize:11,color:C.sub,minWidth:30,textAlign:"right"}}>{c.pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Donut chart */}
+                    <svg width={120} height={120} style={{flexShrink:0}}>
+                      {segments.map((seg,i)=>(
+                        <path key={i} d={seg.d} fill="none" stroke={seg.hex} strokeWidth={seg.stroke}
+                          style={{filter:(seg.hex==="#FFFFFF"||seg.hex==="#F5F0E8")?"drop-shadow(0 0 0 1px #D8D7D0)":undefined}}/>
+                      ))}
+                    </svg>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* § 04 / TOP 5 — Most worn */}
             <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
@@ -1518,6 +1533,8 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
   const [photoUploading,setPhotoUploading]=useState(false);
   const [calMonth,setCalMonth]=useState(()=>new Date().getMonth());
   const [calYear,setCalYear]=useState(()=>new Date().getFullYear());
+  const [detailOutfitTab,setDetailOutfitTab]=useState(0); // 0=primary, 1=outfit2
+  const uploadSlotRef=useRef("primary"); // "primary" | "outfit2"
   const calCameraRef=useRef(null);
 
   useEffect(()=>{
@@ -1534,7 +1551,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   // Build lookup of all previously logged items by name (latest entry wins for each field)
   const knownItems={};
-  Object.values(photoData).forEach(e=>{ if(!e?.logged) return; (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim().toLowerCase(); if(!name) return; if(!knownItems[name]) knownItems[name]={category:item.category||"Top",color:item.color||"Black",price:null,count:0}; knownItems[name].count+=1; if(item.category&&item.category!=="Other") knownItems[name].category=item.category; if(item.color) knownItems[name].color=item.color; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) knownItems[name].price=String(p); }); });
+  Object.values(photoData).forEach(e=>{ if(!e?.logged) return; [...(e.items||[]),...(e.outfit2?.items||[])].forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim().toLowerCase(); if(!name) return; if(!knownItems[name]) knownItems[name]={category:item.category||"Top",color:item.color||"Black",price:null,count:0}; knownItems[name].count+=1; if(item.category&&item.category!=="Other") knownItems[name].category=item.category; if(item.color) knownItems[name].color=item.color; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) knownItems[name].price=String(p); }); });
 
   const handleCameraCapture=async(dataUrl)=>{
     setShowCamera(false);
@@ -1559,7 +1576,12 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       setPhotoUploading(false);
       const base64=finalCompressed.split(",")[1];
       const dateKey=toKey(selectedDate);
-      setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:finalCompressed,items:[],style:null,analysing:true }}));
+      const slot=uploadSlotRef.current;
+      if(slot==="outfit2"){
+        setPhotoData(p=>({...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalCompressed,items:[],style:null,analysing:true}}}));
+      } else {
+        setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:finalCompressed,items:[],style:null,analysing:true }}));
+      }
       setShowReview(true); setShowModal(false);
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
       // Convert bg-removed data-URL to a Blob for storage upload
@@ -1595,7 +1617,11 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           const itemPhotoUrl=await uploadItemPhoto(source,dateKey,idx);
           itemsWithPhotos.push(itemPhotoUrl?{...itemData,itemPhoto:itemPhotoUrl}:itemData);
         }
-        setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{logged:true,photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}; });
+        if(slot==="outfit2"){
+          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}}; });
+        } else {
+          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{logged:true,photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}; });
+        }
         setEditEntry({style,formalityLevel,season,items:itemsWithPhotos.map(item=>({...item}))});
         track("outfit_created", { date_key: dateKey, items_count: items.length, style, season });
         if(Object.keys(photoData).length===0) track("onboarding_completed", { items_count: items.length });
@@ -1605,7 +1631,11 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         setToast(`Outfit analysed — ${items.length} item${items.length!==1?"s":""} found`);
         setTimeout(()=>setToast(null),3000);
       }else{
-        setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],photo:finalPhoto,analysing:false}}; });
+        if(slot==="outfit2"){
+          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{...p[dateKey].outfit2,photo:finalPhoto,analysing:false}}}; });
+        } else {
+          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],photo:finalPhoto,analysing:false}}; });
+        }
         setEditEntry({style:null,formalityLevel:null,season:null,items:[]});
         setToast("Analysis complete — review and add items manually");
         setTimeout(()=>setToast(null),3000);
@@ -1649,7 +1679,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
             <div style={{ fontFamily:F.mono,fontSize:13,fontWeight:500,color:isToday?"#fff":C.ink,lineHeight:1 }}>{d}</div>
             {isToday&&<div style={{ fontFamily:F.mono,fontSize:7,fontWeight:500,letterSpacing:"0.1em",color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginTop:2 }}>TDY</div>}
           </div>
-          {hasPhoto&&<div style={{ width:6,height:6,background:isToday?"rgba(255,255,255,0.55)":C.ink,flexShrink:0 }}/>}
+          {hasPhoto&&<div style={{ display:"flex",gap:2 }}><div style={{ width:6,height:6,background:isToday?"rgba(255,255,255,0.55)":C.ink,flexShrink:0 }}/>{photoData[key]?.outfit2&&<div style={{ width:6,height:6,background:isToday?"rgba(255,255,255,0.35)":C.sub,flexShrink:0 }}/>}</div>}
         </button>
       );
     }
@@ -1679,22 +1709,24 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         }
       </div>
 
-      <div style={{ flex:1,overflowY:"auto" }}>
+      <div style={{ flex:1,overflowY:"auto",display:"flex",flexDirection:"column" }}>
         {/* Day headers */}
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderTop:`1px solid ${C.border}`,borderLeft:`1px solid ${C.border}`,margin:"0 24px" }}>
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderTop:`1px solid ${C.border}`,borderLeft:`1px solid ${C.border}`,margin:"0 24px",flexShrink:0 }}>
           {["M","T","W","T","F","S","S"].map((d,i)=>(
             <div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.mono,fontSize:10,fontWeight:500,color:C.sub,height:28,letterSpacing:"0.06em",borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}` }}>{d}</div>
           ))}
         </div>
         {/* Calendar grid */}
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderLeft:`1px solid ${C.border}`,margin:"0 24px 32px" }}>
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderLeft:`1px solid ${C.border}`,margin:"0 24px 0",flexShrink:0 }}>
           {renderMonth(calMonth,calYear)}
         </div>
+        {/* Fill remaining space with matching border */}
+        <div style={{ flex:1,margin:"0 24px",borderLeft:`1px solid ${C.border}`,borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}` }}/>
       </div>
       {showCamera&&<CameraCapture onCapture={handleCameraCapture} onClose={()=>setShowCamera(false)}/>}
       {showReview&&selectedDate&&(
         <OutfitReview
-          entry={photoData[toKey(selectedDate)]}
+          entry={uploadSlotRef.current==="outfit2"?photoData[toKey(selectedDate)]?.outfit2:photoData[toKey(selectedDate)]}
           editEntry={editEntry}
           selectedDate={selectedDate}
           onRetake={()=>{
@@ -1709,9 +1741,11 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       )}
       {showDetail&&selectedDate&&(()=>{
         const dk=toKey(selectedDate);
-        const entry=photoData[dk];
-        if(!entry?.logged) return null;
-        const items=entry.items||[];
+        const primaryEntry=photoData[dk];
+        if(!primaryEntry?.logged) return null;
+        const hasSecond=!!(primaryEntry.outfit2);
+        const activeEntry=detailOutfitTab===1&&hasSecond?primaryEntry.outfit2:primaryEntry;
+        const items=activeEntry.items||[];
         const REV_LABEL={ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub };
         const itemGroups=items.map(item=>{
           const rows=[];
@@ -1723,10 +1757,10 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           return rows;
         }).filter(g=>g.length>0);
         const outfitRows=[];
-        if(entry.style) outfitRows.push({ label:"Style",value:entry.style });
-        if(entry.formalityLevel) outfitRows.push({ label:"Formality",value:entry.formalityLevel });
-        if(entry.season) outfitRows.push({ label:"Season",value:entry.season });
-        if(entry.notes) outfitRows.push({ label:"Notes",value:entry.notes });
+        if(activeEntry.style) outfitRows.push({ label:"Style",value:activeEntry.style });
+        if(activeEntry.formalityLevel) outfitRows.push({ label:"Formality",value:activeEntry.formalityLevel });
+        if(activeEntry.season) outfitRows.push({ label:"Season",value:activeEntry.season });
+        if(activeEntry.notes) outfitRows.push({ label:"Notes",value:activeEntry.notes });
         const totalAttrs=itemGroups.reduce((s,g)=>s+g.length,0)+outfitRows.length;
         const multiItem=itemGroups.length>1;
         const AttrRow=({label,value,last})=>(
@@ -1736,6 +1770,28 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           </div>
         );
         const dateLabel=selectedDate.toLocaleDateString("en-GB",{ weekday:"long",day:"numeric",month:"long" });
+        const handleDelete=()=>{
+          if(detailOutfitTab===1){
+            // Delete outfit 2 — just remove the outfit2 key
+            setPhotoData(p=>{ const n={...p}; const e={...n[dk]}; delete e.outfit2; n[dk]=e; return n; });
+            setDetailOutfitTab(0);
+          } else if(hasSecond){
+            // Delete outfit 1 but outfit 2 exists — promote outfit 2 to primary
+            setPhotoData(p=>{ const n={...p}; const {outfit2,...rest}=n[dk]; n[dk]={...rest,...outfit2,logged:true,outfit2:undefined}; delete n[dk].outfit2; return n; });
+            setDetailOutfitTab(0);
+          } else {
+            // Delete the only outfit — remove the whole day
+            track("outfit_deleted",{date_key:dk});
+            setPhotoData(p=>{ const n={...p}; delete n[dk]; return n; });
+            setShowDetail(false);
+          }
+        };
+        const handleEdit=()=>{
+          uploadSlotRef.current=detailOutfitTab===1?"outfit2":"primary";
+          setShowDetail(false);
+          setEditEntry({ style:activeEntry.style||null,formalityLevel:activeEntry.formalityLevel||null,season:activeEntry.season||null,notes:activeEntry.notes||"",items:(activeEntry.items||[]).map(item=>typeof item==="object"&&item?{...item}:{name:String(item||""),category:"Other",color:null}) });
+          setEditMode(true); setShowModal(true);
+        };
         return (
           <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:10000,display:"flex",flexDirection:"column" }}>
             <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
@@ -1744,9 +1800,17 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
             <div style={{ padding:"12px 24px 14px",flexShrink:0 }}>
               <h1 style={{ fontSize:28,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>{dateLabel}</h1>
             </div>
-            <div style={{ flexShrink:0,height:200,background:"#2A3628",margin:"0 24px",position:"relative",overflow:"hidden" }}>
-              {entry.photo&&<img src={entry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>}
-              {!entry.photo&&<div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center" }}><span style={{ fontFamily:F.mono,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)" }}>No photo</span></div>}
+            {/* Outfit tabs — shown when 2 outfits exist */}
+            {hasSecond&&(
+              <div style={{ display:"flex",margin:"0 24px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
+                {["Outfit 1","Outfit 2"].map((label,i)=>(
+                  <button key={i} onClick={()=>setDetailOutfitTab(i)} style={{ flex:1,height:36,border:"none",background:"transparent",fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",color:detailOutfitTab===i?C.ink:C.sub,borderBottom:detailOutfitTab===i?`2px solid ${C.ink}`:"2px solid transparent",marginBottom:-1 }}>{label}</button>
+                ))}
+              </div>
+            )}
+            <div style={{ flexShrink:0,height:200,background:"#2A3628",margin:"8px 24px 0",position:"relative",overflow:"hidden" }}>
+              {activeEntry.photo&&<img src={activeEntry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>}
+              {!activeEntry.photo&&<div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center" }}><span style={{ fontFamily:F.mono,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)" }}>No photo</span></div>}
             </div>
             <div style={{ flex:1,overflowY:"auto",padding:"16px 24px 0" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
@@ -1775,18 +1839,42 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                   <div style={{ padding:"20px 18px",textAlign:"center" }}><span style={{ fontSize:13,color:C.sub }}>No attributes — tap Edit to add details</span></div>
                 )}
               </div>
+              {/* Add second outfit button — only shown on primary tab when no outfit2 yet */}
+              {!hasSecond&&detailOutfitTab===0&&(
+                <button onClick={()=>{ uploadSlotRef.current="outfit2"; setShowDetail(false); setEditMode(false); setEditEntry(null); setShowModal(true); setTimeout(()=>setShowSourcePicker(true),50); }} style={{ width:"100%",marginTop:12,height:44,border:`1px solid ${C.border}`,background:C.white,fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:C.sub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+                  <Plus size={13} color={C.sub}/> Add second outfit
+                </button>
+              )}
             </div>
             <div style={{ padding:"12px 24px 44px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
-              <button onClick={()=>{ track("outfit_deleted",{date_key:dk}); setPhotoData(p=>{ const n={...p}; delete n[dk]; return n; }); setShowDetail(false); }} style={{ fontFamily:F.mono,fontSize:11,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:C.red,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:64 }}>Delete</button>
-              <button onClick={()=>{ setShowDetail(false); setEditEntry({ style:entry.style||null,formalityLevel:entry.formalityLevel||null,season:entry.season||null,notes:entry.notes||"",items:(entry.items||[]).map(item=>typeof item==="object"&&item?{...item}:{name:String(item||""),category:"Other",color:null}) }); setEditMode(true); setShowModal(true); }} style={{ height:52,padding:"0 36px",background:C.ink,color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700 }}>Edit</button>
-              <button onClick={()=>setShowDetail(false)} style={{ fontFamily:F.mono,fontSize:11,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:C.sub,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:64,textAlign:"right" }}>Close</button>
+              <button onClick={handleDelete} style={{ fontFamily:F.mono,fontSize:11,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:C.red,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:64 }}>Delete</button>
+              <button onClick={handleEdit} style={{ height:52,padding:"0 36px",background:C.ink,color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700 }}>Edit</button>
+              <button onClick={()=>{ setShowDetail(false); setDetailOutfitTab(0); }} style={{ fontFamily:F.mono,fontSize:11,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",color:C.sub,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:64,textAlign:"right" }}>Close</button>
             </div>
           </div>
         );
       })()}
-      <Modal isOpen={showModal&&!!selectedDate} onClose={()=>{ setShowModal(false); setShowSourcePicker(false); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); }} title={selectedDate?selectedDate.toLocaleDateString("en-US",{ weekday:"long",month:"long",day:"numeric" }):""}>
+      <Modal isOpen={showModal&&!!selectedDate} onClose={()=>{ setShowModal(false); setShowSourcePicker(false); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); uploadSlotRef.current="primary"; }} title={selectedDate?selectedDate.toLocaleDateString("en-US",{ weekday:"long",month:"long",day:"numeric" }):""}>
         {selectedDate&&(()=>{
           const entry=photoData[toKey(selectedDate)];
+          // Adding second outfit — bypass the existing-outfit view, go straight to upload
+          if(entry?.logged&&uploadSlotRef.current==="outfit2"&&!editMode){
+            return (<>
+              <div style={{ background:C.surface,borderRadius:0,padding:20,textAlign:"center",marginBottom:16 }}><Camera size={32} color={C.sub}/><div style={{ fontSize:14,color:C.sub,marginTop:8 }}>Add a second outfit for this day</div></div>
+              <PrimaryBtn onClick={()=>{ if(!photoUploading) setShowSourcePicker(true); }}>{photoUploading?"Processing…":<><Camera size={16}/> Upload Outfit 2 Photo</>}</PrimaryBtn>
+              {showSourcePicker&&<div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",flexDirection:"column",justifyContent:"flex-end" }} onClick={()=>setShowSourcePicker(false)}>
+                <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,padding:"8px 16px 40px" }}>
+                  <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px" }}/>
+                  <p style={{ fontSize:13,fontWeight:700,color:C.sub,textAlign:"center",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:16 }}>Outfit 2 Photo</p>
+                  {cameraEnabled
+                    ? <button onClick={()=>{ setShowSourcePicker(false); setShowCamera(true); }} style={{ width:"100%",height:56,borderRadius:0,border:"none",background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:10,cursor:"pointer",fontFamily:"inherit" }}><Camera size={20} color={C.sage}/><span style={{ fontSize:16,fontWeight:700,color:C.sage }}>Camera</span></button>
+                    : <div style={{ width:"100%",height:48,borderRadius:0,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10,opacity:.5 }}><Camera size={18} color={C.sub}/><span style={{ fontSize:14,fontWeight:600,color:C.sub }}>Camera (enable in Privacy)</span></div>
+                  }
+                  <label style={{ display:"block",cursor:"pointer" }}><input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handlePhotoUpload(e.target.files[0])}/><div style={{ width:"100%",height:56,borderRadius:0,background:C.surface,border:`1.5px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:10 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span style={{ fontSize:16,fontWeight:700,color:C.ink }}>Camera Roll</span></div></label>
+                </div>
+              </div>}
+            </>);
+          }
           if(entry?.logged){
             const STYLES=["Everyday","Going Out","Activewear","Professional"];
             const FORMALITY=["Casual","Smart Casual","Formal","Sporty"];
@@ -1802,7 +1890,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
               const removeItem=(i)=>setEditEntry(e=>({...e,items:e.items.filter((_,idx)=>idx!==i)}));
               const addItem=()=>setEditEntry(e=>({...e,items:[...e.items,{category:"Top",name:"",color:"Black",_isNew:true}]}));
               const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
-              const saveEdit=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); setPhotoData(p=>({...p,[toKey(selectedDate)]:{...p[toKey(selectedDate)],style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season,notes:editEntry.notes||"",items:cleanItems}})); setEditMode(false); setEditEntry(null); };
+              const saveEdit=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); const dk=toKey(selectedDate); if(uploadSlotRef.current==="outfit2"){ setPhotoData(p=>({...p,[dk]:{...p[dk],outfit2:{...p[dk].outfit2,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season,notes:editEntry.notes||"",items:cleanItems}}})); } else { setPhotoData(p=>({...p,[dk]:{...p[dk],style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season,notes:editEntry.notes||"",items:cleanItems}})); } setEditMode(false); setEditEntry(null); };
               return (<>
                 <p style={{ fontSize:10,fontWeight:500,color:C.sub,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:F.mono,marginBottom:10 }}>Style</p>
                 <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:16 }}>
@@ -2801,7 +2889,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
 
   // Build known items from all previously logged outfits
   const knownItems={};
-  Object.values(photoData).forEach(e=>{ if(!e?.logged) return; (e.items||[]).forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim().toLowerCase(); if(!name) return; if(!knownItems[name]) knownItems[name]={category:item.category||"Top",color:item.color||"Black",price:null,count:0}; knownItems[name].count+=1; if(item.category&&item.category!=="Other") knownItems[name].category=item.category; if(item.color) knownItems[name].color=item.color; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) knownItems[name].price=String(p); }); });
+  Object.values(photoData).forEach(e=>{ if(!e?.logged) return; [...(e.items||[]),...(e.outfit2?.items||[])].forEach(item=>{ if(!item||typeof item!=="object") return; const name=(item.name||"").trim().toLowerCase(); if(!name) return; if(!knownItems[name]) knownItems[name]={category:item.category||"Top",color:item.color||"Black",price:null,count:0}; knownItems[name].count+=1; if(item.category&&item.category!=="Other") knownItems[name].category=item.category; if(item.color) knownItems[name].color=item.color; const p=parseFloat(item.price); if(!isNaN(p)&&p>0) knownItems[name].price=String(p); }); });
 
   const handleFile=(file)=>{
     if(!file) return;
@@ -3180,8 +3268,8 @@ export default function App() {
 
   return (
     <>
-      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;font-family:${F.sans};background:${C.surface};-webkit-font-smoothing:antialiased}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
-      <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
+      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;font-family:${F.sans};background:${C.surface};-webkit-font-smoothing:antialiased}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
+      <div style={{ position:"relative",width:"100%",height:"100%",display:"flex",flexDirection:"column",background:C.surface,overflow:"hidden",paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {needsPasswordReset
           ? (() => {
               const doReset = async () => {
