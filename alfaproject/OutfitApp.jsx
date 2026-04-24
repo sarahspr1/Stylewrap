@@ -526,6 +526,9 @@ function DailyLogPrompt({ photoData={}, onAddItem, onDismiss, streak=0 }) {
   );
 }
 
+const GS=({cat})=>{const col="#3A4A38";const sh={Top:<path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,Bottom:<path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,Dresses:<path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,Outerwear:<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,Shoes:<path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,Accessories:<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>};return(<svg viewBox="0 0 110 110" width="52%" height="52%">{sh[cat]||sh.Top}</svg>);};
+const ItemPhoto=({src,category,style:s})=>{const[err,setErr]=useState(false);if(!src||err)return<GS cat={category}/>;return<img src={src} onError={()=>setErr(true)} style={s} alt=""/>;};
+
 function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="", username="" }) {
   const now=new Date();
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -592,7 +595,6 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
   })();
 
   const ML={fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub};
-  const GS=({cat})=>{const col="#3A4A38";const sh={Top:<path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,Bottom:<path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,Dresses:<path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,Outerwear:<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,Shoes:<path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,Accessories:<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>};return(<svg viewBox="0 0 110 110" width="52%" height="52%">{sh[cat]||sh.Top}</svg>);};
 
   const intelRows=[
     {label:"Cost/wear",val:avgItemCPW!=null?`${getCurrencySymbol()}${avgItemCPW.toFixed(2)}`:"—",right:"tracked"},
@@ -644,7 +646,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
                   return(
                     <div key={i} style={{flex:"1 1 0",minWidth:0,background:C.white,border:`1px solid ${C.border}`}}>
                       <div style={{width:"100%",height:72,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-                        {item.itemPhoto?<img src={item.itemPhoto} alt={item.name} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>:<GS cat={item.category}/>}
+                        <ItemPhoto src={item.itemPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>
                       </div>
                       <div style={{padding:"6px 8px 8px"}}>
                         <span style={{fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.1em",color:C.sage}}>{String(i+1).padStart(2,"0")}</span>
@@ -1284,7 +1286,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                     <span style={{fontFamily:F.mono,fontSize:10,color:C.sub}}>{String(i+1).padStart(2,"0")}</span>
                     <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
                       <div style={{width:28,height:28,background:C.surface,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-                        {photo?<img src={photo} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>:<GS cat={item.category}/>}
+                        <ItemPhoto src={photo} category={item.category} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
                       </div>
                       <div style={{minWidth:0}}>
                         <div style={{fontSize:12,fontWeight:600,color:C.ink,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
@@ -1319,7 +1321,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                     <span style={{fontFamily:F.mono,fontSize:10,color:C.sub}}>{String(pItemArr.length-pLeastWorn.length+i+1).padStart(2,"0")}</span>
                     <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
                       <div style={{width:28,height:28,background:C.surface,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-                        {photo?<img src={photo} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>:<GS cat={item.category}/>}
+                        <ItemPhoto src={photo} category={item.category} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
                       </div>
                       <div style={{minWidth:0}}>
                         <div style={{fontSize:12,fontWeight:600,color:C.ink,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
@@ -1615,7 +1617,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           const source=cleanCrop||fallbackCrop;
           if(!source){ itemsWithPhotos.push(itemData); continue; }
           const itemPhotoUrl=await uploadItemPhoto(source,dateKey,idx);
-          itemsWithPhotos.push(itemPhotoUrl?{...itemData,itemPhoto:itemPhotoUrl}:itemData);
+          itemsWithPhotos.push({...itemData,itemPhoto:itemPhotoUrl||source});
         }
         if(slot==="outfit2"){
           setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}}; });
@@ -2926,7 +2928,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
           let cleanCrop=crop;
           try{ cleanCrop=await removeBackground(crop.split(",")[1])||crop; }catch(e){}
           const itemPhotoUrl=await uploadItemPhoto(cleanCrop,todayKey,idx);
-          return itemPhotoUrl?{...itemData,itemPhoto:itemPhotoUrl}:itemData;
+          return {...itemData,itemPhoto:itemPhotoUrl||cleanCrop};
         }));
         setEditEntry({style,formalityLevel,season,items:itemsWithPhotos});
       }else{ setEditEntry({style:null,formalityLevel:null,season:null,items:[]}); }

@@ -3,7 +3,11 @@
     "allow": [
       "Bash(python -c ' *)",
       "Bash(npx tsc *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Read(//c/Users/sarah/.claude/projects/c--Users-sarah-Desktop-alfa-project/memory/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\sarah\\.claude\\projects\\c--Users-sarah-Desktop-alfa-project\\memory"
     ]
   }
 }
