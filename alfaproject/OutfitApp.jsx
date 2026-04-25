@@ -527,9 +527,9 @@ function DailyLogPrompt({ photoData={}, onAddItem, onDismiss, streak=0 }) {
 }
 
 const GS=({cat})=>{const col="#3A4A38";const sh={Top:<path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,Bottom:<path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,Dresses:<path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,Outerwear:<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,Shoes:<path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,Accessories:<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>};return(<svg viewBox="0 0 110 110" width="52%" height="52%">{sh[cat]||sh.Top}</svg>);};
-const ItemPhoto=({src,category,style:s})=>{const[err,setErr]=useState(false);if(!src||err)return<GS cat={category}/>;return<img src={src} onError={()=>setErr(true)} style={s} alt=""/>;};
+const ItemPhoto=({src,fallback,category,style:s})=>{const[err,setErr]=useState(false);const[err2,setErr2]=useState(false);if(src&&!err)return<img src={src} onError={()=>setErr(true)} style={s} alt=""/>;if(fallback&&!err2)return<img src={fallback} onError={()=>setErr2(true)} style={{...s,objectFit:"cover"}} alt=""/>;return<GS cat={category}/>;};
 
-function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="", username="" }) {
+function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="", username="", currency="USD" }) {
   const now=new Date();
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const todayKey=toKey(now);
@@ -597,7 +597,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
   const ML={fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub};
 
   const intelRows=[
-    {label:"Cost/wear",val:avgItemCPW!=null?`${getCurrencySymbol()}${avgItemCPW.toFixed(2)}`:"—",right:"tracked"},
+    {label:"Cost/wear",val:avgItemCPW!=null?`${getCurrencySymbol(currency)}${avgItemCPW.toFixed(2)}`:"—",right:"tracked"},
     {label:"Similar",val:similarCount>0?`${similarCount} outfits`:"—",right:"pairable"},
     {label:"Last worn",val:lastWornDays!=null?`${lastWornDays}d ago`:"first time",right:"this combo"},
   ];
@@ -640,18 +640,18 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
             {/* Item tiles */}
             {items.length>0&&(
-              <div style={{display:"flex",gap:8,padding:"0 8px 8px"}}>
+              <div style={{display:"flex",gap:6,padding:"0 8px 8px"}}>
                 {items.slice(0,3).map((item,i)=>{
                   const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
                   return(
-                    <div key={i} style={{flex:"1 1 0",minWidth:0,background:C.white,border:`1px solid ${C.border}`}}>
-                      <div style={{width:"100%",height:72,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-                        <ItemPhoto src={item.itemPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>
+                    <div key={i} style={{flex:"1 1 0",minWidth:0,background:C.white,border:`1px solid ${C.border}`,display:"flex",flexDirection:"column"}}>
+                      <div style={{width:"100%",aspectRatio:"3/4",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0}}>
+                        <ItemPhoto src={item.itemPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
                       </div>
-                      <div style={{padding:"6px 8px 8px"}}>
-                        <span style={{fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.1em",color:C.sage}}>{String(i+1).padStart(2,"0")}</span>
-                        <div style={{fontSize:12,fontWeight:700,color:C.ink,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
-                        <div style={{fontSize:10,color:C.sub,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{[item.brand,`${wears}×`].filter(Boolean).join(" · ")}</div>
+                      <div style={{padding:"5px 6px 6px"}}>
+                        <span style={{fontFamily:F.mono,fontSize:8,fontWeight:500,letterSpacing:"0.1em",color:C.sage}}>{String(i+1).padStart(2,"0")}</span>
+                        <div style={{fontSize:10,fontWeight:700,color:C.ink,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
+                        <div style={{fontSize:9,color:C.sub,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{[item.brand,`${wears}×`].filter(Boolean).join(" · ")}</div>
                       </div>
                     </div>
                   );
@@ -688,7 +688,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
 const initialCPWPrices = {};
 
-function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", onAddItem }) {
+function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", onAddItem, currency="USD" }) {
   const [view,setView]=useState(initialView);
   const [selectedPiece,setSelectedPiece]=useState(null);
   const [cpwPrices,setCpwPrices]=useState(initialCPWPrices);
@@ -721,9 +721,9 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   allLoggedObjs.forEach(item=>{ const k=(item.name||"").toLowerCase().trim(); if(!k) return; if(!wearCounts[k]) wearCounts[k]={ name:item.name,category:item.category||"Other",count:0 }; wearCounts[k].count+=1; });
   // Map each item name → { photo, dateKey } from its most recent logged outfit
   const itemLastInfo={};
-  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; [...(entry.items||[]),...(entry.outfit2?.items||[])].forEach(item=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(!k) return; if(!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey, itemPhoto:item.itemPhoto||null, brand:null, price:null, color:null }; if(item.brand&&!itemLastInfo[k].brand) itemLastInfo[k].brand=toCanonicalBrand(item.brand); if(item.price!=null&&itemLastInfo[k].price==null){ const p=parseFloat(item.price); if(!isNaN(p)) itemLastInfo[k].price=p; } if(item.color&&!itemLastInfo[k].color) itemLastInfo[k].color=item.color; }); });
+  Object.entries(photoData).sort(([a],[b])=>b.localeCompare(a)).forEach(([dateKey,entry])=>{ if(!entry?.logged) return; [...(entry.items||[]),...(entry.outfit2?.items||[])].forEach((item,itemIdx)=>{ if(!item||typeof item!=="object") return; const k=(item.name||"").trim().toLowerCase(); if(!k) return; if(!itemLastInfo[k]) itemLastInfo[k]={ photo:entry.photo||null, dateKey, itemIdx, itemPhoto:item.itemPhoto||null, brand:null, price:null, color:null }; if(item.brand&&!itemLastInfo[k].brand) itemLastInfo[k].brand=toCanonicalBrand(item.brand); if(item.price!=null&&itemLastInfo[k].price==null){ const p=parseFloat(item.price); if(!isNaN(p)) itemLastInfo[k].price=p; } if(item.color&&!itemLastInfo[k].color) itemLastInfo[k].color=item.color; }); });
   const getItemPhoto=(key)=>{ const info=itemLastInfo[key]; if(!info) return null; if(info.itemPhoto) return info.itemPhoto; if(info.photo) return info.photo; if(currentUser&&info.dateKey) return supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${info.dateKey}.jpg`).data.publicUrl; return null; };
-  const wearArr=Object.values(wearCounts).map(w=>{ const k=w.name.toLowerCase().trim(); const meta=itemLastInfo[k]||{}; return {...w,lastPhoto:getItemPhoto(k),brand:meta.brand||null,price:meta.price??null,color:meta.color||null}; }).sort((a,b)=>b.count-a.count);
+  const wearArr=Object.values(wearCounts).map(w=>{ const k=w.name.toLowerCase().trim(); const meta=itemLastInfo[k]||{}; const outfitPhoto=meta.photo||(currentUser&&meta.dateKey?supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${meta.dateKey}.jpg`).data.publicUrl:null); const cropStorageUrl=currentUser&&meta.dateKey&&meta.itemIdx!=null?supabase.storage.from("outfit-photos").getPublicUrl(`${currentUser}/${meta.dateKey}_item${meta.itemIdx}.jpg`).data.publicUrl:null; const itemCropPhoto=meta.itemPhoto||cropStorageUrl||null; return {...w,lastPhoto:itemCropPhoto||outfitPhoto,itemCropPhoto,outfitPhoto,brand:meta.brand||null,price:meta.price??null,color:meta.color||null}; }).sort((a,b)=>b.count-a.count);
   const totalWears=wearArr.reduce((s,p)=>s+p.count,0);
   const catIcon=()=><Shirt size={22} color={C.sub} strokeWidth={1.5}/>;
   const computedMostWorn=wearArr.slice(0,5).map(p=>({ name:p.name,wears:p.count,category:p.category,image:catIcon() }));
@@ -845,10 +845,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                 <button key={idx} onClick={()=>setSelectedWearItem({...item,_idx:idx+1})} style={{ background:C.white,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",padding:0,display:"flex",flexDirection:"column",overflow:"hidden" }}>
                   {/* Photo / silhouette tile */}
                   <div style={{ width:"100%",aspectRatio:"1/1",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0 }}>
-                    {item.lastPhoto
-                      ? <img src={item.lastPhoto} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
-                      : <GarmentShape category={item.category}/>
-                    }
+                    <ItemPhoto src={item.itemCropPhoto} fallback={item.outfitPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>
                   </div>
                   {/* Info */}
                   <div style={{ padding:"8px 10px 10px",flex:1 }}>
@@ -911,10 +908,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               {/* Image hero */}
               <div style={{ margin:"0 16px",background:C.white,border:`1px solid ${C.border}`,position:"relative",flexShrink:0 }}>
                 <div style={{ width:"100%",aspectRatio:"4/3",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden" }}>
-                  {sw.lastPhoto
-                    ? <img src={sw.lastPhoto} alt={sw.name} style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
-                    : <GarmentShape category={sw.category}/>
-                  }
+                  <ItemPhoto src={sw.itemCropPhoto} fallback={sw.outfitPhoto} category={sw.category} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>
                 </div>
                 {isTop5&&(
                   <div style={{ position:"absolute",top:10,left:10,background:C.ink,padding:"4px 8px",display:"flex",alignItems:"center",gap:4 }}>
@@ -934,7 +928,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               {/* Stats row */}
               <div style={{ display:"flex",padding:"16px 20px 20px",gap:24,flexShrink:0 }}>
                 {[
-                  { val:cpwVal!=null?`${getCurrencySymbol()}${cpwVal.toFixed(2)}`:"—", label:"CPW" },
+                  { val:cpwVal!=null?`${getCurrencySymbol(currency)}${cpwVal.toFixed(2)}`:"—", label:"CPW" },
                   { val:`${sw.count}×`, label:"Worn" },
                   { val:lastDays!=null?`${lastDays}d`:"—", label:"Last" },
                 ].map((s,i)=>(
@@ -953,8 +947,8 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                 {sw.category&&<AttrRow label="Category" value={sw.category}/>}
                 {toColors(sw.color).length>0&&<AttrRow label="Color" value={toColors(sw.color).join(" · ")}/>}
                 {sw.brand&&<AttrRow label="Brand" value={sw.brand}/>}
-                {sw.price!=null&&<AttrRow label="Price" value={`${getCurrencySymbol()}${Number(sw.price).toFixed(2)}`}/>}
-                {cpwVal!=null&&<AttrRow label="Cost per wear" value={`${getCurrencySymbol()}${cpwVal.toFixed(2)}`} valueColor={C.sage} last/>}
+                {sw.price!=null&&<AttrRow label="Price" value={`${getCurrencySymbol(currency)}${Number(sw.price).toFixed(2)}`}/>}
+                {cpwVal!=null&&<AttrRow label="Cost per wear" value={`${getCurrencySymbol(currency)}${cpwVal.toFixed(2)}`} valueColor={C.sage} last/>}
                 {!sw.category&&!sw.color&&!sw.brand&&!sw.price&&<div style={{ padding:"14px 16px" }}><span style={{ fontSize:13,color:C.sub }}>No attributes recorded</span></div>}
               </div>
 
@@ -984,10 +978,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                     {pairedItems.slice(0,3).map((pi,i)=>(
                       <div key={i} style={{ borderRight:i<2?`1px solid ${C.border}`:"none" }}>
                         <div style={{ width:"100%",aspectRatio:"1/1",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden" }}>
-                          {pi.lastPhoto
-                            ? <img src={pi.lastPhoto} alt={pi.name} style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
-                            : <GarmentShape category={pi.category}/>
-                          }
+                          <ItemPhoto src={pi.itemCropPhoto} fallback={pi.outfitPhoto} category={pi.category} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>
                         </div>
                       </div>
                     ))}
@@ -1079,9 +1070,9 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                 <div style={{ width:46,height:46,borderRadius:0,background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22 }}>{catEmoji(cpwAddModal.category)}</div>
                 <div><div style={{ fontSize:16,fontWeight:700,color:C.ink }}>{cpwAddModal.label}</div><div style={{ fontSize:13,color:C.sub }}>{cpwAddModal.wears} wears logged</div></div>
               </div>
-              <label style={{ display:"block",fontSize:13,fontWeight:700,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em" }}>Item Price ($)</label>
+              <label style={{ display:"block",fontSize:13,fontWeight:700,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em" }}>Item Price ({getCurrencySymbol(currency)})</label>
               <input type="number" value={cpwPriceInput} onChange={e=>setCpwPriceInput(e.target.value)} placeholder="0.00" style={{ width:"100%",height:52,padding:"0 16px",borderRadius:0,border:`1.5px solid ${C.border}`,background:C.surface,fontSize:18,fontWeight:700,color:C.ink,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:16 }} onFocus={e=>e.target.style.borderColor=C.sage} onBlur={e=>e.target.style.borderColor=C.border}/>
-              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:0,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>Cost per wear</span><span style={{ fontSize:22,fontWeight:500,color:C.sage,fontFamily:F.mono }}>${(parseFloat(cpwPriceInput)/cpwAddModal.wears).toFixed(2)}</span></div>}
+              {cpwPriceInput&&parseFloat(cpwPriceInput)>0&&<div style={{ background:C.sage+"14",borderRadius:0,padding:"10px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center" }}><span style={{ fontSize:13,color:C.sub }}>Cost per wear</span><span style={{ fontSize:22,fontWeight:500,color:C.sage,fontFamily:F.mono }}>{getCurrencySymbol(currency)}{(parseFloat(cpwPriceInput)/cpwAddModal.wears).toFixed(2)}</span></div>}
               <button onClick={()=>{ if(!cpwPriceInput||parseFloat(cpwPriceInput)<=0) return; setCpwPrices(p=>({...p,[cpwAddModal.key]:parseFloat(cpwPriceInput)})); setCpwAddModal(null); }} style={{ width:"100%",height:52,borderRadius:0,border:"none",background:!cpwPriceInput||parseFloat(cpwPriceInput)<=0?C.border:C.sage,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Save Price</button>
             </div>
           </div>
@@ -1180,7 +1171,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
         {/* 4 stat cards */}
         <div style={{display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",padding:"16px 16px 0",msOverflowStyle:"none"}}>
           {[
-            {label:"Cost / Wear",val:pAvgCPW!=null?`${getCurrencySymbol()}${pAvgCPW.toFixed(2)}`:"—",sub:"avg across tracked items",onClick:()=>pOutfitCount>0&&setView("cpw")},
+            {label:"Cost / Wear",val:pAvgCPW!=null?`${getCurrencySymbol(currency)}${pAvgCPW.toFixed(2)}`:"—",sub:"avg across tracked items",onClick:()=>pOutfitCount>0&&setView("cpw")},
             {label:"Utilization",val:pUtil>0?`${pUtil}%`:"—",sub:`${pWornNames.size} of ${wearArr.length} worn`,onClick:null},
             {label:"New · Unworn",val:(pNewItems>0||pLowUse>0)?`${pNewItems} · ${pLowUse}`:"—",sub:"new items · low-use",onClick:null},
             {label:"CO₂ Avoided",val:pCO2!=="—"?`${pCO2}kg`:"—",sub:"re-wear impact",onClick:null},
@@ -1424,7 +1415,7 @@ const CURRENCIES=[
   {code:"BRL",symbol:"R$",label:"Brazilian Real"},{code:"MXN",symbol:"$",label:"Mexican Peso"},
   {code:"KRW",symbol:"₩",label:"South Korean Won"},{code:"AED",symbol:"د.إ",label:"UAE Dirham"},
 ];
-const getCurrencySymbol=()=>{ const code=localStorage.getItem("preferredCurrency")||"GBP"; return CURRENCIES.find(c=>c.code===code)?.symbol||"£"; };
+const getCurrencySymbol=(code)=>{ const c=code||localStorage.getItem("preferredCurrency")||"USD"; return CURRENCIES.find(x=>x.code===c)?.symbol||"$"; };
 
 // Normalise a brand string to canonical casing — matches against BRANDS list first, then title-cases
 const toCanonicalBrand=n=>{ if(!n||typeof n!=="string") return n; const l=n.toLowerCase().trim(); return BRANDS.find(b=>b.toLowerCase()===l)||n.trim().replace(/\b\w/g,c=>c.toUpperCase()); };
@@ -1521,7 +1512,7 @@ function BrandPicker({ value, onChange }) {
   );
 }
 
-function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavourite, onBack, initialDate=null, onClearInitialDate, cameraEnabled=false }) {
+function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavourite, onBack, initialDate=null, onClearInitialDate, cameraEnabled=false, currency="USD" }) {
   const [selectedDate,setSelectedDate]=useState(null);
   const [showModal,setShowModal]=useState(false);
   const [showSourcePicker,setShowSourcePicker]=useState(false);
@@ -1755,7 +1746,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           if(catVal) rows.push({ label:"Category",value:catVal });
           if(item.color){ const cv=Array.isArray(item.color)?item.color.join(', '):item.color; if(cv) rows.push({ label:"Color",value:cv }); }
           if(item.brand) rows.push({ label:"Brand",value:item.brand });
-          if(item.price) rows.push({ label:"Price",value:`${getCurrencySymbol()}${item.price}` });
+          if(item.price) rows.push({ label:"Price",value:`${getCurrencySymbol(currency)}${item.price}` });
           return rows;
         }).filter(g=>g.length>0);
         const outfitRows=[];
@@ -1925,7 +1916,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                     <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
                       <span style={{ fontSize:12,fontWeight:700,color:C.sub }}>Price</span>
                       <div style={{ display:"flex",alignItems:"center",flex:1,height:34,borderRadius:0,border:`1.5px solid ${C.border}`,background:C.white,overflow:"hidden" }}>
-                        <span style={{ padding:"0 8px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>{getCurrencySymbol()}</span>
+                        <span style={{ padding:"0 8px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>{getCurrencySymbol(currency)}</span>
                         <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                       </div>
                     </div>
@@ -1989,7 +1980,7 @@ return <div key={i} style={{ width:"100%",background:isSel?C.sage+"14":C.surface
   );
 }
 
-function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, onGoToDate }) {
+function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, onGoToDate, currency="USD" }) {
   const removeFav=(name)=>setFavourites(prev=>prev.filter(f=>(f.name||"").trim().toLowerCase()!==(name||"").trim().toLowerCase()));
   const [selectedFav,setSelectedFav]=useState(null);
 
@@ -2112,7 +2103,7 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
               ))}
             </div>
             {/* Attributes */}
-            {[{label:"Category",value:sf.category},{label:"Brand",value:sf.brand||"—"},{label:"Price",value:sf.price?`${getCurrencySymbol()}${sf.price}`:"—"},{label:"Colour",value:sf.color||(Array.isArray(sf.color)?sf.color.join(", "):"—")}].map(({label,value},i,arr)=>(
+            {[{label:"Category",value:sf.category},{label:"Brand",value:sf.brand||"—"},{label:"Price",value:sf.price?`${getCurrencySymbol(currency)}${sf.price}`:"—"},{label:"Colour",value:sf.color||(Array.isArray(sf.color)?sf.color.join(", "):"—")}].map(({label,value},i,arr)=>(
               <div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 20px",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none",background:C.white }}>
                 <span style={{ fontSize:12,color:C.sub }}>{label}</span>
                 <span style={{ fontSize:12,color:C.ink,fontWeight:500 }}>{value||"—"}</span>
@@ -2327,20 +2318,16 @@ function AuthScreen({ onAuth, initialView="landing" }) {
   );
 }
 
-function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignOut, userEmail="", username="", photoData={}, favourites=[], memberSince="" }) {
+function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignOut, userEmail="", username="", photoData={}, favourites=[], memberSince="", currency="USD", onCurrencyChange }) {
   const [profileImage, setProfileImage] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showUnitsPicker, setShowUnitsPicker] = useState(false);
-  const [currency, setCurrency] = useState(()=>localStorage.getItem("preferredCurrency")||"USD");
   const [tempUnit, setTempUnit] = useState(()=>localStorage.getItem("preferredTempUnit")||"F");
   const galleryRef = useRef(null);
   const cameraRef = useRef(null);
 
-  const selectCurrency = (code) => {
-    setCurrency(code);
-    localStorage.setItem("preferredCurrency", code);
-  };
+  const selectCurrency = (code) => { onCurrencyChange?.(code); };
   const selectTempUnit = (unit) => {
     setTempUnit(unit);
     localStorage.setItem("preferredTempUnit", unit);
@@ -2418,18 +2405,21 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
               <div style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub,marginBottom:0 }}>Currency</div>
             </div>
             <div style={{ overflowY:"auto",flex:1,paddingBottom:44 }}>
-              {CURRENCIES.map(c=>(
-                <button key={c.code} onClick={()=>selectCurrency(c.code)} style={{ width:"100%",padding:"14px 24px",border:"none",borderBottom:`1px solid ${C.border}`,background:"transparent",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit" }}>
+              {CURRENCIES.map(c=>{
+                const selected=currency===c.code;
+                return(
+                <button key={c.code} onClick={()=>selectCurrency(c.code)} style={{ width:"100%",padding:"14px 24px",border:"none",borderBottom:`1px solid ${selected?C.sage:C.border}`,background:selected?C.sage:"transparent",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit" }}>
                   <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-                    <span style={{ fontFamily:F.mono,fontSize:14,fontWeight:500,color:C.ink,minWidth:36 }}>{c.symbol}</span>
+                    <span style={{ fontFamily:F.mono,fontSize:14,fontWeight:500,color:selected?"#fff":C.ink,minWidth:36 }}>{c.symbol}</span>
                     <div>
-                      <div style={{ fontSize:14,fontWeight:500,color:C.ink }}>{c.label}</div>
-                      <div style={{ fontFamily:F.mono,fontSize:10,color:C.sub,letterSpacing:"0.06em",marginTop:1 }}>{c.code}</div>
+                      <div style={{ fontSize:14,fontWeight:500,color:selected?"#fff":C.ink }}>{c.label}</div>
+                      <div style={{ fontFamily:F.mono,fontSize:10,color:selected?"rgba(255,255,255,0.65)":C.sub,letterSpacing:"0.06em",marginTop:1 }}>{c.code}</div>
                     </div>
                   </div>
-                  {currency===c.code && <Check size={16} color={C.sage} strokeWidth={2}/>}
+                  {selected&&<Check size={16} color="#fff" strokeWidth={2}/>}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -2484,7 +2474,7 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
           </div>
           <div style={{ width:1,background:C.border,flexShrink:0,margin:"4px 0" }}/>
           <div style={{ flex:1,paddingLeft:20 }}>
-            <div style={{ fontFamily:F.mono,fontSize:34,fontWeight:500,color:C.ink,letterSpacing:"-0.03em",lineHeight:1 }}>{avgCPW?`$${avgCPW}`:"—"}</div>
+            <div style={{ fontFamily:F.mono,fontSize:34,fontWeight:500,color:C.ink,letterSpacing:"-0.03em",lineHeight:1 }}>{avgCPW?`${getCurrencySymbol(currency)}${avgCPW}`:"—"}</div>
             <div style={{ ...LABEL,marginTop:6 }}>CPW</div>
           </div>
         </div>
@@ -3050,7 +3040,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
                   <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:8 }}>
                     <span style={{ fontSize:12,fontWeight:500,color:C.sub,minWidth:34 }}>Price</span>
                     <div style={{ display:"flex",alignItems:"center",flex:1,height:36,border:`1px solid ${C.border}`,overflow:"hidden" }}>
-                      <span style={{ padding:"0 10px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>{getCurrencySymbol()}</span>
+                      <span style={{ padding:"0 10px",fontSize:13,color:C.sub,borderRight:`1px solid ${C.border}`,height:"100%",display:"flex",alignItems:"center" }}>{getCurrencySymbol(currency)}</span>
                       <input type="number" min="0" step="0.01" value={item.price||""} onChange={e=>updateItem(i,"price",e.target.value)} placeholder="0.00" style={{ flex:1,height:"100%",padding:"0 10px",border:"none",background:"transparent",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                     </div>
                   </div>
@@ -3104,6 +3094,7 @@ export default function App() {
   const [needsPasswordReset,setNeedsPasswordReset]=useState(false);
   const [authGoToSignIn,setAuthGoToSignIn]=useState(false);
   const [promptDismissed,setPromptDismissed]=useState(false);
+  const [currency,setCurrency]=useState(()=>localStorage.getItem("preferredCurrency")||"USD");
   const [resetPwNew,setResetPwNew]=useState("");
   const [resetPwConfirm,setResetPwConfirm]=useState("");
   const [resetPwError,setResetPwError]=useState("");
@@ -3259,12 +3250,12 @@ export default function App() {
     if(subScreen==="notifications") return <NotificationsScreen onBack={goBack}/>;
     if(subScreen==="privacy") return <PrivacyScreen onBack={goBack} cameraEnabled={cameraEnabled} onCameraToggle={setCameraEnabled}/>;
     switch(tab){
-      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
-      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} onBack={canGoBack?goBack:null} initialView={wardrobeInitialView} onAddItem={()=>setSubScreen("addItem")}/>;
-      case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null} initialDate={calendarOpenDate} onClearInitialDate={()=>setCalendarOpenDate(null)} cameraEnabled={cameraEnabled}/>;
-      case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} photoData={photoData} onGoToDate={dateKey=>{ setCalendarOpenDate(dateKey); navigateTo("calendar"); }} onBack={canGoBack?goBack:null}/>;
-      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} photoData={photoData} favourites={favourites} memberSince={memberSince} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setMemberSince(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
-      default:          return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} currency={currency} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} onBack={canGoBack?goBack:null} initialView={wardrobeInitialView} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} currency={currency} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null} initialDate={calendarOpenDate} onClearInitialDate={()=>setCalendarOpenDate(null)} cameraEnabled={cameraEnabled}/>;
+      case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} photoData={photoData} currency={currency} onGoToDate={dateKey=>{ setCalendarOpenDate(dateKey); navigateTo("calendar"); }} onBack={canGoBack?goBack:null}/>;
+      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} photoData={photoData} favourites={favourites} memberSince={memberSince} currency={currency} onCurrencyChange={code=>{setCurrency(code);localStorage.setItem("preferredCurrency",code);}} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setMemberSince(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
+      default:          return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} currency={currency} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
     }
   };
 
