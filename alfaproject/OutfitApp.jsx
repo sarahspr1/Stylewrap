@@ -205,7 +205,7 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, ChevronDown, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag, Wind, Gem, Waves, AtSign } from "lucide-react";
+import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, ChevronDown, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag, Wind, Gem, Waves, AtSign, BarChart2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 function CatIcon({ cat, size=12, color="rgba(58,68,56,0.4)" }){
@@ -478,16 +478,14 @@ function StatCard({ icon, number, label, accent=C.sage, onClick }) {
 
 
 function TabBar({ active, onChange }) {
-  const tabs=[{ id:"home",label:"Home",icon:Home },{ id:"wardrobe",label:"Wardrobe",icon:Shirt },{ id:"calendar",label:"Calendar",icon:CalendarDays },{ id:"favorites",label:"Favorites",icon:Heart },{ id:"profile",label:"Profile",icon:User }];
+  const tabs=[{ id:"home",label:"Home",icon:Home },{ id:"wardrobe",label:"Wardrobe",icon:Shirt },{ id:"calendar",label:"Calendar",icon:CalendarDays },{ id:"analytics",label:"Analytics",icon:BarChart2 },{ id:"profile",label:"Profile",icon:User }];
   return (
     <div style={{ height:83,background:C.white,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-around",paddingBottom:20,flexShrink:0 }}>
       {tabs.map(({ id,label,icon:Icon })=>{
         const a=active===id;
-        return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:56,border:"none",background:"transparent",cursor:"pointer",padding:"4px 2px",borderRadius:0 }}>
-          {a
-            ? <div style={{ display:"flex",alignItems:"center",gap:5,background:C.ink,borderRadius:99,padding:"5px 12px" }}><Icon size={16} color="#fff" strokeWidth={1.5}/><span style={{ fontSize:9,fontWeight:500,color:"#fff",letterSpacing:"0.12em",textTransform:"uppercase",whiteSpace:"nowrap",fontFamily:F.mono }}>{label}</span></div>
-            : <><Icon size={20} color="rgba(58,68,56,0.4)" strokeWidth={1.5}/><span style={{ fontSize:9,fontWeight:500,color:"rgba(31,38,32,0.45)",letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:F.mono }}>{label}</span></>
-          }
+        return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:48,border:"none",background:"transparent",cursor:"pointer",padding:"4px 4px 0",borderRadius:0,borderTop:a?`2px solid ${C.ink}`:"2px solid transparent" }}>
+          <Icon size={18} color={a?C.ink:"rgba(58,68,56,0.38)"} strokeWidth={a?2:1.5}/>
+          <span style={{ fontFamily:F.mono,fontSize:9,fontWeight:a?600:500,color:a?C.ink:"rgba(31,38,32,0.4)",letterSpacing:"0.1em",textTransform:"uppercase",whiteSpace:"nowrap" }}>{label}</span>
         </button>;
       })}
     </div>
@@ -602,56 +600,73 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
     {label:"Last worn",val:lastWornDays!=null?`${lastWornDays}d ago`:"first time",right:"this combo"},
   ];
 
+  // Split headline: first item in sans, rest in serif italic
+  const headlinePart1=(()=>{
+    if(!items.length) return null;
+    return items[0].name?.charAt(0).toUpperCase()+(items[0].name?.slice(1)||"");
+  })();
+  const headlinePart2=(()=>{
+    if(items.length<2) return null;
+    return ", "+items.slice(1).map(i=>i.name?.toLowerCase()).filter(Boolean).join(", ")+".";
+  })();
+
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface}}>
       {/* Nav */}
-      <div style={{padding:"16px 20px 10px",background:C.surface,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+      <div style={{padding:"20px 20px 10px",background:C.surface,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <button onClick={onShowAllItems} style={{border:"none",background:"transparent",cursor:"pointer",padding:0}}>
           <span style={{...ML}}>§ 01 / Home</span>
         </button>
         <span style={{fontFamily:F.mono,fontSize:10,color:C.sub,letterSpacing:"0.08em"}}>{dateLabel}</span>
       </div>
 
-      {/* Main card — fills remaining height, scrollable */}
-      <div style={{flex:1,overflowY:"auto",margin:"0 8px 8px",background:C.surface,border:`1px solid ${C.border}`}}>
+      {/* Main card — fills remaining height, scrolls internally */}
+      <div style={{flex:1,overflowY:"auto",margin:"0 10px 0",background:C.surface,border:`1px solid ${C.border}`,borderBottom:"none"}}>
 
         {/* CTA */}
         <button onClick={onAddItem} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"0 14px",height:48,background:C.ink,border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontFamily:"inherit",boxSizing:"border-box"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{...ML,color:"rgba(255,255,255,0.45)"}}>Log</span>
-            <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>{loggedToday?"Edit today's outfit":"Confirm today's outfit"}</span>
+            <span style={{fontFamily:F.mono,fontSize:8,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(255,255,255,0.45)"}}>{loggedToday?"Edit":"Log"}</span>
+            <span style={{fontFamily:F.sans,fontSize:13,fontWeight:600,color:"#fff"}}>{loggedToday?"Edit today's outfit":"Confirm today's outfit"}</span>
           </div>
-          <ChevronRight size={16} color="rgba(255,255,255,0.6)" strokeWidth={2}/>
+          <ChevronRight size={15} color="rgba(255,255,255,0.5)" strokeWidth={1.5}/>
         </button>
 
         {displayEntry?(
           <>
             {/* Outfit label + headline */}
-            <div style={{padding:"14px 14px 12px"}}>
+            <div style={{padding:"14px 14px 10px"}}>
               <span style={{...ML,color:C.sage}}>Outfit / {String(allLoggedKeys.indexOf(displayKey)+1).padStart(2,"0")}</span>
-              <h2 style={{fontFamily:F.serif,fontSize:28,fontWeight:700,color:C.ink,margin:"6px 0 10px",letterSpacing:"-0.01em",lineHeight:1.15}}>{headline||"Outfit logged"}</h2>
-              {/* Tags */}
+              <h2 style={{fontSize:26,fontWeight:500,color:C.ink,margin:"6px 0 10px",letterSpacing:"-0.02em",lineHeight:1.08,fontFamily:F.sans}}>
+                {headlinePart1||"Outfit logged"}
+                {headlinePart2&&<span style={{fontFamily:F.serif,fontStyle:"italic",fontWeight:400}}>{headlinePart2}</span>}
+                {!headlinePart2&&items.length===1&&<span style={{fontFamily:F.serif,fontStyle:"italic",fontWeight:400}}>.</span>}
+              </h2>
+              {/* Pills */}
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {displayEntry.style&&<span style={{fontSize:11,color:C.ink,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.style}</span>}
-                {displayEntry.season&&<span style={{fontSize:11,color:C.ink,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.season}</span>}
-                {comboCount>0&&<span style={{fontSize:11,color:C.ink,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{ordinal(comboCount)} wear</span>}
+                {displayEntry.style&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.style}</span>}
+                {displayEntry.season&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.season}</span>}
+                {comboCount>0&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{ordinal(comboCount)} wear</span>}
               </div>
             </div>
 
             {/* Item tiles */}
             {items.length>0&&(
-              <div style={{display:"flex",gap:6,padding:"0 8px 8px"}}>
+              <div style={{display:"flex",gap:6,padding:"0 10px 10px"}}>
                 {items.slice(0,3).map((item,i)=>{
                   const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
                   return(
                     <div key={i} style={{flex:"1 1 0",minWidth:0,background:C.white,border:`1px solid ${C.border}`,display:"flex",flexDirection:"column"}}>
-                      <div style={{width:"100%",aspectRatio:"3/4",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0}}>
+                      <div style={{width:"100%",aspectRatio:"3/4",background:C.white,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0}}>
                         <ItemPhoto src={item.itemPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
                       </div>
-                      <div style={{padding:"5px 6px 6px"}}>
-                        <span style={{fontFamily:F.mono,fontSize:8,fontWeight:500,letterSpacing:"0.1em",color:C.sage}}>{String(i+1).padStart(2,"0")}</span>
-                        <div style={{fontSize:10,fontWeight:700,color:C.ink,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</div>
-                        <div style={{fontSize:9,color:C.sub,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{[item.brand,`${wears}×`].filter(Boolean).join(" · ")}</div>
+                      <div style={{padding:"6px 7px 7px",background:C.surface,borderTop:`1px solid ${C.border}`}}>
+                        <span style={{fontFamily:F.mono,fontSize:8,letterSpacing:"0.1em",color:C.sage}}>{String(i+1).padStart(2,"0")}</span>
+                        <div style={{fontSize:11,fontWeight:600,color:C.ink,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>{item.name}</div>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:3}}>
+                          <span style={{fontFamily:F.mono,fontSize:9,color:C.sub,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.brand||item.category||""}</span>
+                          <span style={{fontFamily:F.mono,fontSize:9,color:C.sage,flexShrink:0,marginLeft:4}}>{wears}×</span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -659,26 +674,28 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
               </div>
             )}
 
-            {/* TODAY'S INTEL */}
-            <div style={{margin:"0 8px 8px",background:C.white,border:`1px solid ${C.border}`}}>
-              <div style={{padding:"9px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <span style={{...ML}}>Today's Intel</span>
-                <span style={{...ML}}>{intelRows.filter(r=>r.val!=="—").length} insights</span>
+            {/* TODAY'S INTEL — 3-column dashboard */}
+            <div style={{margin:"0 10px 10px",background:C.white,border:`1px solid ${C.border}`}}>
+              <div style={{padding:"8px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{...ML}}>§ Today's Intel</span>
+                <span style={{...ML,color:C.sage}}>{intelRows.filter(r=>r.val!=="—").length} insights</span>
               </div>
-              {intelRows.map((r,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",padding:"11px 14px",borderBottom:i<intelRows.length-1?`1px solid ${C.border}`:"none",gap:8}}>
-                  <span style={{fontSize:12,color:C.sub,flex:"0 0 76px"}}>{r.label}</span>
-                  <span style={{fontSize:13,fontWeight:700,color:C.ink,flex:1}}>{r.val}</span>
-                  <span style={{fontSize:11,color:C.sage}}>{r.right}</span>
-                </div>
-              ))}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
+                {intelRows.map((r,i)=>(
+                  <div key={i} style={{padding:"12px 10px 10px",borderRight:i<intelRows.length-1?`1px solid ${C.border}`:"none"}}>
+                    <div style={{fontFamily:F.mono,fontSize:8,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub,marginBottom:6}}>{r.label}</div>
+                    <div style={{fontFamily:F.mono,fontSize:20,fontWeight:500,color:C.ink,lineHeight:1,letterSpacing:"-0.02em"}}>{r.val}</div>
+                    <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:5}}>{r.right}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </>
         ):(
-          <div style={{padding:"40px 20px",textAlign:"center"}}>
-            <Shirt size={36} color={C.sub} strokeWidth={1} style={{margin:"0 auto 14px",display:"block"}}/>
-            <div style={{fontSize:15,fontWeight:700,color:C.ink,marginBottom:6}}>No outfits logged yet</div>
-            <div style={{fontSize:13,color:C.sub,lineHeight:1.5}}>Log your first outfit to see your daily summary here.</div>
+          <div style={{padding:"48px 20px",textAlign:"center"}}>
+            <Shirt size={32} color={C.sub} strokeWidth={1} style={{margin:"0 auto 14px",display:"block"}}/>
+            <div style={{fontFamily:F.sans,fontSize:15,fontWeight:600,color:C.ink,marginBottom:6}}>No outfits logged yet</div>
+            <div style={{fontFamily:F.sans,fontSize:13,color:C.sub,lineHeight:1.5}}>Log your first outfit to see your daily summary here.</div>
           </div>
         )}
       </div>
@@ -688,7 +705,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
 const initialCPWPrices = {};
 
-function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", onAddItem, currency="USD" }) {
+function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", onAddItem, currency="USD", favourites=[], onGoToWardrobe }) {
   const [view,setView]=useState(initialView);
   const [selectedPiece,setSelectedPiece]=useState(null);
   const [cpwPrices,setCpwPrices]=useState(initialCPWPrices);
@@ -699,6 +716,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   const [itemSearch,setItemSearch]=useState("");
   const [itemCatFilter,setItemCatFilter]=useState("All");
   const [itemSort,setItemSort]=useState("most");
+  const [showFavourites,setShowFavourites]=useState(false);
   const [selectedWearItem,setSelectedWearItem]=useState(null);
   const [filterPeriod,setFilterPeriod]=useState("overall");
   const [showFilterMenu,setShowFilterMenu]=useState(false);
@@ -767,11 +785,13 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   );
 
   if(view==="items"){
+    const favSet=new Set(favourites.map(f=>(f.name||"").trim().toLowerCase()));
     const allCategories=["All",...[...new Set(wearArr.map(i=>i.category).filter(Boolean))].sort()];
     const filteredItems=wearArr.filter(i=>{
       const matchesCat=itemCatFilter==="All"||i.category===itemCatFilter;
       const matchesSearch=i.name.toLowerCase().includes(itemSearch.toLowerCase());
-      return matchesCat&&matchesSearch;
+      const matchesFav=!showFavourites||favSet.has(i.name.trim().toLowerCase());
+      return matchesCat&&matchesSearch&&matchesFav;
     });
     const sortedItems=[...filteredItems].sort((a,b)=>{
       if(itemSort==="least") return a.count-b.count;
@@ -811,14 +831,17 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             </button>
             <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>{wearArr.length} Items</span>
           </div>
-          <h1 style={{ fontSize:34,fontWeight:800,color:C.ink,margin:"0 0 16px",letterSpacing:"-0.03em",lineHeight:1 }}>Your library</h1>
+          <h1 style={{ fontSize:34,fontWeight:800,color:C.ink,margin:"0 0 16px",letterSpacing:"-0.03em",lineHeight:1 }}>My Wardrobe</h1>
         </div>
         {/* Filters */}
         <div style={{ flexShrink:0,padding:"0 24px" }}>
           <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none",msOverflowStyle:"none" }}>
             {allCategories.map(c=>(
-              <button key={c} onClick={()=>setItemCatFilter(c)} style={{ flexShrink:0,height:32,padding:"0 16px",borderRadius:0,border:`1px solid ${itemCatFilter===c?C.ink:C.border}`,background:itemCatFilter===c?C.ink:C.white,color:itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.01em" }}>{c}</button>
+              <button key={c} onClick={()=>{ setItemCatFilter(c); setShowFavourites(false); }} style={{ flexShrink:0,height:32,padding:"0 16px",borderRadius:0,border:`1px solid ${!showFavourites&&itemCatFilter===c?C.ink:C.border}`,background:!showFavourites&&itemCatFilter===c?C.ink:C.white,color:!showFavourites&&itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.01em" }}>{c}</button>
             ))}
+            <button onClick={()=>{ setShowFavourites(f=>!f); if(!showFavourites) setItemCatFilter("All"); }} style={{ flexShrink:0,height:32,padding:"0 14px",borderRadius:0,border:`1px solid ${showFavourites?C.sage:C.border}`,background:showFavourites?C.sage:C.white,color:showFavourites?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.01em",display:"flex",alignItems:"center",gap:5 }}>
+              <Heart size={12} color={showFavourites?"#fff":C.sub} strokeWidth={2} style={{flexShrink:0}}/>Favourites
+            </button>
           </div>
           <div style={{ display:"flex",gap:6,paddingBottom:12,borderBottom:`1px solid ${C.border}` }}>
             {[{id:"most",label:"Most Worn"},{id:"least",label:"Least Worn"},{id:"az",label:"A–Z"}].map(s=>(
@@ -836,8 +859,8 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             </div>
           ) : sortedItems.length===0 ? (
             <div style={{ textAlign:"center",padding:"40px 24px" }}>
-              <div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>No items match</div>
-              <div style={{ fontSize:13,color:C.sub }}>Try a different category</div>
+              <div style={{ fontSize:15,fontWeight:700,color:C.ink,marginBottom:4 }}>{showFavourites?"No favourites yet":"No items match"}</div>
+              <div style={{ fontSize:13,color:C.sub }}>{showFavourites?"Tap the heart on an item to save it here.":"Try a different category"}</div>
             </div>
           ) : (
             <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
@@ -1155,7 +1178,6 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               {pDays>0?`${pDays}d · `:""}{pGarments} garments tracked · <span style={{color:C.sage,cursor:"pointer"}} onClick={()=>setView("items")}>{pOutfitCount} outfits</span>
             </p>
           </div>
-          <button onClick={()=>setView("items")} style={{border:`1px solid ${C.border}`,background:C.white,padding:"6px 12px",cursor:"pointer",fontFamily:F.mono,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",color:C.sub,marginTop:4,flexShrink:0}}>Library</button>
         </div>
         {/* Period tabs */}
         <div style={{display:"flex",gap:0,marginTop:14,borderBottom:`1px solid ${C.border}`}}>
@@ -1169,17 +1191,16 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
 
       <div style={{flex:1,overflowY:"auto"}}>
         {/* 4 stat cards */}
-        <div style={{display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",padding:"16px 16px 0",msOverflowStyle:"none"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,padding:"16px 16px 0"}}>
           {[
             {label:"Cost / Wear",val:pAvgCPW!=null?`${getCurrencySymbol(currency)}${pAvgCPW.toFixed(2)}`:"—",sub:"avg across tracked items",onClick:()=>pOutfitCount>0&&setView("cpw")},
             {label:"Utilization",val:pUtil>0?`${pUtil}%`:"—",sub:`${pWornNames.size} of ${wearArr.length} worn`,onClick:null},
             {label:"New · Unworn",val:(pNewItems>0||pLowUse>0)?`${pNewItems} · ${pLowUse}`:"—",sub:"new items · low-use",onClick:null},
-            {label:"CO₂ Avoided",val:pCO2!=="—"?`${pCO2}kg`:"—",sub:"re-wear impact",onClick:null},
           ].map((s,i)=>(
-            <div key={i} onClick={s.onClick||undefined} style={{flexShrink:0,width:138,background:C.white,border:`1px solid ${C.border}`,padding:"14px 14px 12px",cursor:s.onClick?"pointer":"default"}}>
-              <div style={{...ML,marginBottom:8}}>{s.label}</div>
-              <div style={{fontSize:22,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1,fontFamily:F.mono}}>{s.val}</div>
-              <div style={{fontSize:10,color:C.sub,marginTop:6,lineHeight:1.3}}>{s.sub}</div>
+            <div key={i} onClick={s.onClick||undefined} style={{background:C.white,border:`1px solid ${C.border}`,padding:"12px 10px 10px",cursor:s.onClick?"pointer":"default",minWidth:0}}>
+              <div style={{...ML,marginBottom:6,fontSize:8}}>{s.label}</div>
+              <div style={{fontSize:18,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1,fontFamily:F.mono,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.val}</div>
+              <div style={{fontSize:9,color:C.sub,marginTop:5,lineHeight:1.3}}>{s.sub}</div>
             </div>
           ))}
         </div>
@@ -1659,9 +1680,9 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
   const renderMonth=(mIdx,yr)=>{
     const year=yr??today.getFullYear(),days=new Date(year,mIdx+1,0).getDate();
     const firstDay=new Date(year,mIdx,1).getDay(),offset=(firstDay+6)%7; // Monday-first
-    const CELL={ borderTop:"none",borderLeft:"none",borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}`,cursor:"pointer",padding:"7px 7px 6px",display:"flex",flexDirection:"column",alignItems:"flex-start",justifyContent:"space-between",aspectRatio:"1",fontFamily:"inherit",minHeight:52 };
+    const CELL={ borderTop:"none",borderLeft:"none",borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}`,cursor:"pointer",padding:"7px 7px 6px",display:"flex",flexDirection:"column",alignItems:"flex-start",justifyContent:"space-between",fontFamily:"inherit",minHeight:0 };
     const cells=[];
-    for(let i=0;i<offset;i++) cells.push(<div key={`e${i}`} style={{ borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}`,aspectRatio:"1" }}/>);
+    for(let i=0;i<offset;i++) cells.push(<div key={`e${i}`} style={{ borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}` }}/>);
     for(let d=1;d<=days;d++){
       const date=new Date(year,mIdx,d),key=toKey(date);
       const isToday=date.toDateString()===today.toDateString(),hasPhoto=!!(photoData[key]?.logged);
@@ -1694,7 +1715,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       </div>
 
       {/* Title + stats */}
-      <div style={{ padding:"14px 24px 20px",flexShrink:0 }}>
+      <div style={{ padding:"14px 24px 12px",flexShrink:0 }}>
         <h1 style={{ fontSize:38,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1.05 }}>{months[calMonth]} {toRoman(calYear)}</h1>
         {countUpTo>0
           ? <p style={{ fontSize:13,color:C.sub,margin:"6px 0 0",fontWeight:400 }}>{wornCount} worn · {restCount} rest · {logPct}% logged</p>
@@ -1702,19 +1723,18 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         }
       </div>
 
-      <div style={{ flex:1,overflowY:"auto",display:"flex",flexDirection:"column" }}>
+      {/* Calendar — fills remaining height */}
+      <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",padding:"0 24px 16px",minHeight:0 }}>
         {/* Day headers */}
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderTop:`1px solid ${C.border}`,borderLeft:`1px solid ${C.border}`,margin:"0 24px",flexShrink:0 }}>
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderTop:`1px solid ${C.border}`,borderLeft:`1px solid ${C.border}`,flexShrink:0 }}>
           {["M","T","W","T","F","S","S"].map((d,i)=>(
             <div key={i} style={{ display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.mono,fontSize:10,fontWeight:500,color:C.sub,height:28,letterSpacing:"0.06em",borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}` }}>{d}</div>
           ))}
         </div>
-        {/* Calendar grid */}
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderLeft:`1px solid ${C.border}`,margin:"0 24px 0",flexShrink:0 }}>
+        {/* Calendar grid — rows stretch to fill height */}
+        <div style={{ flex:1,display:"grid",gridTemplateColumns:"repeat(7,1fr)",gridAutoRows:"1fr",borderLeft:`1px solid ${C.border}`,minHeight:0 }}>
           {renderMonth(calMonth,calYear)}
         </div>
-        {/* Fill remaining space with matching border */}
-        <div style={{ flex:1,margin:"0 24px",borderLeft:`1px solid ${C.border}`,borderRight:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}` }}/>
       </div>
       {showCamera&&<CameraCapture onCapture={handleCameraCapture} onClose={()=>setShowCamera(false)}/>}
       {showReview&&selectedDate&&(
@@ -2039,8 +2059,8 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
       {/* Grid */}
       <div style={{ flex:1,overflowY:"auto",padding:"12px 12px 32px" }}>
         {favourites.length===0 ? (
-          <div style={{ textAlign:"center",padding:"64px 24px" }}>
-            <Heart size={36} color={C.sub} strokeWidth={1} style={{ margin:"0 auto 16px",display:"block" }}/>
+          <div style={{ height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"0 24px" }}>
+            <Heart size={36} color={C.sub} strokeWidth={1} style={{ marginBottom:16 }}/>
             <div style={{ fontSize:16,fontWeight:700,color:C.ink,marginBottom:6 }}>No favourites yet</div>
             <div style={{ fontSize:13,color:C.sub,lineHeight:1.5 }}>Tap the heart on any item in your outfit log to save it here.</div>
           </div>
@@ -2437,7 +2457,7 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
         </div>
       )}
 
-      <div style={{ flex:1,overflowY:"auto" }}>
+      <div style={{ flex:1,overflowY:"auto",display:"flex",flexDirection:"column" }}>
         {/* Section label + Edit */}
         <div style={{ padding:"28px 24px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
           <span style={{ ...LABEL }}>§ 05 · Profile</span>
@@ -2527,7 +2547,7 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
         </div>
 
         {/* Sign out */}
-        <div style={{ padding:"12px 24px 40px" }}>
+        <div style={{ padding:"12px 24px 40px",marginTop:"auto" }}>
           <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",padding:"16px 18px",border:`1px solid ${C.border}`,background:"transparent",color:C.red,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit" }}>
             <LogOut size={16} color={C.red} strokeWidth={1.5}/>Sign Out
           </button>
@@ -2537,12 +2557,20 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
   );
 }
 
-function SettingsScreen({ onBack, username="" }) {
+function SettingsScreen({ onBack, username="", onNameChange, currentUser="" }) {
   const [panel,setPanel]=useState(null); // null | "password" | "phone" | "name" | "dob" | "delete"
   const [curPw,setCurPw]=useState(""); const [newPw,setNewPw]=useState(""); const [confPw,setConfPw]=useState("");
-  const [phone,setPhone]=useState(""); const [firstName,setFirstName]=useState(""); const [lastName,setLastName]=useState("");
+  const [phone,setPhone]=useState("");
+  const [firstName,setFirstName]=useState(()=>username.includes(" ")?username.split(" ")[0]:username);
+  const [lastName,setLastName]=useState(()=>username.includes(" ")?username.split(" ").slice(1).join(" "):"");
   const [dob,setDob]=useState("");
   const [msg,setMsg]=useState(""); const [err,setErr]=useState("");
+
+  useEffect(()=>{
+    supabase.auth.getUser().then(({data:{user}})=>{
+      if(user?.user_metadata?.date_of_birth) setDob(user.user_metadata.date_of_birth);
+    });
+  },[]);
 
   const handleDobChange=(val)=>{
     const digits=val.replace(/\D/g,"").slice(0,8);
@@ -2614,8 +2642,13 @@ function SettingsScreen({ onBack, username="" }) {
   const handleSaveName=async()=>{
     setErr(""); setMsg("");
     if(!firstName&&!lastName){setErr("Please enter at least a first name.");return;}
-    const {error}=await supabase.auth.updateUser({data:{first_name:firstName,last_name:lastName}});
+    const displayName=[firstName,lastName].filter(Boolean).join(" ");
+    const {error}=await supabase.auth.updateUser({data:{first_name:firstName,last_name:lastName,display_name:displayName}});
     if(error){setErr(error.message);return;}
+    if(currentUser){
+      await supabase.from("users").update({username:displayName}).eq("id",currentUser);
+    }
+    onNameChange?.(displayName);
     setMsg("Name updated successfully.");
   };
 
@@ -2862,7 +2895,7 @@ function PrivacyScreen({ onBack, cameraEnabled, onCameraToggle }) {
 }
 
 
-function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false }) {
+function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false, currency="USD" }) {
   const [step,setStep]=useState("pick"); // pick | analysing | edit | done
   const [photo,setPhoto]=useState(null);
   const [photoUrl,setPhotoUrl]=useState(null); // Supabase Storage URL once uploaded
@@ -3115,7 +3148,8 @@ export default function App() {
         console.log("[session restore] profile loaded:", profile ? `photo_data keys: ${Object.keys(profile.photo_data||{}).length}` : "null");
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
-        setCurrentUsername(profile?.username||session.user.user_metadata?.username||"");
+        setCurrentUsername(profile?.username||session.user.user_metadata?.display_name||session.user.user_metadata?.username||"");
+        setCameraEnabled(!!session.user.user_metadata?.camera_enabled);
         const _d=session.user.created_at?new Date(session.user.created_at):null;
         if(_d) setMemberSince(`${String(_d.getMonth()+1).padStart(2,"0")}\u00B7${_d.getFullYear()}`);
         setPhotoData(profile?.photo_data||{});
@@ -3238,24 +3272,24 @@ export default function App() {
     if(tabHistory.length>0){
       const prev=tabHistory[tabHistory.length-1];
       setTabHistory(h=>h.slice(0,-1));
-      if(tab==="wardrobe") setWardrobeInitialView("main");
       setTab(prev);
     }
   };
   const canGoBack = subScreen!==null || tabHistory.length>0;
 
   const renderContent=()=>{
-    if(subScreen==="addItem") return <AddItemScreen onBack={goBack} photoData={photoData} setPhotoData={setPhotoData} cameraEnabled={cameraEnabled}/>;
-    if(subScreen==="settings") return <SettingsScreen onBack={goBack} username={currentUsername}/>;
+    if(subScreen==="addItem") return <AddItemScreen onBack={goBack} photoData={photoData} setPhotoData={setPhotoData} cameraEnabled={cameraEnabled} currency={currency}/>;
+    if(subScreen==="settings") return <SettingsScreen onBack={goBack} username={currentUsername} currentUser={currentUser} onNameChange={name=>setCurrentUsername(name)}/>;
     if(subScreen==="notifications") return <NotificationsScreen onBack={goBack}/>;
-    if(subScreen==="privacy") return <PrivacyScreen onBack={goBack} cameraEnabled={cameraEnabled} onCameraToggle={setCameraEnabled}/>;
+    if(subScreen==="privacy") return <PrivacyScreen onBack={goBack} cameraEnabled={cameraEnabled} onCameraToggle={async(val)=>{ setCameraEnabled(val); await supabase.auth.updateUser({data:{camera_enabled:val}}); }}/>;
     switch(tab){
-      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} currency={currency} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
-      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} onBack={canGoBack?goBack:null} initialView={wardrobeInitialView} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} currency={currency} onShowAllItems={()=>navigateTo("wardrobe")} onGoToFavorites={()=>navigateTo("wardrobe")} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} favourites={favourites} onBack={canGoBack?goBack:null} initialView="items" onAddItem={()=>setSubScreen("addItem")} onGoToWardrobe={()=>navigateTo("wardrobe")}/>;
+      case "analytics": return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} favourites={favourites} onBack={canGoBack?goBack:null} initialView="main" onAddItem={()=>setSubScreen("addItem")} onGoToWardrobe={()=>navigateTo("wardrobe")}/>;
       case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} currency={currency} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null} initialDate={calendarOpenDate} onClearInitialDate={()=>setCalendarOpenDate(null)} cameraEnabled={cameraEnabled}/>;
       case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} photoData={photoData} currency={currency} onGoToDate={dateKey=>{ setCalendarOpenDate(dateKey); navigateTo("calendar"); }} onBack={canGoBack?goBack:null}/>;
       case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} photoData={photoData} favourites={favourites} memberSince={memberSince} currency={currency} onCurrencyChange={code=>{setCurrency(code);localStorage.setItem("preferredCurrency",code);}} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setMemberSince(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
-      default:          return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} currency={currency} onShowAllItems={()=>{ setWardrobeInitialView("items"); navigateTo("wardrobe"); }} onGoToFavorites={()=>navigateTo("favorites")} onAddItem={()=>setSubScreen("addItem")}/>;
+      default:          return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} currency={currency} onShowAllItems={()=>navigateTo("wardrobe")} onGoToFavorites={()=>navigateTo("wardrobe")} onAddItem={()=>setSubScreen("addItem")}/>;
     }
   };
 
