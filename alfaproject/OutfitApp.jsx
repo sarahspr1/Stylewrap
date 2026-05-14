@@ -205,7 +205,7 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, ChevronDown, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag, Wind, Gem, Waves, AtSign, BarChart2 } from "lucide-react";
+import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, ChevronDown, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag, Wind, Gem, Waves, AtSign, BarChart2, Share2, Download } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 function CatIcon({ cat, size=12, color="rgba(58,68,56,0.4)" }){
@@ -433,15 +433,18 @@ function OutfitReview({ entry, editEntry, selectedDate, onRetake, onSave, onEdit
   );
 }
 
-function Modal({ isOpen, onClose, title, children }) {
+function Modal({ isOpen, onClose, title, children, onShare, contentRef }) {
   if (!isOpen) return null;
   return (
     <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"flex-end" }} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",maxHeight:"92vh",overflow:"auto",padding:"8px 20px 44px",animation:"slideUp .28s cubic-bezier(.32,.72,0,1)" }}>
+      <div ref={contentRef} onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,width:"100%",maxHeight:"92vh",overflow:"auto",padding:"8px 20px 44px",animation:"slideUp .28s cubic-bezier(.32,.72,0,1)" }}>
         <div style={{ width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 16px" }} />
         <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
           <h2 style={{ fontSize:22,fontWeight:900,color:C.ink,margin:0,letterSpacing:"-0.02em" }}>{title}</h2>
-          <button onClick={onClose} style={{ width:32,height:32,borderRadius:"50%",border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><X size={17} color={C.sub}/></button>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            {onShare&&<button onClick={onShare} style={{width:32,height:32,borderRadius:"50%",border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><Share2 size={15} color={C.sub}/></button>}
+            <button onClick={onClose} style={{ width:32,height:32,borderRadius:"50%",border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><X size={17} color={C.sub}/></button>
+          </div>
         </div>
         {children}
       </div>
@@ -527,7 +530,122 @@ function DailyLogPrompt({ photoData={}, onAddItem, onDismiss, streak=0 }) {
 const GS=({cat})=>{const col="#3A4A38";const sh={Top:<path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,Bottom:<path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,Dresses:<path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,Outerwear:<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,Shoes:<path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,Accessories:<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>};return(<svg viewBox="0 0 110 110" width="52%" height="52%">{sh[cat]||sh.Top}</svg>);};
 const ItemPhoto=({src,fallback,category,style:s})=>{const[err,setErr]=useState(false);const[err2,setErr2]=useState(false);if(src&&!err)return<img src={src} onError={()=>setErr(true)} style={s} alt=""/>;if(fallback&&!err2)return<img src={fallback} onError={()=>setErr2(true)} style={{...s,objectFit:"cover"}} alt=""/>;return<GS cat={category}/>;};
 
+function ShareSheet({ onClose, targetRef }) {
+  const [phase,setPhase]=useState("idle"); // idle | generating | done | error
+  const [errMsg,setErrMsg]=useState("");
+
+  const generate=async()=>{
+    setPhase("generating");
+    try {
+      const {default:html2canvas}=await import("html2canvas");
+      const el=targetRef.current;
+      if(!el) throw new Error("Nothing to capture");
+      const canvas=await html2canvas(el,{
+        scale:Math.min(window.devicePixelRatio*2,4),
+        useCORS:true,
+        allowTaint:true,
+        backgroundColor:"#FFFFFF",
+        logging:false,
+        scrollX:0,
+        scrollY:0,
+        width:el.offsetWidth,
+        height:el.scrollHeight||el.offsetHeight,
+        windowWidth:el.offsetWidth,
+        windowHeight:el.scrollHeight||el.offsetHeight,
+      });
+      return canvas;
+    } catch(e){
+      setPhase("error");
+      setErrMsg(e.message||"Failed to capture");
+      return null;
+    }
+  };
+
+  const handleSave=async()=>{
+    const canvas=await generate();
+    if(!canvas) return;
+    canvas.toBlob(blob=>{
+      if(!blob){setPhase("error");setErrMsg("Could not create image");return;}
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download=`stylewrap-${Date.now()}.png`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setPhase("done");
+    },"image/png",1.0);
+  };
+
+  const handleInstagram=async()=>{
+    const canvas=await generate();
+    if(!canvas) return;
+    canvas.toBlob(async blob=>{
+      if(!blob){setPhase("error");setErrMsg("Could not create image");return;}
+      const file=new File([blob],"stylewrap.png",{type:"image/png"});
+      try {
+        if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:"Stylewrap",text:"My outfit on Stylewrap"});
+          setPhase("done");
+        } else {
+          // Fallback: download
+          const url=URL.createObjectURL(blob);
+          const a=document.createElement("a");
+          a.href=url; a.download="stylewrap.png";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          setPhase("done");
+        }
+      } catch(e){
+        if(e.name==="AbortError"){setPhase("idle");return;}
+        setPhase("error"); setErrMsg(e.message||"Share failed");
+      }
+    },"image/png",1.0);
+  };
+
+  const BtnRow=({onClick,dark,children})=>(
+    <button onClick={onClick} style={{width:"100%",height:56,border:dark?"none":`1.5px solid ${C.border}`,background:dark?C.ink:C.white,color:dark?"#fff":C.ink,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:10,borderRadius:0}}>{children}</button>
+  );
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.52)",zIndex:99999,display:"flex",flexDirection:"column",justifyContent:"flex-end"}} onClick={phase==="idle"?onClose:undefined}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.white,padding:"8px 20px 44px"}}>
+        <div style={{width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px"}}/>
+        {phase==="generating"&&(
+          <div style={{textAlign:"center",padding:"32px 0"}}>
+            <div style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite",margin:"0 auto 14px"}}/>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <div style={{fontSize:13,fontWeight:600,color:C.sub}}>Generating image…</div>
+          </div>
+        )}
+        {phase==="done"&&(
+          <div style={{textAlign:"center",padding:"28px 0"}}>
+            <div style={{width:44,height:44,borderRadius:"50%",background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}><Check size={22} color={C.sage}/></div>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,marginBottom:4}}>Done</div>
+            <div style={{fontSize:13,color:C.sub,marginBottom:24}}>Your image is ready.</div>
+            <button onClick={onClose} style={{width:"100%",height:48,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",borderRadius:0}}>Close</button>
+          </div>
+        )}
+        {phase==="error"&&(
+          <div style={{textAlign:"center",padding:"24px 0"}}>
+            <div style={{fontSize:13,color:C.red,marginBottom:16}}>{errMsg||"Something went wrong."}</div>
+            <button onClick={()=>setPhase("idle")} style={{width:"100%",height:48,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",borderRadius:0}}>Try again</button>
+          </div>
+        )}
+        {phase==="idle"&&(
+          <>
+            <div style={{fontFamily:F.mono,fontSize:9,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub,textAlign:"center",marginBottom:16}}>Share</div>
+            <BtnRow onClick={handleInstagram} dark><Share2 size={17}/>Share to Instagram</BtnRow>
+            <BtnRow onClick={handleSave}><Download size={17}/>Save to Phone</BtnRow>
+            <button onClick={onClose} style={{width:"100%",height:48,border:"none",background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="", username="", currency="USD" }) {
+  const shareRef=useRef(null);
+  const [showShare,setShowShare]=useState(false);
   const now=new Date();
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const todayKey=toKey(now);
@@ -611,20 +729,24 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
   })();
 
   return (
-    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface}}>
+    <div ref={shareRef} style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface}}>
       {/* Nav */}
       <div style={{padding:"20px 20px 10px",background:C.surface,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <button onClick={onShowAllItems} style={{border:"none",background:"transparent",cursor:"pointer",padding:0}}>
           <span style={{...ML}}>§ 01 / Home</span>
         </button>
-        <span style={{fontFamily:F.mono,fontSize:10,color:C.sub,letterSpacing:"0.08em"}}>{dateLabel}</span>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontFamily:F.mono,fontSize:10,color:C.sub,letterSpacing:"0.08em"}}>{dateLabel}</span>
+          <button onClick={()=>setShowShare(true)} style={{border:"none",background:"transparent",cursor:"pointer",padding:4,display:"flex",alignItems:"center"}}><Share2 size={15} color={C.sub}/></button>
+        </div>
       </div>
 
-      {/* Main card — fills remaining height, scrolls internally */}
-      <div style={{flex:1,overflowY:"auto",margin:"0 10px 0",background:C.surface,border:`1px solid ${C.border}`,borderBottom:"none"}}>
+      {/* Main card — fills remaining height, no scroll, flex column */}
+      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface}}>
+      {showShare&&<ShareSheet onClose={()=>setShowShare(false)} targetRef={shareRef}/>}
 
         {/* CTA */}
-        <button onClick={onAddItem} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"0 14px",height:48,background:C.ink,border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontFamily:"inherit",boxSizing:"border-box"}}>
+        <button onClick={onAddItem} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"0 14px",height:44,background:C.ink,border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontFamily:"inherit",boxSizing:"border-box",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <span style={{fontFamily:F.mono,fontSize:8,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(255,255,255,0.45)"}}>{loggedToday?"Edit":"Log"}</span>
             <span style={{fontFamily:F.sans,fontSize:13,fontWeight:600,color:"#fff"}}>{loggedToday?"Edit today's outfit":"Confirm today's outfit"}</span>
@@ -634,36 +756,35 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
         {displayEntry?(
           <>
-            {/* Outfit label + headline */}
-            <div style={{padding:"14px 14px 10px"}}>
+            {/* Outfit label + headline + pills — fixed height */}
+            <div style={{padding:"10px 14px 8px",flexShrink:0,borderBottom:`1px solid ${C.border}`}}>
               <span style={{...ML,color:C.sage}}>Outfit / {String(allLoggedKeys.indexOf(displayKey)+1).padStart(2,"0")}</span>
-              <h2 style={{fontSize:26,fontWeight:500,color:C.ink,margin:"6px 0 10px",letterSpacing:"-0.02em",lineHeight:1.08,fontFamily:F.sans}}>
+              <h2 style={{fontSize:22,fontWeight:500,color:C.ink,margin:"4px 0 8px",letterSpacing:"-0.02em",lineHeight:1.1,fontFamily:F.sans}}>
                 {headlinePart1||"Outfit logged"}
                 {headlinePart2&&<span style={{fontFamily:F.serif,fontStyle:"italic",fontWeight:400}}>{headlinePart2}</span>}
                 {!headlinePart2&&items.length===1&&<span style={{fontFamily:F.serif,fontStyle:"italic",fontWeight:400}}>.</span>}
               </h2>
-              {/* Pills */}
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {displayEntry.style&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.style}</span>}
-                {displayEntry.season&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{displayEntry.season}</span>}
-                {comboCount>0&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"3px 10px"}}>{ordinal(comboCount)} wear</span>}
+                {displayEntry.style&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"2px 8px"}}>{displayEntry.style}</span>}
+                {displayEntry.season&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"2px 8px"}}>{displayEntry.season}</span>}
+                {comboCount>0&&<span style={{fontFamily:F.sans,fontSize:10,fontWeight:500,color:C.sage,background:C.white,border:`1px solid ${C.border}`,padding:"2px 8px"}}>{ordinal(comboCount)} wear</span>}
               </div>
             </div>
 
-            {/* Item tiles */}
+            {/* Item tiles — flex:1 fills remaining space between header and intel */}
             {items.length>0&&(
-              <div style={{display:"flex",gap:6,padding:"0 10px 10px"}}>
+              <div style={{flex:1,display:"flex",gap:1,padding:"0",minHeight:0,borderBottom:`1px solid ${C.border}`}}>
                 {items.slice(0,3).map((item,i)=>{
                   const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
                   return(
-                    <div key={i} style={{flex:"1 1 0",minWidth:0,background:C.white,border:`1px solid ${C.border}`,display:"flex",flexDirection:"column"}}>
-                      <div style={{width:"100%",aspectRatio:"3/4",background:C.white,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0}}>
+                    <div key={i} style={{flex:"1 1 0",minWidth:0,minHeight:0,background:C.white,border:`1px solid ${C.border}`,display:"flex",flexDirection:"column"}}>
+                      <div style={{flex:1,minHeight:0,background:C.white,overflow:"hidden"}}>
                         <ItemPhoto src={item.itemPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
                       </div>
-                      <div style={{padding:"6px 7px 7px",background:C.surface,borderTop:`1px solid ${C.border}`}}>
+                      <div style={{padding:"5px 7px 6px",background:C.surface,borderTop:`1px solid ${C.border}`,flexShrink:0}}>
                         <span style={{fontFamily:F.mono,fontSize:8,letterSpacing:"0.1em",color:C.sage}}>{String(i+1).padStart(2,"0")}</span>
-                        <div style={{fontSize:11,fontWeight:600,color:C.ink,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>{item.name}</div>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:3}}>
+                        <div style={{fontSize:11,fontWeight:600,color:C.ink,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>{item.name}</div>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:2}}>
                           <span style={{fontFamily:F.mono,fontSize:9,color:C.sub,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.brand||item.category||""}</span>
                           <span style={{fontFamily:F.mono,fontSize:9,color:C.sage,flexShrink:0,marginLeft:4}}>{wears}×</span>
                         </div>
@@ -674,28 +795,28 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
               </div>
             )}
 
-            {/* TODAY'S INTEL — 3-column dashboard */}
-            <div style={{margin:"0 10px 10px",background:C.white,border:`1px solid ${C.border}`}}>
-              <div style={{padding:"8px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            {/* TODAY'S INTEL — fixed height at bottom */}
+            <div style={{background:C.white,flexShrink:0}}>
+              <div style={{padding:"7px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <span style={{...ML}}>§ Today's Intel</span>
                 <span style={{...ML,color:C.sage}}>{intelRows.filter(r=>r.val!=="—").length} insights</span>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
                 {intelRows.map((r,i)=>(
-                  <div key={i} style={{padding:"12px 10px 10px",borderRight:i<intelRows.length-1?`1px solid ${C.border}`:"none"}}>
-                    <div style={{fontFamily:F.mono,fontSize:8,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub,marginBottom:6}}>{r.label}</div>
-                    <div style={{fontFamily:F.mono,fontSize:20,fontWeight:500,color:C.ink,lineHeight:1,letterSpacing:"-0.02em"}}>{r.val}</div>
-                    <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:5}}>{r.right}</div>
+                  <div key={i} style={{padding:"10px 10px 8px",borderRight:i<intelRows.length-1?`1px solid ${C.border}`:"none"}}>
+                    <div style={{fontFamily:F.mono,fontSize:8,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub,marginBottom:4}}>{r.label}</div>
+                    <div style={{fontFamily:F.mono,fontSize:18,fontWeight:500,color:C.ink,lineHeight:1,letterSpacing:"-0.02em"}}>{r.val}</div>
+                    <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:4}}>{r.right}</div>
                   </div>
                 ))}
               </div>
             </div>
           </>
         ):(
-          <div style={{padding:"48px 20px",textAlign:"center"}}>
-            <Shirt size={32} color={C.sub} strokeWidth={1} style={{margin:"0 auto 14px",display:"block"}}/>
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+            <Shirt size={32} color={C.sub} strokeWidth={1} style={{marginBottom:14}}/>
             <div style={{fontFamily:F.sans,fontSize:15,fontWeight:600,color:C.ink,marginBottom:6}}>No outfits logged yet</div>
-            <div style={{fontFamily:F.sans,fontSize:13,color:C.sub,lineHeight:1.5}}>Log your first outfit to see your daily summary here.</div>
+            <div style={{fontFamily:F.sans,fontSize:13,color:C.sub,lineHeight:1.5,textAlign:"center"}}>Log your first outfit to see your daily summary here.</div>
           </div>
         )}
       </div>
@@ -706,6 +827,8 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 const initialCPWPrices = {};
 
 function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", onAddItem, currency="USD", favourites=[], onGoToWardrobe }) {
+  const analyticsShareRef=useRef(null);
+  const [showAnalyticsShare,setShowAnalyticsShare]=useState(false);
   const [view,setView]=useState(initialView);
   const [selectedPiece,setSelectedPiece]=useState(null);
   const [cpwPrices,setCpwPrices]=useState(initialCPWPrices);
@@ -786,7 +909,9 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
 
   if(view==="items"){
     const favSet=new Set(favourites.map(f=>(f.name||"").trim().toLowerCase()));
-    const allCategories=["All",...[...new Set(wearArr.map(i=>i.category).filter(Boolean))].sort()];
+    const dynamicCats=[...new Set(wearArr.map(i=>i.category).filter(Boolean))];
+    const pinnedCats=["Accessories","Shoes"];
+    const allCategories=["All",...[...new Set([...dynamicCats,...pinnedCats])].sort()];
     const filteredItems=wearArr.filter(i=>{
       const matchesCat=itemCatFilter==="All"||i.category===itemCatFilter;
       const matchesSearch=i.name.toLowerCase().includes(itemSearch.toLowerCase());
@@ -839,14 +964,14 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             {allCategories.map(c=>(
               <button key={c} onClick={()=>{ setItemCatFilter(c); setShowFavourites(false); }} style={{ flexShrink:0,height:32,padding:"0 16px",borderRadius:0,border:`1px solid ${!showFavourites&&itemCatFilter===c?C.ink:C.border}`,background:!showFavourites&&itemCatFilter===c?C.ink:C.white,color:!showFavourites&&itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.01em" }}>{c}</button>
             ))}
-            <button onClick={()=>{ setShowFavourites(f=>!f); if(!showFavourites) setItemCatFilter("All"); }} style={{ flexShrink:0,height:32,padding:"0 14px",borderRadius:0,border:`1px solid ${showFavourites?C.sage:C.border}`,background:showFavourites?C.sage:C.white,color:showFavourites?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.01em",display:"flex",alignItems:"center",gap:5 }}>
-              <Heart size={12} color={showFavourites?"#fff":C.sub} strokeWidth={2} style={{flexShrink:0}}/>Favourites
-            </button>
           </div>
           <div style={{ display:"flex",gap:6,paddingBottom:12,borderBottom:`1px solid ${C.border}` }}>
             {[{id:"most",label:"Most Worn"},{id:"least",label:"Least Worn"},{id:"az",label:"A–Z"}].map(s=>(
               <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ height:24,padding:"0 10px",borderRadius:0,border:itemSort===s.id?`1px solid ${C.ink}`:`1px solid ${C.border}`,background:itemSort===s.id?C.ink:"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:F.mono,letterSpacing:"0.06em",textTransform:"uppercase" }}>{s.label}</button>
             ))}
+            <button onClick={()=>{ setShowFavourites(f=>!f); if(!showFavourites) setItemCatFilter("All"); }} style={{ height:24,padding:"0 10px",borderRadius:0,border:showFavourites?`1px solid ${C.sage}`:`1px solid ${C.border}`,background:showFavourites?C.sage:"transparent",color:showFavourites?"#fff":C.sub,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:F.mono,letterSpacing:"0.06em",textTransform:"uppercase",display:"flex",alignItems:"center",gap:4 }}>
+              <Heart size={10} color={showFavourites?"#fff":C.sub} strokeWidth={2}/>Favourites
+            </button>
           </div>
         </div>
         {/* Grid */}
@@ -868,7 +993,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                 <button key={idx} onClick={()=>setSelectedWearItem({...item,_idx:idx+1})} style={{ background:C.white,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",padding:0,display:"flex",flexDirection:"column",overflow:"hidden" }}>
                   {/* Photo / silhouette tile */}
                   <div style={{ width:"100%",aspectRatio:"1/1",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0 }}>
-                    <ItemPhoto src={item.itemCropPhoto} fallback={item.outfitPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"contain",display:"block"}}/>
+                    <ItemPhoto src={item.itemCropPhoto} fallback={item.outfitPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
                   </div>
                   {/* Info */}
                   <div style={{ padding:"8px 10px 10px",flex:1 }}>
@@ -1166,7 +1291,8 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
   const GS=({cat,size=24})=>{const col="#3A4A38";const sh={Top:<path d="M20 20 L35 12 L45 18 L65 18 L75 12 L90 20 L95 45 L85 48 L85 95 L25 95 L25 48 L15 45 Z" fill={col}/>,Bottom:<path d="M30 15 L80 15 L82 50 L78 95 L60 95 L55 55 L50 95 L32 95 L28 50 Z" fill={col}/>,Dresses:<path d="M35 15 L45 10 L65 10 L75 15 L72 30 L85 95 L25 95 L38 30 Z" fill={col}/>,Outerwear:<path d="M18 22 L35 12 L45 16 L55 14 L65 16 L75 12 L92 22 L90 95 L68 95 L55 55 L42 95 L20 95 Z" fill={col}/>,Shoes:<path d="M12 60 L35 55 L55 52 L80 55 L92 62 L92 72 L15 72 Z" fill={col}/>,Accessories:<g><path d="M32 25 Q55 10 78 25" stroke={col} strokeWidth="3" fill="none"/><path d="M25 30 L85 30 L80 90 L30 90 Z" fill={col}/></g>};return(<svg viewBox="0 0 110 110" width={size} height={size}>{sh[cat]||sh.Top}</svg>);};
 
   return (
-    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface}}>
+    <div ref={analyticsShareRef} style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface}}>
+      {showAnalyticsShare&&<ShareSheet onClose={()=>setShowAnalyticsShare(false)} targetRef={analyticsShareRef}/>}
       {/* Header */}
       <div style={{padding:"28px 24px 0",background:C.surface,flexShrink:0}}>
         {onBack&&<button onClick={onBack} style={{display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 8px",fontFamily:"inherit"}}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
@@ -1178,6 +1304,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               {pDays>0?`${pDays}d · `:""}{pGarments} garments tracked · <span style={{color:C.sage,cursor:"pointer"}} onClick={()=>setView("items")}>{pOutfitCount} outfits</span>
             </p>
           </div>
+          <button onClick={()=>setShowAnalyticsShare(true)} style={{border:"none",background:"transparent",cursor:"pointer",padding:4,display:"flex",alignItems:"center",marginTop:4}}><Share2 size={17} color={C.sub}/></button>
         </div>
         {/* Period tabs */}
         <div style={{display:"flex",gap:0,marginTop:14,borderBottom:`1px solid ${C.border}`}}>
@@ -1534,6 +1661,8 @@ function BrandPicker({ value, onChange }) {
 }
 
 function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavourite, onBack, initialDate=null, onClearInitialDate, cameraEnabled=false, currency="USD" }) {
+  const outfitModalRef=useRef(null);
+  const [showOutfitShare,setShowOutfitShare]=useState(false);
   const [selectedDate,setSelectedDate]=useState(null);
   const [showModal,setShowModal]=useState(false);
   const [showSourcePicker,setShowSourcePicker]=useState(false);
@@ -1867,7 +1996,8 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           </div>
         );
       })()}
-      <Modal isOpen={showModal&&!!selectedDate} onClose={()=>{ setShowModal(false); setShowSourcePicker(false); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); uploadSlotRef.current="primary"; }} title={selectedDate?selectedDate.toLocaleDateString("en-US",{ weekday:"long",month:"long",day:"numeric" }):""}>
+      {showOutfitShare&&<ShareSheet onClose={()=>setShowOutfitShare(false)} targetRef={outfitModalRef}/>}
+      <Modal isOpen={showModal&&!!selectedDate} onClose={()=>{ setShowModal(false); setShowSourcePicker(false); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); uploadSlotRef.current="primary"; }} title={selectedDate?selectedDate.toLocaleDateString("en-US",{ weekday:"long",month:"long",day:"numeric" }):""} onShare={()=>setShowOutfitShare(true)} contentRef={outfitModalRef}>
         {selectedDate&&(()=>{
           const entry=photoData[toKey(selectedDate)];
           // Adding second outfit — bypass the existing-outfit view, go straight to upload
@@ -2306,7 +2436,7 @@ function AuthScreen({ onAuth, initialView="landing" }) {
       setError("");
       if (!recoverEmail || !/\S+@\S+\.\S+/.test(recoverEmail)) { setError("Please enter a valid email address."); return; }
       setLoading(true);
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(recoverEmail, { redirectTo: window.location.origin });
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(recoverEmail, { redirectTo: "https://stylewrap.vercel.app/" });
       setLoading(false);
       if (resetErr) { setError(resetErr.message || "Failed to send reset email. Please try again."); return; }
       setView("forgot-sent");
@@ -2338,7 +2468,7 @@ function AuthScreen({ onAuth, initialView="landing" }) {
   );
 }
 
-function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignOut, userEmail="", username="", photoData={}, favourites=[], memberSince="", currency="USD", onCurrencyChange }) {
+function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignOut, userEmail="", username="", displayName="", photoData={}, favourites=[], memberSince="", currency="USD", onCurrencyChange }) {
   const [profileImage, setProfileImage] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -2378,7 +2508,7 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
   const avgCPW = cpwItems.length ? (cpwItems.reduce((s, i) => s + i.price / i.wears, 0) / cpwItems.length).toFixed(2) : null;
 
   // Display name
-  const displayName = username || userEmail.split("@")[0] || "Style enthusiast";
+  const resolvedDisplayName = displayName || username || userEmail.split("@")[0] || "Style enthusiast";
 
   // Notifications status
   const reminderEnabled = localStorage.getItem("dailyReminderEnabled") !== "false";
@@ -2469,11 +2599,11 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
           <button onClick={()=>setShowPicker(true)} style={{ width:88,height:88,borderRadius:0,background:C.sage,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,overflow:"hidden",flexShrink:0 }}>
             {profileImage
               ? <img src={profileImage} alt="Profile" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>
-              : <span style={{ fontFamily:F.sans,fontSize:30,fontWeight:600,color:"#fff",lineHeight:1 }}>{displayName.charAt(0).toUpperCase()}</span>
+              : <span style={{ fontFamily:F.sans,fontSize:30,fontWeight:600,color:"#fff",lineHeight:1 }}>{resolvedDisplayName.charAt(0).toUpperCase()}</span>
             }
           </button>
           <div>
-            <div style={{ fontSize:22,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1.1,marginBottom:6 }}>{displayName}</div>
+            <div style={{ fontSize:22,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1.1,marginBottom:6 }}>{resolvedDisplayName}</div>
             {memberSince && <div style={{ ...LABEL }}>Member Since {memberSince}</div>}
           </div>
         </div>
@@ -2557,20 +2687,55 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
   );
 }
 
-function SettingsScreen({ onBack, username="", onNameChange, currentUser="" }) {
+function SettingsScreen({ onBack, username="", displayName="", onDisplayNameChange, currentUser="" }) {
   const [panel,setPanel]=useState(null); // null | "password" | "phone" | "name" | "dob" | "delete"
   const [curPw,setCurPw]=useState(""); const [newPw,setNewPw]=useState(""); const [confPw,setConfPw]=useState("");
   const [phone,setPhone]=useState("");
-  const [firstName,setFirstName]=useState(()=>username.includes(" ")?username.split(" ")[0]:username);
-  const [lastName,setLastName]=useState(()=>username.includes(" ")?username.split(" ").slice(1).join(" "):"");
+  const [firstName,setFirstName]=useState(()=>displayName.includes(" ")?displayName.split(" ")[0]:displayName);
+  const [lastName,setLastName]=useState(()=>displayName.includes(" ")?displayName.split(" ").slice(1).join(" "):"");
   const [dob,setDob]=useState("");
   const [msg,setMsg]=useState(""); const [err,setErr]=useState("");
+  const [lockedUsername,setLockedUsername]=useState("");
+  const [usernameCorrupted,setUsernameCorrupted]=useState(false);
+  const [recoveryUsername,setRecoveryUsername]=useState("");
+  const [recoveryMsg,setRecoveryMsg]=useState(""); const [recoveryErr,setRecoveryErr]=useState("");
+
+  const isValidUsernameFormat=(u)=>/^[a-z0-9_]{3,20}$/.test(u);
 
   useEffect(()=>{
-    supabase.auth.getUser().then(({data:{user}})=>{
+    supabase.auth.getUser().then(async({data:{user}})=>{
+      if(!user) return;
       if(user?.user_metadata?.date_of_birth) setDob(user.user_metadata.date_of_birth);
+      const metaUsername=user.user_metadata?.username||"";
+      const {data:row}=await supabase.from("users").select("username").eq("id",user.id).single();
+      const dbUsername=row?.username||"";
+      // Valid username = lowercase, alphanumeric + underscore, 3-20 chars (matches signup rule)
+      const validMeta=isValidUsernameFormat(metaUsername)?metaUsername:"";
+      const validDb=isValidUsernameFormat(dbUsername)?dbUsername:"";
+      const resolved=validMeta||validDb;
+      if(resolved){ setLockedUsername(resolved); }
+      else{ setUsernameCorrupted(true); }
     });
   },[]);
+
+  const handleRecoverUsername=async()=>{
+    setRecoveryErr(""); setRecoveryMsg("");
+    if(!isValidUsernameFormat(recoveryUsername)){ setRecoveryErr("Username must be 3–20 characters: lowercase letters, numbers, and underscores only."); return; }
+    const {data:{user:authUser}}=await supabase.auth.getUser();
+    if(!authUser) return;
+    // Check not taken by someone else
+    const {data:taken}=await supabase.from("users").select("id").eq("username",recoveryUsername).maybeSingle();
+    if(taken&&taken.id!==authUser.id){ setRecoveryErr("That username is already taken."); return; }
+    // Write to both DB and auth metadata (spread existing metadata to preserve everything else)
+    const [dbRes,authRes]=await Promise.all([
+      supabase.from("users").update({username:recoveryUsername}).eq("id",authUser.id),
+      supabase.auth.updateUser({data:{...authUser.user_metadata,username:recoveryUsername}})
+    ]);
+    if(dbRes.error||authRes.error){ setRecoveryErr((dbRes.error||authRes.error).message); return; }
+    setLockedUsername(recoveryUsername);
+    setUsernameCorrupted(false);
+    setRecoveryMsg("Username restored successfully.");
+  };
 
   const handleDobChange=(val)=>{
     const digits=val.replace(/\D/g,"").slice(0,8);
@@ -2642,16 +2807,22 @@ function SettingsScreen({ onBack, username="", onNameChange, currentUser="" }) {
   const handleSaveName=async()=>{
     setErr(""); setMsg("");
     if(!firstName&&!lastName){setErr("Please enter at least a first name.");return;}
-    const displayName=[firstName,lastName].filter(Boolean).join(" ");
-    const {error}=await supabase.auth.updateUser({data:{first_name:firstName,last_name:lastName,display_name:displayName}});
+    const newDisplayName=[firstName,lastName].filter(Boolean).join(" ");
+    const {data:{user:currentAuthUser}}=await supabase.auth.getUser();
+    const {error}=await supabase.auth.updateUser({
+      data:{
+        ...currentAuthUser.user_metadata,
+        first_name:firstName,
+        last_name:lastName,
+        display_name:newDisplayName
+      }
+    });
     if(error){setErr(error.message);return;}
-    if(currentUser){
-      await supabase.from("users").update({username:displayName}).eq("id",currentUser);
-    }
-    onNameChange?.(displayName);
+    onDisplayNameChange?.(newDisplayName);
     setMsg("Name updated successfully.");
   };
 
+  const [deleteConfirm,setDeleteConfirm]=useState(false);
   const handleDeleteAccount=async()=>{
     setErr("");
     await supabase.auth.signOut();
@@ -2669,19 +2840,31 @@ function SettingsScreen({ onBack, username="", onNameChange, currentUser="" }) {
   return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:C.surface }}>
       <div style={{ background:C.white,padding:"16px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12,flexShrink:0 }}>
-        <button onClick={panel?()=>{setPanel(null);setErr("");setMsg("");}:onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
+        <button onClick={panel?()=>{setPanel(null);setErr("");setMsg("");setDeleteConfirm(false);}:onBack} style={{ width:36,height:36,borderRadius:0,border:"none",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}><ChevronLeft size={20} color={C.sage}/></button>
         <h1 style={{ fontSize:22,fontWeight:800,color:C.ink,margin:0 }}>{panel?"Settings":"Settings"}</h1>
       </div>
       <div style={{ flex:1,overflowY:"auto",padding:16,paddingBottom:32 }}>
         {!panel&&(<>
-          {username&&(
+          {lockedUsername&&(
             <div style={{ background:C.white,borderRadius:0,padding:"14px 16px",marginBottom:10,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:14 }}>
               <div style={{ width:40,height:40,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><AtSign size={18} color={C.sage}/></div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Username</div>
-                <div style={{ fontSize:13,fontWeight:700,color:C.sage,marginTop:2 }}>@{username}</div>
+                <div style={{ fontSize:13,fontWeight:700,color:C.sage,marginTop:2 }}>@{lockedUsername}</div>
               </div>
               <div style={{ fontSize:11,fontWeight:700,color:C.sub,background:C.surface,padding:"3px 8px",border:`1px solid ${C.border}` }}>Permanent</div>
+            </div>
+          )}
+          {usernameCorrupted&&(
+            <div style={{ background:C.white,borderRadius:0,padding:16,marginBottom:10,border:`1px solid ${C.border}` }}>
+              <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
+                <div style={{ width:40,height:40,borderRadius:0,background:C.sage+"14",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><AtSign size={18} color={C.sage}/></div>
+                <div><div style={{ fontSize:15,fontWeight:600,color:C.ink }}>Username</div><div style={{ fontSize:12,color:C.sub,marginTop:2 }}>Your username needs to be restored.</div></div>
+              </div>
+              {recoveryErr&&<div style={{ background:"#FEF0EF",border:"1px solid #F4C5C0",padding:"7px 10px",fontSize:12,color:C.red,marginBottom:8 }}>{recoveryErr}</div>}
+              {recoveryMsg&&<div style={{ background:C.sage+"18",border:`1px solid ${C.sage}40`,padding:"7px 10px",fontSize:12,color:C.sage,marginBottom:8 }}>{recoveryMsg}</div>}
+              <input value={recoveryUsername} onChange={e=>setRecoveryUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,""))} placeholder="enter your original username" maxLength={20} style={{ width:"100%",height:42,padding:"0 12px",border:`1.5px solid ${C.border}`,background:C.surface,fontSize:14,color:C.ink,outline:"none",fontFamily:F.mono,boxSizing:"border-box",marginBottom:8 }}/>
+              <button onClick={handleRecoverUsername} style={{ width:"100%",height:40,border:"none",background:C.sage,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Restore Username</button>
             </div>
           )}
           {[{id:"password",title:"Change Password",sub:"Enter your current password and choose a new one."},{id:"phone",title:"Update Phone Number",sub:"Enter your new phone number to receive a verification code."},{id:"name",title:"Change Name",sub:"Update your display name."},{id:"dob",title:"Date of Birth",sub:"Update your date of birth."}].map(item=>(
@@ -2762,10 +2945,27 @@ function SettingsScreen({ onBack, username="", onNameChange, currentUser="" }) {
 
         {panel==="delete"&&(
           <div style={{ background:"#FEF0EF",borderRadius:0,padding:20,border:`1px solid ${C.red}30` }}>
-            <h3 style={{ fontSize:15,fontWeight:700,color:C.red,margin:"0 0 8px" }}>Delete Account</h3>
-            <p style={{ fontSize:13,color:C.sub,margin:"0 0 20px",lineHeight:1.5 }}>This will permanently delete your account and all your outfit data. This cannot be undone.</p>
-            <button onClick={handleDeleteAccount} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.red,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Delete Account</button>
-            <button onClick={()=>setPanel(null)} style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+            {!deleteConfirm?(
+              <>
+                <h3 style={{ fontSize:15,fontWeight:700,color:C.red,margin:"0 0 8px" }}>Delete Account</h3>
+                <p style={{ fontSize:13,color:C.sub,margin:"0 0 20px",lineHeight:1.5 }}>This will permanently delete your account and all your outfit data. This cannot be undone.</p>
+                <button onClick={()=>setDeleteConfirm(true)} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.red,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Delete Account</button>
+                <button onClick={()=>setPanel(null)} style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+              </>
+            ):(
+              <>
+                <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
+                  <div style={{ width:40,height:40,background:"#FCD9D7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                    <Trash2 size={20} color={C.red} strokeWidth={1.5}/>
+                  </div>
+                  <h3 style={{ fontSize:15,fontWeight:700,color:C.red,margin:0 }}>Are you sure?</h3>
+                </div>
+                <p style={{ fontSize:13,color:C.sub,margin:"0 0 6px",lineHeight:1.5 }}>You're about to permanently delete your account.</p>
+                <p style={{ fontSize:13,fontWeight:600,color:C.ink,margin:"0 0 20px",lineHeight:1.5 }}>All outfits, wardrobe data, and analytics will be lost forever.</p>
+                <button onClick={handleDeleteAccount} style={{ width:"100%",height:48,borderRadius:0,border:"none",background:C.red,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Yes, delete my account</button>
+                <button onClick={()=>setDeleteConfirm(false)} style={{ width:"100%",height:48,borderRadius:0,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Go back</button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -3115,6 +3315,7 @@ export default function App() {
   const [currentUser,setCurrentUser]=useState(null);
   const [currentEmail,setCurrentEmail]=useState("");
   const [currentUsername,setCurrentUsername]=useState("");
+  const [currentDisplayName,setCurrentDisplayName]=useState("");
   const [memberSince,setMemberSince]=useState("");
   const [tab,setTab]=useState("home");
   const [subScreen,setSubScreen]=useState(null);
@@ -3146,9 +3347,17 @@ export default function App() {
         const {data:profile,error:profileErr}=await supabase.from("users").select("photo_data,favourites,username").eq("id",session.user.id).single();
         if(profileErr) console.error("[session restore] profile load error:", profileErr);
         console.log("[session restore] profile loaded:", profile ? `photo_data keys: ${Object.keys(profile.photo_data||{}).length}` : "null");
+        // Auth metadata username is set at signup and never modified — use as authoritative source
+        const authUsername=session.user.user_metadata?.username||"";
+        const dbUsername=profile?.username||"";
+        // Auto-repair DB if a previous bug overwrote username with display name
+        if(authUsername&&dbUsername!==authUsername){
+          await supabase.from("users").update({username:authUsername}).eq("id",session.user.id);
+        }
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
-        setCurrentUsername(profile?.username||session.user.user_metadata?.display_name||session.user.user_metadata?.username||"");
+        setCurrentUsername(authUsername||dbUsername);
+        setCurrentDisplayName(session.user.user_metadata?.display_name||"");
         setCameraEnabled(!!session.user.user_metadata?.camera_enabled);
         const _d=session.user.created_at?new Date(session.user.created_at):null;
         if(_d) setMemberSince(`${String(_d.getMonth()+1).padStart(2,"0")}\u00B7${_d.getFullYear()}`);
@@ -3279,24 +3488,24 @@ export default function App() {
 
   const renderContent=()=>{
     if(subScreen==="addItem") return <AddItemScreen onBack={goBack} photoData={photoData} setPhotoData={setPhotoData} cameraEnabled={cameraEnabled} currency={currency}/>;
-    if(subScreen==="settings") return <SettingsScreen onBack={goBack} username={currentUsername} currentUser={currentUser} onNameChange={name=>setCurrentUsername(name)}/>;
+    if(subScreen==="settings") return <SettingsScreen onBack={goBack} username={currentUsername} displayName={currentDisplayName} currentUser={currentUser} onDisplayNameChange={name=>setCurrentDisplayName(name)}/>;
     if(subScreen==="notifications") return <NotificationsScreen onBack={goBack}/>;
     if(subScreen==="privacy") return <PrivacyScreen onBack={goBack} cameraEnabled={cameraEnabled} onCameraToggle={async(val)=>{ setCameraEnabled(val); await supabase.auth.updateUser({data:{camera_enabled:val}}); }}/>;
     switch(tab){
-      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} currency={currency} onShowAllItems={()=>navigateTo("wardrobe")} onGoToFavorites={()=>navigateTo("wardrobe")} onAddItem={()=>setSubScreen("addItem")}/>;
+      case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentDisplayName||currentUsername} currency={currency} onShowAllItems={()=>navigateTo("wardrobe")} onGoToFavorites={()=>navigateTo("wardrobe")} onAddItem={()=>setSubScreen("addItem")}/>;
       case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} favourites={favourites} onBack={canGoBack?goBack:null} initialView="items" onAddItem={()=>setSubScreen("addItem")} onGoToWardrobe={()=>navigateTo("wardrobe")}/>;
       case "analytics": return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} favourites={favourites} onBack={canGoBack?goBack:null} initialView="main" onAddItem={()=>setSubScreen("addItem")} onGoToWardrobe={()=>navigateTo("wardrobe")}/>;
       case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} currency={currency} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null} initialDate={calendarOpenDate} onClearInitialDate={()=>setCalendarOpenDate(null)} cameraEnabled={cameraEnabled}/>;
       case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} photoData={photoData} currency={currency} onGoToDate={dateKey=>{ setCalendarOpenDate(dateKey); navigateTo("calendar"); }} onBack={canGoBack?goBack:null}/>;
-      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} photoData={photoData} favourites={favourites} memberSince={memberSince} currency={currency} onCurrencyChange={code=>{setCurrency(code);localStorage.setItem("preferredCurrency",code);}} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setMemberSince(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
+      case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} displayName={currentDisplayName} photoData={photoData} favourites={favourites} memberSince={memberSince} currency={currency} onCurrencyChange={code=>{setCurrency(code);localStorage.setItem("preferredCurrency",code);}} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setCurrentDisplayName(""); setMemberSince(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
       default:          return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentUsername} currency={currency} onShowAllItems={()=>navigateTo("wardrobe")} onGoToFavorites={()=>navigateTo("wardrobe")} onAddItem={()=>setSubScreen("addItem")}/>;
     }
   };
 
   return (
     <>
-      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;font-family:${F.sans};background:${C.surface};-webkit-font-smoothing:antialiased}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
-      <div style={{ position:"relative",width:"100%",height:"100%",display:"flex",flexDirection:"column",background:C.surface,overflow:"hidden",paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
+      <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;height:100dvh;font-family:${F.sans};background:${C.surface};-webkit-font-smoothing:antialiased;overflow:hidden}#root{height:100%;height:100dvh;display:flex;flex-direction:column;overflow:hidden}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
+      <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,overflow:"hidden",paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {needsPasswordReset
           ? (() => {
               const doReset = async () => {
