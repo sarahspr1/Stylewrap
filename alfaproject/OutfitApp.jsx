@@ -483,7 +483,7 @@ function StatCard({ icon, number, label, accent=C.sage, onClick }) {
 function TabBar({ active, onChange }) {
   const tabs=[{ id:"home",label:"Home",icon:Home },{ id:"wardrobe",label:"Wardrobe",icon:Shirt },{ id:"calendar",label:"Calendar",icon:CalendarDays },{ id:"analytics",label:"Analytics",icon:BarChart2 },{ id:"profile",label:"Profile",icon:User }];
   return (
-    <div style={{ height:83,background:C.white,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-around",paddingBottom:20,flexShrink:0 }}>
+    <div style={{ height:56,background:C.white,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-around",flexShrink:0 }}>
       {tabs.map(({ id,label,icon:Icon })=>{
         const a=active===id;
         return <button key={id} onClick={()=>onChange(id)} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:48,border:"none",background:"transparent",cursor:"pointer",padding:"4px 4px 0",borderRadius:0,borderTop:a?`2px solid ${C.ink}`:"2px solid transparent" }}>
