@@ -564,14 +564,35 @@ function ShareSheet({ onClose, targetRef }) {
   const handleSave=async()=>{
     const canvas=await generate();
     if(!canvas) return;
-    canvas.toBlob(blob=>{
+    canvas.toBlob(async blob=>{
       if(!blob){setPhase("error");setErrMsg("Could not create image");return;}
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url; a.download=`stylewrap-${Date.now()}.png`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setPhase("done");
+      const filename=`stylewrap-${Date.now()}.png`;
+      const file=new File([blob],filename,{type:"image/png"});
+      // iOS Safari blocks programmatic downloads — use native share sheet instead
+      // so the user can tap "Save Image" → Photos
+      if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file],title:"Stylewrap"});
+          setPhase("done");
+        } catch(e){
+          if(e.name==="AbortError"){setPhase("idle");return;}
+          // Share failed — fall through to download
+          const url=URL.createObjectURL(blob);
+          const a=document.createElement("a");
+          a.href=url; a.download=filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          setPhase("done");
+        }
+      } else {
+        // Desktop / Android fallback: direct download
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=url; a.download=filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setPhase("done");
+      }
     },"image/png",1.0);
   };
 
@@ -620,7 +641,7 @@ function ShareSheet({ onClose, targetRef }) {
           <div style={{textAlign:"center",padding:"28px 0"}}>
             <div style={{width:44,height:44,borderRadius:"50%",background:C.sage+"18",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}><Check size={22} color={C.sage}/></div>
             <div style={{fontSize:15,fontWeight:700,color:C.ink,marginBottom:4}}>Done</div>
-            <div style={{fontSize:13,color:C.sub,marginBottom:24}}>Your image is ready.</div>
+            <div style={{fontSize:13,color:C.sub,marginBottom:24}}>Check your Photos app or Downloads folder.</div>
             <button onClick={onClose} style={{width:"100%",height:48,border:`1.5px solid ${C.border}`,background:"transparent",color:C.sub,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",borderRadius:0}}>Close</button>
           </div>
         )}
