@@ -531,11 +531,15 @@ const GS=({cat})=>{const col="#3A4A38";const sh={Top:<path d="M20 20 L35 12 L45 
 const ItemPhoto=({src,fallback,category,style:s})=>{const[err,setErr]=useState(false);const[err2,setErr2]=useState(false);if(src&&!err)return<img src={src} onError={()=>setErr(true)} style={s} alt=""/>;if(fallback&&!err2)return<img src={fallback} onError={()=>setErr2(true)} style={{...s,objectFit:"cover"}} alt=""/>;return<GS cat={category}/>;};
 
 function ShareSheet({ onClose, targetRef }) {
-  const [phase,setPhase]=useState("idle"); // idle | generating | done | error
+  // "idle" | "capturing" | "processing" | "done" | "error"
+  const [phase,setPhase]=useState("idle");
   const [errMsg,setErrMsg]=useState("");
 
-  const generate=async()=>{
-    setPhase("generating");
+  const capture=async()=>{
+    // 1. Hide overlay so it doesn't appear in the screenshot
+    setPhase("capturing");
+    // Wait two paint frames for the DOM to update before html2canvas reads it
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     try {
       const {default:html2canvas}=await import("html2canvas");
       const el=targetRef.current;
@@ -553,6 +557,8 @@ function ShareSheet({ onClose, targetRef }) {
         windowWidth:el.offsetWidth,
         windowHeight:el.scrollHeight||el.offsetHeight,
       });
+      // 2. Capture done — show processing spinner while blob is created
+      setPhase("processing");
       return canvas;
     } catch(e){
       setPhase("error");
@@ -562,21 +568,18 @@ function ShareSheet({ onClose, targetRef }) {
   };
 
   const handleSave=async()=>{
-    const canvas=await generate();
+    const canvas=await capture();
     if(!canvas) return;
     canvas.toBlob(async blob=>{
       if(!blob){setPhase("error");setErrMsg("Could not create image");return;}
       const filename=`stylewrap-${Date.now()}.png`;
       const file=new File([blob],filename,{type:"image/png"});
-      // iOS Safari blocks programmatic downloads — use native share sheet instead
-      // so the user can tap "Save Image" → Photos
       if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
         try{
           await navigator.share({files:[file],title:"Stylewrap"});
           setPhase("done");
         } catch(e){
           if(e.name==="AbortError"){setPhase("idle");return;}
-          // Share failed — fall through to download
           const url=URL.createObjectURL(blob);
           const a=document.createElement("a");
           a.href=url; a.download=filename;
@@ -585,7 +588,6 @@ function ShareSheet({ onClose, targetRef }) {
           setPhase("done");
         }
       } else {
-        // Desktop / Android fallback: direct download
         const url=URL.createObjectURL(blob);
         const a=document.createElement("a");
         a.href=url; a.download=filename;
@@ -597,7 +599,7 @@ function ShareSheet({ onClose, targetRef }) {
   };
 
   const handleInstagram=async()=>{
-    const canvas=await generate();
+    const canvas=await capture();
     if(!canvas) return;
     canvas.toBlob(async blob=>{
       if(!blob){setPhase("error");setErrMsg("Could not create image");return;}
@@ -607,7 +609,6 @@ function ShareSheet({ onClose, targetRef }) {
           await navigator.share({files:[file],title:"Stylewrap",text:"My outfit on Stylewrap"});
           setPhase("done");
         } else {
-          // Fallback: download
           const url=URL.createObjectURL(blob);
           const a=document.createElement("a");
           a.href=url; a.download="stylewrap.png";
@@ -626,15 +627,18 @@ function ShareSheet({ onClose, targetRef }) {
     <button onClick={onClick} style={{width:"100%",height:56,border:dark?"none":`1.5px solid ${C.border}`,background:dark?C.ink:C.white,color:dark?"#fff":C.ink,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:10,borderRadius:0}}>{children}</button>
   );
 
+  // During "capturing" the overlay is fully invisible so html2canvas sees clean content
+  const hidden=phase==="capturing";
+
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.52)",zIndex:99999,display:"flex",flexDirection:"column",justifyContent:"flex-end"}} onClick={phase==="idle"?onClose:undefined}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.52)",zIndex:99999,display:"flex",flexDirection:"column",justifyContent:"flex-end",visibility:hidden?"hidden":"visible"}} onClick={phase==="idle"?onClose:undefined}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.white,padding:"8px 20px 44px"}}>
         <div style={{width:36,height:4,borderRadius:99,background:C.border,margin:"8px auto 20px"}}/>
-        {phase==="generating"&&(
+        {(phase==="processing")&&(
           <div style={{textAlign:"center",padding:"32px 0"}}>
             <div style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite",margin:"0 auto 14px"}}/>
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-            <div style={{fontSize:13,fontWeight:600,color:C.sub}}>Generating image…</div>
+            <div style={{fontSize:13,fontWeight:600,color:C.sub}}>Saving…</div>
           </div>
         )}
         {phase==="done"&&(
