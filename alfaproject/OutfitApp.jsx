@@ -783,8 +783,8 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
         background:'#FFFFFF',
         boxShadow:'0 30px 80px -20px rgba(0,0,0,0.18),0 4px 12px rgba(0,0,0,0.06)',
       }}>
-        {/* Frame — inset 36px with hairline border */}
-        <div style={{position:'absolute',inset:36,border:`1px solid ${hair}`,display:'grid',gridTemplateRows:'110px 1fr auto auto auto 70px',background:'#FFFFFF'}}>
+        {/* Frame — inset 36px */}
+        <div style={{position:'absolute',inset:36,display:'grid',gridTemplateRows:'110px 1fr auto auto auto 70px',background:'#FFFFFF'}}>
 
           {/* TOP STRIP */}
           <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',padding:'0 36px',borderBottom:`1px solid ${hair}`}}>
@@ -802,11 +802,11 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
           {/* HERO */}
           <div style={{position:'relative',background:'#FFFFFF',borderBottom:`1px solid ${hair}`,overflow:'hidden',display:'grid',gridTemplateColumns:'1fr 620px 1fr'}}>
             {/* Left gutter */}
-            <div style={{background:'#FFFFFF',borderRight:`1px solid ${hair}`,position:'relative'}}>
+            <div style={{background:'#FFFFFF',position:'relative'}}>
               <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%) rotate(-90deg)',transformOrigin:'center',fontFamily:F.mono,fontSize:12,letterSpacing:'0.4em',color:sage,textTransform:'uppercase',whiteSpace:'nowrap'}}>§ outfit · {dotDate}</div>
             </div>
             {/* Photo column */}
-            <div style={{position:'relative',background:bed,overflow:'hidden'}}>
+            <div style={{position:'relative',background:'#FFFFFF',overflow:'hidden'}}>
               {displayEntry?.photo
                 ?<img src={displayEntry.photo} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain'}}/>
                 :<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Shirt size={120} color={muted} strokeWidth={0.7}/></div>
@@ -834,7 +834,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
               </div>
             </div>
             {/* Right gutter */}
-            <div style={{background:'#FFFFFF',borderLeft:`1px solid ${hair}`,position:'relative'}}>
+            <div style={{background:'#FFFFFF',position:'relative'}}>
               <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%) rotate(-90deg)',transformOrigin:'center',fontFamily:F.mono,fontSize:12,letterSpacing:'0.4em',color:sage,textTransform:'uppercase',whiteSpace:'nowrap'}}>stylewrap · n° {outfitNum}</div>
             </div>
           </div>
@@ -872,7 +872,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
               const defaultCats=['TOP','BOTTOM','SHOES'];
               return(
                 <div key={i} style={{display:'flex',flexDirection:'column'}}>
-                  <div style={{position:'relative',aspectRatio:'1/1',background:bed2,border:`1px solid ${hair}`,overflow:'hidden'}}>
+                  <div style={{position:'relative',aspectRatio:'1/1',background:'#FFFFFF',border:`1px solid ${hair}`,overflow:'hidden'}}>
                     {item?.itemPhoto
                       ?<img src={item.itemPhoto} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain'}}/>
                       :<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Shirt size={40} color={muted} strokeWidth={0.8}/></div>
@@ -3625,7 +3625,7 @@ export default function App() {
   return (
     <>
       <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;height:100dvh;font-family:${F.sans};background:${C.surface};-webkit-font-smoothing:antialiased;overflow:hidden}#root{height:100%;height:100dvh;display:flex;flex-direction:column;overflow:hidden}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
-      <div style={{ position:"fixed",inset:0,display:"flex",flexDirection:"column",background:C.surface,overflow:"hidden",paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
+      <div style={{ position:"fixed",top:0,bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,display:"flex",flexDirection:"column",background:C.surface,overflow:"hidden",paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {needsPasswordReset
           ? (() => {
               const doReset = async () => {
