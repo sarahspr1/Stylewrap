@@ -738,9 +738,8 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
   const days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
   const dayLabel=days[now.getDay()];
   const outfitNum=displayKey?String(allLoggedKeys.indexOf(displayKey)+1).padStart(2,'0'):'00';
-  const dotDate=`${String(now.getDate()).padStart(2,'0')}·${String(now.getMonth()+1).padStart(2,'0')}·${String(now.getFullYear()).slice(2)}`;
+  const shortDate=`${String(now.getDate()).padStart(2,'0')}·${String(now.getMonth()+1).padStart(2,'0')}`;
 
-  // Headline segments: first (sans), middle (serif italic sage), last (sans)
   const headlineSegs=(()=>{
     if(!items.length) return null;
     const names=items.slice(0,3).map(i=>i.name?.toLowerCase()).filter(Boolean);
@@ -751,30 +750,61 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
     return [{t:cap(names[0])+', ',serif:false},{t:names.slice(1,-1).join(', ')+', ',serif:true},{t:names[names.length-1]+'.',serif:false}];
   })();
 
-  const insightCount=[avgItemCPW!=null,similarCount>0,lastWornDays!=null].filter(Boolean).length;
+  const totalCost=items.filter(i=>i.price!=null&&parseFloat(i.price)>0).reduce((s,i)=>s+parseFloat(i.price),0);
+  const pricedCount=items.filter(i=>i.price!=null&&parseFloat(i.price)>0).length;
+  const newItemCount=items.slice(0,3).filter(i=>(wearCountMap[i.name.trim().toLowerCase()]||0)===1).length;
+
+  const ovly={position:'absolute',fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage,textTransform:'uppercase',background:'rgba(255,255,255,0.86)',padding:'8px 11px',backdropFilter:'blur(4px)',lineHeight:1.55,zIndex:3};
 
   return (
     <div ref={shareRef} style={{flex:1,overflowY:'auto',background:C.surface}}>
       {showShare&&<ShareSheet onClose={()=>setShowShare(false)} targetRef={shareRef}/>}
 
       {/* Top bar */}
-      <div style={{padding:'20px 20px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
-        <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ 01 / <strong style={{color:C.ink,fontWeight:500}}>HOME</strong></span>
-        <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{dotDate} · {dayLabel}</span>
+      <div style={{height:46,padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
+        <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ 01 · <strong style={{color:C.ink,fontWeight:500}}>OUTFIT</strong></span>
+        <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:22,color:C.ink,lineHeight:1}}>Stylewrap<sup style={{fontFamily:F.mono,fontStyle:'normal',fontSize:9,letterSpacing:'0.14em',color:C.sage,verticalAlign:'top',marginLeft:2,position:'relative',top:3}}>™</sup></span>
+        <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{shortDate} · {dayLabel}</span>
       </div>
 
-      {/* CTA */}
-      <button onClick={onAddItem} style={{display:'flex',width:'calc(100% - 40px)',margin:'0 20px',background:C.ink,color:C.offwhite,padding:'14px 16px',justifyContent:'space-between',alignItems:'center',border:'none',cursor:'pointer',fontFamily:'inherit',boxSizing:'border-box'}}>
-        <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <span style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.14em',color:'rgba(247,246,240,0.55)',padding:'3px 7px',border:'1px solid rgba(247,246,240,0.3)'}}>{loggedToday?'EDIT':'LOG'}</span>
-          <span style={{fontSize:14,fontWeight:500}}>{loggedToday?"Edit today's outfit":"Confirm today's outfit"}</span>
+      {/* Hero photo */}
+      <div style={{position:'relative',background:C.white,overflow:'hidden',minHeight:280}}>
+        {displayEntry?.photo
+          ?<img src={displayEntry.photo} style={{width:'100%',display:'block',objectFit:'contain'}}/>
+          :<div style={{height:300,display:'flex',alignItems:'center',justifyContent:'center'}}><Shirt size={64} color={C.sub} strokeWidth={0.8}/></div>
+        }
+        {/* Overlay TL */}
+        <div style={{...ovly,top:14,left:14}}>
+          N°<strong style={{color:C.ink,fontWeight:500}}>{outfitNum}</strong><br/>
+          {comboCount<=1?'FIRST WEAR':`${ordinal(comboCount)} WEAR`}
         </div>
-        <span style={{fontFamily:F.mono,fontSize:14,opacity:0.7}}>→</span>
-      </button>
+        {/* Overlay TR */}
+        {displayEntry?.style&&(
+          <div style={{...ovly,top:14,right:14,textAlign:'right'}}>
+            <strong style={{color:C.ink,fontWeight:500}}>{displayEntry.style.toUpperCase()}</strong>
+            {displayEntry.season&&<><br/>{displayEntry.season.toUpperCase()}</>}
+          </div>
+        )}
+        {/* Bottom pull — always shown */}
+        <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:3,background:'rgba(255,255,255,0.9)',padding:'12px 14px 14px',backdropFilter:'blur(6px)',display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:12}}>
+          <div style={{minWidth:0}}>
+            <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.16em',color:C.sage,textTransform:'uppercase',marginBottom:4}}>§ MOOD</div>
+            <div style={{fontFamily:F.serif,fontStyle:'italic',fontSize:16,color:C.ink,lineHeight:1.3}}>
+              {displayEntry?.notes||<span style={{color:C.sub}}>Add a mood note in edit.</span>}
+            </div>
+          </div>
+          <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.12em',color:C.sage,textTransform:'uppercase',textAlign:'right',flexShrink:0,lineHeight:1.5}}>
+            OUTFIT<br/><strong style={{color:C.ink,fontWeight:500,fontSize:13}}>N° {outfitNum}</strong>
+          </div>
+        </div>
+      </div>
 
-      {/* Outfit headline + pills */}
-      <div style={{padding:'20px 20px 0'}}>
-        <div style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage,marginBottom:8}}>OUTFIT / {outfitNum}</div>
+      {/* § THE LOOK */}
+      <div style={{padding:'18px 20px 0'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+          <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ THE LOOK</span>
+          <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sub}}>{String(items.length).padStart(2,'0')} PIECES</span>
+        </div>
         <h1 style={{fontFamily:F.sans,fontSize:24,lineHeight:1.08,letterSpacing:'-0.02em',fontWeight:500,margin:'0 0 14px',color:C.ink,textWrap:'pretty'}}>
           {headlineSegs
             ?headlineSegs.map((seg,i)=>seg.serif
@@ -784,78 +814,81 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
           }
         </h1>
         <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-          {displayEntry?.style&&<span style={{padding:'5px 10px',background:C.white,border:`1px solid ${C.border}`,fontSize:10,fontWeight:500,color:C.sage,display:'flex',alignItems:'center',gap:6}}><span style={{display:'inline-block',width:6,height:6,background:'currentColor',flexShrink:0}}/>{displayEntry.style}</span>}
-          {displayEntry?.season&&<span style={{padding:'5px 10px',background:C.white,border:`1px solid ${C.border}`,fontSize:10,fontWeight:500,color:C.sage}}>{displayEntry.season}</span>}
-          {comboCount>0&&<span style={{padding:'5px 10px',background:C.white,border:`1px solid ${C.border}`,fontSize:10,fontWeight:500,color:C.ink}}>{ordinal(comboCount)} wear</span>}
+          {displayEntry?.style&&<span style={{padding:'5px 10px',background:C.ink,border:`1px solid ${C.ink}`,fontSize:10,fontWeight:500,color:'#fff'}}>{displayEntry.style}</span>}
+          {displayEntry?.season&&<span style={{padding:'5px 10px',background:'transparent',border:`1px solid ${C.border}`,fontSize:10,fontWeight:500,color:C.sage}}>{displayEntry.season}</span>}
+          {comboCount>0&&<span style={{padding:'5px 10px',background:'transparent',border:`1px solid ${C.border}`,fontSize:10,fontWeight:500,color:C.sage}}>{ordinal(comboCount)} wear</span>}
         </div>
       </div>
 
-      {/* Photo grid — 3 cols when 3 items, 2 cols otherwise */}
+      {/* The pieces. */}
       {items.length>0&&(
-        <div style={{padding:'16px 20px 0',display:'grid',gridTemplateColumns:items.length>=3?'1fr 1fr 1fr':'1fr 1fr',gap:6}}>
-          {items.slice(0,3).map((item,i)=>{
-            const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
-            return(
-              <div key={i} style={{background:C.white,border:`1px solid ${C.border}`,display:'flex',flexDirection:'column'}}>
-                <div style={{aspectRatio:'3/4',position:'relative',overflow:'hidden'}}>
-                  {item.itemPhoto
-                    ?<img src={item.itemPhoto} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-                    :<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Shirt size={24} color={C.sub} strokeWidth={1}/></div>
-                  }
-                </div>
-                <div style={{padding:'9px 10px 11px'}}>
-                  <div style={{fontFamily:F.mono,fontSize:9,color:C.sub,letterSpacing:'0.08em',marginBottom:3}}>{String(i+1).padStart(2,'0')}</div>
-                  <div style={{fontSize:12,fontWeight:500,lineHeight:1.25,color:C.ink}}>{item.name}</div>
-                  <div style={{fontSize:10,color:C.sub,marginTop:3,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.brand||item.category||''}</span>
-                    <span style={{fontFamily:F.mono,color:C.sage,flexShrink:0,marginLeft:4}}>{wears}×</span>
+        <div style={{padding:'20px 20px 0'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
+            <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:20,color:C.ink}}>The <em>pieces.</em></span>
+            <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{String(items.length).padStart(2,'0')} ITEMS{newItemCount>0?` · ${newItemCount} NEW`:''}</span>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+            {items.slice(0,3).map((item,i)=>{
+              const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
+              const defaultCats=['TOP','BOTTOM','SHOES'];
+              return(
+                <div key={i}>
+                  <div style={{position:'relative',aspectRatio:'1/1',background:C.white,border:`1px solid ${C.border}`,overflow:'hidden'}}>
+                    {item.itemPhoto
+                      ?<img src={item.itemPhoto} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain'}}/>
+                      :<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Shirt size={20} color={C.sub} strokeWidth={1}/></div>
+                    }
+                    <div style={{position:'absolute',top:6,left:8,fontFamily:F.mono,fontSize:8,letterSpacing:'0.12em',color:C.sage,background:'rgba(255,255,255,0.88)',padding:'3px 6px',zIndex:2}}>
+                      {String(i+1).padStart(2,'0')} · {item.category?.toUpperCase()||defaultCats[i]}
+                    </div>
+                  </div>
+                  <div style={{marginTop:7}}>
+                    <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.1em',color:C.sage,textTransform:'uppercase',marginBottom:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.brand||item.category||'—'}</div>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:4}}>
+                      <div style={{fontSize:11,fontWeight:500,color:C.ink,lineHeight:1.2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
+                      <span style={{fontFamily:F.mono,fontSize:10,color:C.sage,flexShrink:0}}>{wears}×</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Intel block */}
-      <div style={{margin:'18px 20px 0',background:C.white,border:`1px solid ${C.border}`}}>
-        <div style={{padding:'11px 14px',borderBottom:`1px solid ${C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ TODAY'S INTEL</span>
-          <span style={{fontFamily:F.mono,fontSize:9,color:C.sub,letterSpacing:'0.08em'}}>{insightCount} INSIGHTS</span>
+      {/* Intel */}
+      <div style={{margin:'20px 20px 0',borderTop:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr'}}>
+        <div style={{padding:'14px 12px 14px 0'}}>
+          <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.1em',color:C.sub,textTransform:'uppercase',marginBottom:8}}>Cost / Wear</div>
+          <div style={{fontFamily:F.sans,fontSize:22,fontWeight:500,letterSpacing:'-0.025em',color:C.ink,lineHeight:1}}>
+            {avgItemCPW!=null
+              ?<>{getCurrencySymbol(currency)}{Math.floor(avgItemCPW)}<span style={{fontSize:14,color:C.sage,fontWeight:500}}>.{String(Math.round((avgItemCPW%1)*100)).padStart(2,'0')}</span></>
+              :'—'
+            }
+          </div>
+          {pricedCount>0&&<div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:6,letterSpacing:'0.05em'}}>{getCurrencySymbol(currency)}{totalCost.toFixed(0)} · {pricedCount} pieces</div>}
         </div>
-        <div style={{padding:'14px',display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
-          <div>
-            <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.1em',color:C.sub,textTransform:'uppercase',marginBottom:6}}>Cost / Wear</div>
-            <div style={{fontFamily:F.sans,fontSize:20,fontWeight:500,letterSpacing:'-0.02em',color:C.ink,lineHeight:1}}>
-              {avgItemCPW!=null
-                ?<>{getCurrencySymbol(currency)}{Math.floor(avgItemCPW)}<span style={{fontFamily:F.sans,fontSize:13,fontWeight:500,color:C.sage,marginLeft:3}}>.{String(Math.round((avgItemCPW%1)*100)).padStart(2,'0')}</span></>
-                :'—'
-              }
-            </div>
-            <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:5,letterSpacing:'0.05em'}}>tracked</div>
+        <div style={{padding:'14px 12px',borderLeft:`1px solid ${C.border}`,borderRight:`1px solid ${C.border}`}}>
+          <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.1em',color:C.sub,textTransform:'uppercase',marginBottom:8}}>Pairable</div>
+          <div style={{fontFamily:F.sans,fontSize:22,fontWeight:500,letterSpacing:'-0.025em',color:C.ink,lineHeight:1}}>
+            {similarCount>0?<>{similarCount}<span style={{fontSize:14,color:C.sage,fontWeight:500}}> mix</span></>:'—'}
           </div>
-          <div>
-            <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.1em',color:C.sub,textTransform:'uppercase',marginBottom:6}}>Pairable</div>
-            <div style={{fontFamily:F.sans,fontSize:20,fontWeight:500,letterSpacing:'-0.02em',color:C.ink,lineHeight:1}}>
-              {similarCount>0?similarCount:'—'}
-            </div>
-            <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:5,letterSpacing:'0.05em'}}>{similarCount>0?'combos':'first combo'}</div>
+          <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:6,letterSpacing:'0.05em'}}>{similarCount>0?'outfits':'first combo'}</div>
+        </div>
+        <div style={{padding:'14px 0 14px 12px'}}>
+          <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.1em',color:C.sub,textTransform:'uppercase',marginBottom:8}}>Last Worn</div>
+          <div style={{fontFamily:F.sans,fontSize:22,fontWeight:500,letterSpacing:'-0.025em',color:C.ink,lineHeight:1}}>
+            {lastWornDays!=null
+              ?<>{lastWornDays}<span style={{fontSize:14,color:C.sage,fontWeight:500}}>d</span></>
+              :<em style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:400,fontSize:20}}>first</em>
+            }
           </div>
-          <div>
-            <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.1em',color:C.sub,textTransform:'uppercase',marginBottom:6}}>Last Worn</div>
-            <div style={{fontFamily:F.sans,fontSize:20,fontWeight:500,letterSpacing:'-0.02em',color:C.ink,lineHeight:1}}>
-              {lastWornDays!=null
-                ?<>{lastWornDays}<span style={{fontFamily:F.sans,fontSize:13,fontWeight:500,color:C.sage,marginLeft:3}}>d</span></>
-                :<em style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:400,fontSize:18}}>1st</em>
-              }
-            </div>
-            <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:5,letterSpacing:'0.05em'}}>this combo</div>
-          </div>
+          <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:6,letterSpacing:'0.05em'}}>this combo</div>
         </div>
       </div>
 
       {/* Actions row */}
-      <div style={{borderTop:`1px solid ${C.border}`,margin:'16px 0 0',padding:'0 20px',display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',height:48}}>
+      <div style={{padding:'0 20px',display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',height:48}}>
         <button onClick={onAddItem} style={{background:'none',border:'none',cursor:'pointer',padding:0,textAlign:'left',fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage,textTransform:'uppercase'}}>
           LOG <strong style={{color:C.ink,fontWeight:500}}>TODAY</strong>
         </button>
