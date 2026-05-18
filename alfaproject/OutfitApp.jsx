@@ -894,7 +894,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
         </button>
         <div style={{fontFamily:F.serif,fontStyle:'italic',fontSize:14,color:C.ink,borderLeft:`1px solid ${C.border}`,borderRight:`1px solid ${C.border}`,padding:'0 16px',height:'100%',display:'flex',alignItems:'center'}}>est. wardrobe</div>
         <button onClick={()=>setShowShare(true)} style={{background:'none',border:'none',cursor:'pointer',padding:0,textAlign:'right',fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage,textTransform:'uppercase'}}>
-          SHARE TO <strong style={{color:C.ink,fontWeight:500}}>STORY</strong>
+          <strong style={{color:C.ink,fontWeight:500}}>SHARE</strong>
         </button>
       </div>
 
