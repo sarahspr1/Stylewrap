@@ -822,7 +822,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
       {/* The pieces. */}
       {items.length>0&&(
-        <div style={{padding:'20px 20px 0'}}>
+        <div style={{padding:'20px 20px 0',boxSizing:'border-box',width:'100%'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
             <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:20,color:C.ink}}>The <em>pieces.</em></span>
             <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{String(items.length).padStart(2,'0')} ITEMS{newItemCount>0?` · ${newItemCount} NEW`:''}</span>
@@ -832,7 +832,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
               const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
               const defaultCats=['TOP','BOTTOM','SHOES'];
               return(
-                <div key={i}>
+                <div key={i} style={{minWidth:0}}>
                   <div style={{position:'relative',aspectRatio:'1/1',background:C.surface,border:`1px solid ${C.border}`,overflow:'hidden'}}>
                     {item.itemPhoto
                       ?<img src={item.itemPhoto} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain'}}/>
