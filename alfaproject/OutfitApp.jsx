@@ -670,6 +670,7 @@ function ShareSheet({ onClose, targetRef }) {
 
 function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorites, onAddItem, userEmail="", username="", currency="USD" }) {
   const shareRef=useRef(null);
+  const cardRef=useRef(null);
   const [showShare,setShowShare]=useState(false);
   const now=new Date();
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -758,7 +759,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
   return (
     <div ref={shareRef} style={{flex:1,overflowY:'auto',overflowX:'hidden',background:C.surface}}>
-      {showShare&&<ShareSheet onClose={()=>setShowShare(false)} targetRef={shareRef}/>}
+      {showShare&&<ShareSheet onClose={()=>setShowShare(false)} targetRef={cardRef}/>}
 
       {/* Top bar */}
       <div style={{height:46,padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
@@ -766,6 +767,9 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
         <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:22,color:C.ink,lineHeight:1}}>Insyte Studio<sup style={{fontFamily:F.mono,fontStyle:'normal',fontSize:9,letterSpacing:'0.14em',color:C.sage,verticalAlign:'top',marginLeft:2,position:'relative',top:3}}>™</sup></span>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{shortDate} · {dayLabel}</span>
       </div>
+
+      {/* Export card — captured by ShareSheet */}
+      <div ref={cardRef} style={{background:C.surface}}>
 
       {/* Hero photo */}
       <div style={{position:'relative',background:C.white,overflow:'hidden',minHeight:280}}>
@@ -819,6 +823,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
           {comboCount>0&&<span style={{padding:'5px 10px',background:'transparent',border:`1px solid ${C.border}`,fontSize:10,fontWeight:500,color:C.sage}}>{ordinal(comboCount)} wear</span>}
         </div>
       </div>
+      </div>{/* end export card */}
 
       {/* The pieces. */}
       {items.length>0&&(
