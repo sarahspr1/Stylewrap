@@ -888,11 +888,10 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       </div>
 
       {/* Actions row */}
-      <div style={{padding:'0 20px',display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',height:48}}>
+      <div style={{padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',height:48,borderTop:`1px solid ${C.border}`}}>
         <button onClick={onAddItem} style={{background:'none',border:'none',cursor:'pointer',padding:0,textAlign:'left',fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage,textTransform:'uppercase'}}>
           LOG <strong style={{color:C.ink,fontWeight:500}}>TODAY</strong>
         </button>
-        <div style={{fontFamily:F.serif,fontStyle:'italic',fontSize:14,color:C.ink,borderLeft:`1px solid ${C.border}`,borderRight:`1px solid ${C.border}`,padding:'0 16px',height:'100%',display:'flex',alignItems:'center'}}>est. wardrobe</div>
         <button onClick={()=>setShowShare(true)} style={{background:'none',border:'none',cursor:'pointer',padding:0,textAlign:'right',fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage,textTransform:'uppercase'}}>
           <strong style={{color:C.ink,fontWeight:500}}>SHARE</strong>
         </button>
