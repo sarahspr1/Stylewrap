@@ -764,7 +764,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       {/* Top bar */}
       <div style={{height:46,padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ 01 · <strong style={{color:C.ink,fontWeight:500}}>OUTFIT</strong></span>
-        <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:22,color:C.ink,lineHeight:1}}>Insyte Studio<sup style={{fontFamily:F.mono,fontStyle:'normal',fontSize:9,letterSpacing:'0.14em',color:C.sage,verticalAlign:'top',marginLeft:2,position:'relative',top:3}}>™</sup></span>
+        <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:22,color:C.ink,lineHeight:1}}>Insyte Studio</span>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{shortDate} · {dayLabel}</span>
       </div>
 
