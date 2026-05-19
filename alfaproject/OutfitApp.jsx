@@ -757,7 +757,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
   const ovly={position:'absolute',fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage,textTransform:'uppercase',background:'rgba(255,255,255,0.86)',padding:'8px 11px',backdropFilter:'blur(4px)',lineHeight:1.55,zIndex:3};
 
   return (
-    <div ref={shareRef} style={{flex:1,overflowY:'auto',background:C.surface}}>
+    <div ref={shareRef} style={{flex:1,overflowY:'auto',overflowX:'hidden',background:C.surface}}>
       {showShare&&<ShareSheet onClose={()=>setShowShare(false)} targetRef={shareRef}/>}
 
       {/* Top bar */}
@@ -827,7 +827,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
             <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:20,color:C.ink}}>The <em>pieces.</em></span>
             <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{String(items.length).padStart(2,'0')} ITEMS{newItemCount>0?` · ${newItemCount} NEW`:''}</span>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}}>
             {items.slice(0,3).map((item,i)=>{
               const wears=wearCountMap[item.name.trim().toLowerCase()]||1;
               const defaultCats=['TOP','BOTTOM','SHOES'];
