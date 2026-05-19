@@ -572,11 +572,11 @@ function ShareSheet({ onClose, targetRef }) {
     if(!canvas) return;
     canvas.toBlob(async blob=>{
       if(!blob){setPhase("error");setErrMsg("Could not create image");return;}
-      const filename=`stylewrap-${Date.now()}.png`;
+      const filename=`insyte-studio-${Date.now()}.png`;
       const file=new File([blob],filename,{type:"image/png"});
       if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
         try{
-          await navigator.share({files:[file],title:"Stylewrap"});
+          await navigator.share({files:[file],title:"Insyte Studio"});
           setPhase("done");
         } catch(e){
           if(e.name==="AbortError"){setPhase("idle");return;}
@@ -603,15 +603,15 @@ function ShareSheet({ onClose, targetRef }) {
     if(!canvas) return;
     canvas.toBlob(async blob=>{
       if(!blob){setPhase("error");setErrMsg("Could not create image");return;}
-      const file=new File([blob],"stylewrap.png",{type:"image/png"});
+      const file=new File([blob],"insyte-studio.png",{type:"image/png"});
       try {
         if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-          await navigator.share({files:[file],title:"Stylewrap",text:"My outfit on Stylewrap"});
+          await navigator.share({files:[file],title:"Insyte Studio",text:"My outfit on Insyte Studio"});
           setPhase("done");
         } else {
           const url=URL.createObjectURL(blob);
           const a=document.createElement("a");
-          a.href=url; a.download="stylewrap.png";
+          a.href=url; a.download="insyte-studio.png";
           document.body.appendChild(a); a.click(); document.body.removeChild(a);
           URL.revokeObjectURL(url);
           setPhase("done");
@@ -763,7 +763,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       {/* Top bar */}
       <div style={{height:46,padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ 01 · <strong style={{color:C.ink,fontWeight:500}}>OUTFIT</strong></span>
-        <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:22,color:C.ink,lineHeight:1}}>Stylewrap<sup style={{fontFamily:F.mono,fontStyle:'normal',fontSize:9,letterSpacing:'0.14em',color:C.sage,verticalAlign:'top',marginLeft:2,position:'relative',top:3}}>™</sup></span>
+        <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:22,color:C.ink,lineHeight:1}}>Insyte Studio<sup style={{fontFamily:F.mono,fontStyle:'normal',fontSize:9,letterSpacing:'0.14em',color:C.sage,verticalAlign:'top',marginLeft:2,position:'relative',top:3}}>™</sup></span>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{shortDate} · {dayLabel}</span>
       </div>
 
@@ -2432,7 +2432,7 @@ function AuthScreen({ onAuth, initialView="landing" }) {
   if (view === "landing") return (
     <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:C.surface,padding:32 }}>
       <Logo/>
-      <h1 style={{ fontSize:32,fontWeight:900,color:C.ink,margin:"0 0 8px",textAlign:"center",letterSpacing:"-0.03em" }}>Stylewrap</h1>
+      <h1 style={{ fontSize:32,fontWeight:900,color:C.ink,margin:"0 0 8px",textAlign:"center",letterSpacing:"-0.03em" }}>Insyte Studio</h1>
       <p style={{ fontSize:15,color:C.sub,margin:"0 0 40px",textAlign:"center" }}>Your personal style companion</p>
       <button onClick={()=>{ setError(""); setEmail(""); setPassword(""); setView("signin"); }} style={{ width:"100%",height:54,borderRadius:0,border:"none",background:C.ink,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12 }}>Sign In</button>
       <button onClick={()=>{ setError(""); setEmail(""); setPassword(""); setConfirmPassword(""); setView("signup"); }} style={{ width:"100%",height:54,borderRadius:0,border:`2px solid ${C.ink}`,background:"transparent",color:C.ink,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Sign Up</button>
@@ -3527,7 +3527,7 @@ export default function App() {
       if(t<=now) return;
       timers.push(setTimeout(()=>{
         const key=_toKey(new Date());
-        if(!photoData[key]?.logged) new Notification("Stylewrap",{ body, icon:"/favicon.ico", tag });
+        if(!photoData[key]?.logged) new Notification("Insyte Studio",{ body, icon:"/favicon.ico", tag });
       }, t-now));
     };
     const _rem=localStorage.getItem("dailyReminderEnabled")!=="false";
