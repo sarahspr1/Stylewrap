@@ -789,18 +789,18 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
             {displayEntry.season&&<><br/>{displayEntry.season.toUpperCase()}</>}
           </div>
         )}
-        {/* Bottom pull — always shown */}
-        <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:3,background:'rgba(255,255,255,0.9)',padding:'12px 14px 14px',backdropFilter:'blur(6px)',display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:12}}>
-          <div style={{minWidth:0}}>
-            <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.16em',color:C.sage,textTransform:'uppercase',marginBottom:4}}>§ MOOD</div>
-            <div style={{fontFamily:F.serif,fontStyle:'italic',fontSize:16,color:C.ink,lineHeight:1.3}}>
-              {displayEntry?.notes||<span style={{color:C.sub}}>Add a mood note in edit.</span>}
+        {/* Bottom pull — only shown when mood note exists */}
+        {displayEntry?.notes&&(
+          <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:3,background:'rgba(255,255,255,0.9)',padding:'12px 14px 14px',backdropFilter:'blur(6px)',display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:12}}>
+            <div style={{minWidth:0}}>
+              <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.16em',color:C.sage,textTransform:'uppercase',marginBottom:4}}>§ MOOD</div>
+              <div style={{fontFamily:F.serif,fontStyle:'italic',fontSize:16,color:C.ink,lineHeight:1.3}}>{displayEntry.notes}</div>
+            </div>
+            <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.12em',color:C.sage,textTransform:'uppercase',textAlign:'right',flexShrink:0,lineHeight:1.5}}>
+              OUTFIT<br/><strong style={{color:C.ink,fontWeight:500,fontSize:13}}>N° {outfitNum}</strong>
             </div>
           </div>
-          <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.12em',color:C.sage,textTransform:'uppercase',textAlign:'right',flexShrink:0,lineHeight:1.5}}>
-            OUTFIT<br/><strong style={{color:C.ink,fontWeight:500,fontSize:13}}>N° {outfitNum}</strong>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* § THE LOOK */}
