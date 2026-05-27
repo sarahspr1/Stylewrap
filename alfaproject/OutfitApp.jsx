@@ -152,6 +152,17 @@ async function uploadPhoto(blob, dateKey){
   return supabase.storage.from("outfit-photos").getPublicUrl(path).data.publicUrl;
 }
 
+async function uploadOriginalPhoto(blob, dateKey){
+  const { data:{ session } } = await supabase.auth.getSession();
+  if(!session) return null;
+  const path = `${session.user.id}/${dateKey}_original.jpg`;
+  const { error } = await supabase.storage
+    .from("outfit-photos")
+    .upload(path, blob, { upsert:true, contentType:"image/jpeg" });
+  if(error){ console.error("[uploadOriginalPhoto]",error); return null; }
+  return supabase.storage.from("outfit-photos").getPublicUrl(path).data.publicUrl;
+}
+
 // Crop a single clothing item from a bg-removed outfit image using AI-provided bbox.
 // bbox: { x, y, w, h } — all fractions of image dimensions (0.0–1.0)
 function cropItemPhoto(dataUrl, bbox) {
@@ -544,6 +555,9 @@ function ShareSheet({ onClose, targetRef }) {
       const {default:html2canvas}=await import("html2canvas");
       const el=targetRef.current;
       if(!el) throw new Error("Nothing to capture");
+      // Hide any UI elements marked as share-only (e.g. toggle buttons)
+      const hideEls=[...el.querySelectorAll('[data-share-hide]')];
+      hideEls.forEach(e=>{ e.style.visibility='hidden'; });
       const canvas=await html2canvas(el,{
         scale:Math.min(window.devicePixelRatio*2,4),
         useCORS:true,
@@ -557,6 +571,8 @@ function ShareSheet({ onClose, targetRef }) {
         windowWidth:el.offsetWidth,
         windowHeight:el.scrollHeight||el.offsetHeight,
       });
+      // Restore hidden elements
+      hideEls.forEach(e=>{ e.style.visibility=''; });
       // 2. Capture done — show processing spinner while blob is created
       setPhase("processing");
       return canvas;
@@ -672,6 +688,8 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
   const shareRef=useRef(null);
   const cardRef=useRef(null);
   const [showShare,setShowShare]=useState(false);
+  const [showOriginal,setShowOriginal]=useState(false);
+  useEffect(()=>{ setShowOriginal(false); },[displayKey]);
   const now=new Date();
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const todayKey=toKey(now);
@@ -774,9 +792,23 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       {/* Hero photo */}
       <div style={{position:'relative',background:C.white,overflow:'hidden',minHeight:280}}>
         {displayEntry?.photo
-          ?<img src={displayEntry.photo} style={{width:'100%',display:'block',objectFit:'contain'}}/>
+          ?<div style={{position:'relative',width:'100%'}}>
+            <img src={displayEntry.photo} style={{width:'100%',display:'block',objectFit:'contain',transition:'opacity 200ms ease',opacity:showOriginal&&displayEntry.originalPhoto?0:1}}/>
+            {displayEntry.originalPhoto&&(
+              <img src={displayEntry.originalPhoto} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain',transition:'opacity 200ms ease',opacity:showOriginal?1:0}}/>
+            )}
+          </div>
           :<div style={{height:300,display:'flex',alignItems:'center',justifyContent:'center'}}><Shirt size={64} color={C.sub} strokeWidth={0.8}/></div>
         }
+        {/* Background toggle — hidden from share capture */}
+        {displayEntry?.originalPhoto&&(
+          <button data-share-hide="true" onClick={()=>setShowOriginal(v=>!v)} style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:4,background:'rgba(255,255,255,0.9)',backdropFilter:'blur(4px)',border:`1px solid ${C.border}`,padding:'5px 12px',display:'flex',alignItems:'center',gap:7,cursor:'pointer',fontFamily:F.mono,fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:C.ink}}>
+            <span style={{width:24,height:14,borderRadius:7,background:showOriginal?C.ink:C.border,position:'relative',display:'inline-block',transition:'background 150ms',flexShrink:0}}>
+              <span style={{position:'absolute',top:2,left:showOriginal?10:2,width:10,height:10,borderRadius:5,background:'#fff',transition:'left 150ms',display:'block'}}/>
+            </span>
+            BG
+          </button>
+        )}
         {/* Overlay TL */}
         <div style={{...ovly,top:14,left:14}}>
           N°<strong style={{color:C.ink,fontWeight:500}}>{outfitNum}</strong><br/>
@@ -1806,21 +1838,24 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       if(slot==="outfit2"){
         setPhotoData(p=>({...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalCompressed,items:[],style:null,analysing:true}}}));
       } else {
-        setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:finalCompressed,items:[],style:null,analysing:true }}));
+        setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:finalCompressed,originalPhoto:compressed,items:[],style:null,analysing:true }}));
       }
       setShowReview(true); setShowModal(false);
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
-      // Convert bg-removed data-URL to a Blob for storage upload
+      // Convert bg-removed and original data-URLs to Blobs for storage upload
       const blob=await fetch(finalCompressed).then(r=>r.blob());
-      // Upload photo and run AI analysis in parallel
+      const originalBlob=await fetch(compressed).then(r=>r.blob());
+      // Upload both photos and run AI analysis in parallel
       let _analysisErr=null;
-      const [photoUrl,parsed]=await Promise.all([
+      const [photoUrl,originalUrl,parsed]=await Promise.all([
         uploadPhoto(blob,dateKey),
+        uploadOriginalPhoto(originalBlob,dateKey),
         analyseOutfit(base64,"image/jpeg",knownItemsList).catch(e=>{ _analysisErr=e; return null; }),
       ]);
       if(_analysisErr){ setToast("AI error: "+(_analysisErr.message||String(_analysisErr))); setTimeout(()=>setToast(null),30000); track("ai_analysis_failed", { error: _analysisErr.message||String(_analysisErr), date_key: dateKey }); }
       // Append cache-buster so the browser always loads the fresh photo after re-upload on the same date
       const finalPhoto=photoUrl?(photoUrl+"?t="+Date.now()):finalCompressed;
+      const finalOriginalPhoto=originalUrl?(originalUrl+"?t="+Date.now()):compressed;
       if(parsed){
         const rawItems=parsed.clothing_items||[];
         const items=rawItems.map(item=>{const key=(item.name||"").trim().toLowerCase();const known=knownItems[key];const normColor=normalizeAiColor(item.color);const normBrand=toCanonicalBrand(item.brand||null);const base={...item,color:normColor,brand:normBrand};if(known){return {...base,price:known.price??item.price,_recognized:true,_wearCount:known.count};}return base;});
@@ -1846,7 +1881,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         if(slot==="outfit2"){
           setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}}; });
         } else {
-          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{logged:true,photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}; });
+          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{logged:true,photo:finalPhoto,originalPhoto:finalOriginalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}; });
         }
         setEditEntry({style,formalityLevel,season,items:itemsWithPhotos.map(item=>({...item}))});
         track("outfit_created", { date_key: dateKey, items_count: items.length, style, season });
@@ -1860,7 +1895,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         if(slot==="outfit2"){
           setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{...p[dateKey].outfit2,photo:finalPhoto,analysing:false}}}; });
         } else {
-          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],photo:finalPhoto,analysing:false}}; });
+          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],photo:finalPhoto,originalPhoto:finalOriginalPhoto,analysing:false}}; });
         }
         setEditEntry({style:null,formalityLevel:null,season:null,items:[]});
         setToast("Analysis complete — review and add items manually");
