@@ -1,0 +1,12 @@
+{
+  "name": "Insyte Studio",
+  "short_name": "Insyte Studio",
+  "description": "Your personal wardrobe journal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1F2620",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }
+  ]
+}

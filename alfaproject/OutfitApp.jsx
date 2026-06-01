@@ -3548,33 +3548,65 @@ export default function App() {
   const _d=new Date();
   while(photoData[_toKey(_d)]?.logged){ _streak++; _d.setDate(_d.getDate()-1); }
 
-  // Request notification permission politely after 8s
+  // Show in-app permission prompt after 12s (instead of silently requesting)
+  const [showNotifPrompt,setShowNotifPrompt]=useState(false);
   useEffect(()=>{
     if(!isSignedIn||!("Notification" in window)) return;
     if(Notification.permission!=="default") return;
-    const t=setTimeout(()=>Notification.requestPermission(),8000);
+    const t=setTimeout(()=>setShowNotifPrompt(true),12000);
     return ()=>clearTimeout(t);
   },[isSignedIn]);
 
-  // Schedule browser notifications for morning + evening
+  // Schedule notifications via service worker (survives tab close on installed PWA)
   useEffect(()=>{
     if(!isSignedIn||!("Notification" in window)||Notification.permission!=="granted") return;
+    const _rem=localStorage.getItem("dailyReminderEnabled")!=="false";
+    if(!_rem||_loggedToday) return;
     const now=new Date();
     const timers=[];
-    const scheduleNotif=(hour,minRange,body,tag)=>{
+
+    const notifOptions=(body,tag)=>({
+      body,
+      icon:"/favicon.ico",
+      badge:"/favicon.ico",
+      tag,
+      requireInteraction:false,
+      data:{ url:"/" },
+      actions:[
+        {action:"log",title:"Log Outfit"},
+        {action:"skip",title:"Later"}
+      ]
+    });
+
+    const scheduleNotif=async(hour,minOffset,body,tag)=>{
       const t=new Date(now);
-      t.setHours(hour,Math.floor(Math.random()*minRange),0,0);
+      t.setHours(hour,minOffset,0,0);
       if(t<=now) return;
+      const delay=t-now;
+      const opts=notifOptions(body,tag);
+      // Try TimestampTrigger (Chrome Android PWA — fires even when app is closed)
+      try{
+        const reg=await navigator.serviceWorker?.ready;
+        if(reg&&"TimestampTrigger" in window){
+          await reg.showNotification("Insyte Studio",{...opts,showTrigger:new window.TimestampTrigger(t.getTime())});
+          return;
+        }
+        // Fallback: service worker notification on a timer (tab must stay open)
+        if(reg){
+          timers.push(setTimeout(async()=>{
+            if(!photoData[_toKey(new Date())]?.logged) await reg.showNotification("Insyte Studio",opts);
+          },delay));
+          return;
+        }
+      }catch(_){}
+      // Last resort: basic Notification API
       timers.push(setTimeout(()=>{
-        const key=_toKey(new Date());
-        if(!photoData[key]?.logged) new Notification("Insyte Studio",{ body, icon:"/favicon.ico", tag });
-      }, t-now));
+        if(!photoData[_toKey(new Date())]?.logged) new Notification("Insyte Studio",{body,icon:"/favicon.ico",tag});
+      },delay));
     };
-    const _rem=localStorage.getItem("dailyReminderEnabled")!=="false";
-    if(!_loggedToday&&_rem){
-      scheduleNotif(10,120,"What are you wearing today? Log your outfit in seconds.","morning-reminder");
-      scheduleNotif(18,180,"Don't forget to log today's outfit. Your wardrobe story awaits.","evening-reminder");
-    }
+
+    scheduleNotif(9,0,"What are you wearing today? Capture your look in seconds.","morning-reminder");
+    scheduleNotif(18,0,"Still time to log today's outfit — your wardrobe story is waiting.","evening-reminder");
     return ()=>timers.forEach(clearTimeout);
   },[isSignedIn,_loggedToday]);
 
@@ -3665,6 +3697,18 @@ export default function App() {
             : <>
                 <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
                 {!subScreen&&<TabBar active={tab} onChange={t=>{ if(t!=="wardrobe") setWardrobeInitialView("main"); setTab(t); setSubScreen(null); }}/>}
+                {showNotifPrompt&&Notification.permission==="default"&&(
+                  <div style={{position:"fixed",bottom:72,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:390,background:C.ink,color:"#fff",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,zIndex:200,boxShadow:"0 4px 24px rgba(0,0,0,0.18)"}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:F.mono,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.55)",marginBottom:3}}>Daily Reminder</div>
+                      <div style={{fontSize:13,fontWeight:500,lineHeight:1.35}}>Get a nudge to log your outfit each morning</div>
+                    </div>
+                    <div style={{display:"flex",gap:8,flexShrink:0}}>
+                      <button onClick={()=>setShowNotifPrompt(false)} style={{background:"none",border:"1px solid rgba(255,255,255,0.25)",color:"rgba(255,255,255,0.6)",padding:"7px 12px",cursor:"pointer",fontFamily:F.mono,fontSize:10,letterSpacing:"0.1em"}}>Later</button>
+                      <button onClick={async()=>{ const p=await Notification.requestPermission(); setShowNotifPrompt(false); if(p==="granted"){ const reg=await navigator.serviceWorker?.ready; if(reg) reg.showNotification("Insyte Studio",{body:"You're all set — we'll remind you to log your outfit each day.",icon:"/favicon.ico",tag:"welcome"}); } }} style={{background:"#fff",border:"none",color:C.ink,padding:"7px 14px",cursor:"pointer",fontFamily:F.mono,fontSize:10,letterSpacing:"0.1em",fontWeight:600}}>Allow</button>
+                    </div>
+                  </div>
+                )}
                 {showDailyPrompt&&<DailyLogPrompt photoData={photoData} onAddItem={()=>setSubScreen("addItem")} streak={_streak} onDismiss={()=>{ localStorage.setItem("promptDismissed",new Date().toDateString()); setPromptDismissed(true); }}/>}
               </>
         }
