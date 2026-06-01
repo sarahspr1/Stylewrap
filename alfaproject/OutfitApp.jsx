@@ -689,7 +689,6 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
   const cardRef=useRef(null);
   const [showShare,setShowShare]=useState(false);
   const [showOriginal,setShowOriginal]=useState(false);
-  useEffect(()=>{ setShowOriginal(false); },[displayKey]);
   const now=new Date();
   const toKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const todayKey=toKey(now);
@@ -698,6 +697,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
   // Show today's outfit if logged, otherwise most recent
   const displayKey=loggedToday?todayKey:(allLoggedKeys[0]||null);
+  useEffect(()=>{ setShowOriginal(false); },[displayKey]);
   const displayEntry=displayKey?photoData[displayKey]:null;
   const items=(displayEntry?.items||[]).filter(i=>i&&typeof i==="object"&&i.name);
 
