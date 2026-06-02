@@ -2554,7 +2554,7 @@ function AuthScreen({ onAuth, initialView="landing" }) {
       setError("");
       if (!recoverEmail || !/\S+@\S+\.\S+/.test(recoverEmail)) { setError("Please enter a valid email address."); return; }
       setLoading(true);
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(recoverEmail, { redirectTo: "https://stylewrap.vercel.app/" });
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(recoverEmail, { redirectTo: "https://stylewrap.vercel.app" });
       setLoading(false);
       if (resetErr) { setError(resetErr.message || "Failed to send reset email. Please try again."); return; }
       setView("forgot-sent");
