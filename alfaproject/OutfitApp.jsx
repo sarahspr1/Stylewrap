@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const _sbUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const _sbKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-const supabase = createClient(_sbUrl, _sbKey, { auth: { flowType: 'pkce', detectSessionInUrl: true } });
+const supabase = createClient(_sbUrl, _sbKey);
 
 // One session ID per browser tab — resets when the tab is closed.
 const _sessionId = (() => {
