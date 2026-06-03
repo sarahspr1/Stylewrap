@@ -1072,14 +1072,14 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
         <div style={{ flexShrink:0,padding:"0 24px" }}>
           <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none",msOverflowStyle:"none" }}>
             {allCategories.map(c=>(
-              <button key={c} onClick={()=>{ setItemCatFilter(c); setShowFavourites(false); }} style={{ flexShrink:0,height:32,padding:"0 16px",borderRadius:0,border:`1px solid ${!showFavourites&&itemCatFilter===c?C.ink:C.border}`,background:!showFavourites&&itemCatFilter===c?C.ink:C.white,color:!showFavourites&&itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.01em" }}>{c}</button>
+              <button key={c} onClick={()=>{ setItemCatFilter(c); setShowFavourites(false); }} style={{ flexShrink:0,height:32,padding:"0 16px",borderRadius:8,border:`1px solid ${!showFavourites&&itemCatFilter===c?C.ink:C.border}`,background:!showFavourites&&itemCatFilter===c?C.ink:C.white,color:!showFavourites&&itemCatFilter===c?"#fff":C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F.sans,letterSpacing:"0.01em" }}>{c}</button>
             ))}
           </div>
           <div style={{ display:"flex",gap:4,paddingBottom:12,borderBottom:`1px solid ${C.border}` }}>
             {[{id:"most",label:"Most Worn"},{id:"least",label:"Least Worn"},{id:"az",label:"A–Z"}].map(s=>(
-              <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ flex:1,height:28,padding:"0 4px",borderRadius:0,border:itemSort===s.id?`1px solid ${C.ink}`:`1px solid ${C.border}`,background:itemSort===s.id?C.ink:"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:F.mono,letterSpacing:"0.04em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{s.label}</button>
+              <button key={s.id} onClick={()=>setItemSort(s.id)} style={{ flex:1,height:28,padding:"0 4px",borderRadius:8,border:itemSort===s.id?`1px solid ${C.ink}`:`1px solid ${C.border}`,background:itemSort===s.id?C.ink:"transparent",color:itemSort===s.id?"#fff":C.sub,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:F.mono,letterSpacing:"0.04em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{s.label}</button>
             ))}
-            <button onClick={()=>{ setShowFavourites(f=>!f); if(!showFavourites) setItemCatFilter("All"); }} style={{ flex:1,height:28,padding:"0 4px",borderRadius:0,border:showFavourites?`1px solid ${C.sage}`:`1px solid ${C.border}`,background:showFavourites?C.sage:"transparent",color:showFavourites?"#fff":C.sub,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:F.mono,letterSpacing:"0.04em",textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:3,whiteSpace:"nowrap" }}>
+            <button onClick={()=>{ setShowFavourites(f=>!f); if(!showFavourites) setItemCatFilter("All"); }} style={{ flex:1,height:28,padding:"0 4px",borderRadius:8,border:showFavourites?`1px solid ${C.sage}`:`1px solid ${C.border}`,background:showFavourites?C.sage:"transparent",color:showFavourites?"#fff":C.sub,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:F.mono,letterSpacing:"0.04em",textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:3,whiteSpace:"nowrap" }}>
               <Heart size={9} color={showFavourites?"#fff":C.sub} strokeWidth={2}/>Favourites
             </button>
           </div>
