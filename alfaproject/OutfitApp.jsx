@@ -2701,7 +2701,7 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
 
         {/* Avatar + name block */}
         <div style={{ padding:"0 24px 24px",display:"flex",alignItems:"center",gap:20 }}>
-          <button onClick={()=>setShowPicker(true)} style={{ width:88,height:88,borderRadius:0,background:C.sage,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,overflow:"hidden",flexShrink:0 }}>
+          <button onClick={()=>setShowPicker(true)} style={{ width:88,height:88,borderRadius:12,background:C.sage,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,overflow:"hidden",flexShrink:0 }}>
             {profileImage
               ? <img src={profileImage} alt="Profile" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>
               : <span style={{ fontFamily:F.sans,fontSize:30,fontWeight:600,color:"#fff",lineHeight:1 }}>{resolvedDisplayName.charAt(0).toUpperCase()}</span>
