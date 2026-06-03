@@ -2739,7 +2739,7 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
 
         {/* Settings card */}
         <div style={{ padding:"20px 24px 0" }}>
-          <div style={{ background:C.white,border:`1px solid ${C.border}` }}>
+          <div style={{ background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden" }}>
             {/* Appearance */}
             <div style={{ padding:"16px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}` }}>
               <span style={{ fontSize:15,color:C.ink,fontWeight:500 }}>Appearance</span>
@@ -2783,7 +2783,7 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
 
         {/* Sign out */}
         <div style={{ padding:"12px 24px 40px",marginTop:"auto" }}>
-          <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",padding:"16px 18px",border:`1px solid ${C.border}`,background:"transparent",color:C.red,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit" }}>
+          <button onClick={()=>setShowSignOutConfirm(true)} style={{ width:"100%",padding:"16px 18px",border:`1px solid ${C.border}`,background:"transparent",color:C.red,fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",borderRadius:12 }}>
             <LogOut size={16} color={C.red} strokeWidth={1.5}/>Sign Out
           </button>
         </div>
