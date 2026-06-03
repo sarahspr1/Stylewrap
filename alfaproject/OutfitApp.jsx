@@ -849,11 +849,6 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
             :<em style={{fontFamily:F.serif,fontStyle:'italic',color:C.sub,fontWeight:400}}>No outfit logged yet.</em>
           }
         </h1>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-          {displayEntry?.style&&<span style={{padding:'5px 10px',background:C.ink,border:`1px solid ${C.ink}`,fontSize:10,fontWeight:500,color:'#fff'}}>{displayEntry.style}</span>}
-          {displayEntry?.season&&<span style={{padding:'5px 10px',background:'transparent',border:`1px solid ${C.border}`,fontSize:10,fontWeight:500,color:C.sage}}>{displayEntry.season}</span>}
-          {comboCount>0&&<span style={{padding:'5px 10px',background:'transparent',border:`1px solid ${C.border}`,fontSize:10,fontWeight:500,color:C.sage}}>{ordinal(comboCount)} wear</span>}
-        </div>
       </div>
       </div>{/* end export card */}
 
