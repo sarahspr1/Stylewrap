@@ -1408,7 +1408,6 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
         {onBack&&<button onClick={onBack} style={{display:"flex",alignItems:"center",gap:4,border:"none",background:"transparent",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 8px",fontFamily:"inherit"}}><ChevronLeft size={15} color={C.sub} strokeWidth={2}/>Back</button>}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div>
-            <span style={{...ML}}>§ 01 / Overview</span>
             <h1 style={{fontSize:34,fontWeight:800,color:C.ink,margin:"6px 0 4px",letterSpacing:"-0.03em",lineHeight:1}}>Analytics</h1>
             <p style={{fontSize:11,color:C.sub,margin:0,fontFamily:F.mono,letterSpacing:"0.03em"}}>
               {pGarments} garments tracked · <span style={{color:C.sage,cursor:"pointer"}} onClick={()=>setView("items")}>{pOutfitCount} outfits</span>
@@ -1454,7 +1453,6 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             {linePoints.length>1&&(
               <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
                 <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
-                  <span style={{...ML}}>§ 02 / Volume</span>
                   <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Wears across the period</div>
                 </div>
                 <div style={{padding:"14px 16px 16px"}}>
