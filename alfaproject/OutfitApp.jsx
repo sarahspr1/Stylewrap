@@ -1062,7 +1062,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
         <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
           <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
             <button onClick={()=>setView("main")} style={{ border:"none",background:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4 }}>
-              <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ 02 · Wardrobe</span>
+              <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>Wardrobe</span>
             </button>
             <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>{wearArr.length} Items</span>
           </div>
@@ -1489,7 +1489,6 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               return (
                 <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
                   <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
-                    <span style={{...ML}}>§ 03 / Palette</span>
                     <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Color distribution</div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",padding:"16px 16px",gap:16}}>
@@ -1518,7 +1517,6 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             {/* § 04 / TOP 5 — Most worn */}
             <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
               <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
-                <span style={{...ML}}>§ 04 / Top 5</span>
                 <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Most-worn</div>
                 <div style={{fontSize:11,color:C.sub,marginTop:2}}>Your heavy lifters</div>
               </div>
@@ -1553,7 +1551,6 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             {/* § 04 / BOTTOM 5 — Least worn */}
             <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
               <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
-                <span style={{...ML}}>§ 04 / Bottom 5</span>
                 <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Least-worn</div>
                 <div style={{fontSize:11,color:C.sub,marginTop:2}}>Waiting their turn</div>
               </div>
@@ -1944,7 +1941,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
 
       {/* Section header row */}
       <div style={{ padding:"28px 24px 0",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
-        <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ 04 · Calendar</span>
+        <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>Calendar</span>
         <div style={{ display:"flex",alignItems:"center",gap:4 }}>
           <button onClick={prevMonth} style={{ border:"none",background:"transparent",cursor:"pointer",padding:"4px 6px",fontFamily:F.mono,fontSize:13,color:C.sub,lineHeight:1 }}>{"<"}</button>
           <span style={{ fontFamily:F.mono,fontSize:12,color:C.sub,letterSpacing:"0.04em" }}>{months[calMonth]}</span>
@@ -2046,7 +2043,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         return (
           <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:10000,display:"flex",flexDirection:"column" }}>
             <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
-              <span style={{ ...REV_LABEL }}>§ 04 · Calendar</span>
+              <span style={{ ...REV_LABEL }}>Calendar</span>
             </div>
             <div style={{ padding:"12px 24px 14px",flexShrink:0 }}>
               <h1 style={{ fontSize:28,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>{dateLabel}</h1>
@@ -2284,8 +2281,8 @@ function FavoritesScreen({ onBack, favourites=[], setFavourites, photoData={}, o
       <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
           {onBack
-            ? <button onClick={onBack} style={{ border:"none",background:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4 }}><span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ 03 · Favourites</span></button>
-            : <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>§ 03 · Favourites</span>
+            ? <button onClick={onBack} style={{ border:"none",background:"transparent",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4 }}><span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>Favourites</span></button>
+            : <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>Favourites</span>
           }
           <span style={{ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub }}>{favourites.length} Items</span>
         </div>
