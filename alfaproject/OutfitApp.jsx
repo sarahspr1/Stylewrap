@@ -1621,8 +1621,6 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                 {/* Italic insight */}
                 {topStyle&&(
                   <div style={{padding:"10px 16px 16px",borderTop:`1px solid ${C.border}`}}>
-                    <span style={{...ML,display:"block",marginBottom:8}}>§ Read</span>
-                    <p style={{fontFamily:F.serif,fontStyle:"italic",fontSize:14,color:C.sage,margin:"0 0 14px",lineHeight:1.6}}>{topStyle.name} leads your wardrobe story{periodTab!=="all"?" this period":""}.</p>
                     <div style={{display:"flex",gap:24}}>
                       <div><div style={{fontSize:22,fontWeight:700,color:C.ink,fontFamily:F.mono,lineHeight:1}}>{topStyle.pct}%</div><span style={{...ML,marginTop:4,display:"block"}}>{topStyle.name}</span></div>
                       <div><div style={{fontSize:22,fontWeight:700,color:C.ink,fontFamily:F.mono,lineHeight:1}}>{pStyleData.length}</div><span style={{...ML,marginTop:4,display:"block"}}>Styles</span></div>
