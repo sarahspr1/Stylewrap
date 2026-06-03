@@ -302,7 +302,7 @@ function CameraCapture({ onCapture, onClose }) {
     <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:10000,display:"flex",flexDirection:"column" }}>
       {/* Section header */}
       <div style={{ padding:"28px 24px 0",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
-        <span style={{ ...CAM_LABEL }}>§ 05 · Camera</span>
+        <span style={{ ...CAM_LABEL }}>Camera</span>
         <button onClick={onClose} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:"pointer",padding:0 }}>Cancel</button>
       </div>
       {/* Title */}
@@ -383,7 +383,7 @@ function OutfitReview({ entry, editEntry, selectedDate, onRetake, onSave, onEdit
     <div style={{ position:"fixed",inset:0,background:C.surface,zIndex:10000,display:"flex",flexDirection:"column" }}>
       {/* Header */}
       <div style={{ padding:"28px 24px 0",flexShrink:0 }}>
-        <span style={{ ...REV_LABEL }}>§ 05 · Camera</span>
+        <span style={{ ...REV_LABEL }}>Camera</span>
       </div>
       <div style={{ padding:"12px 24px 14px",flexShrink:0 }}>
         <h1 style={{ fontSize:34,fontWeight:800,color:C.ink,margin:0,letterSpacing:"-0.03em",lineHeight:1 }}>Camera</h1>
@@ -781,7 +781,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
       {/* Top bar */}
       <div style={{height:46,padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
-        <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ 01 · <strong style={{color:C.ink,fontWeight:500}}>OUTFIT</strong></span>
+        <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}><strong style={{color:C.ink,fontWeight:500}}>OUTFIT</strong></span>
         <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:22,color:C.ink,lineHeight:1}}>Insyte Studio</span>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{shortDate} · {dayLabel}</span>
       </div>
@@ -1587,7 +1587,6 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
               <div style={{margin:"12px 16px 32px",background:C.white,border:`1px solid ${C.border}`}}>
                 <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
                   <div>
-                    <span style={{...ML}}>§ 05 / Style</span>
                     <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Style distribution</div>
                     <div style={{fontSize:11,color:C.sub,marginTop:2}}>Share of {pOutfitCount} logged outfits</div>
                   </div>
@@ -2696,7 +2695,7 @@ function ProfileScreen({ onSettings, onNotifications, onPrivacy, onBack, onSignO
       <div style={{ flex:1,overflowY:"auto",display:"flex",flexDirection:"column" }}>
         {/* Section label + Edit */}
         <div style={{ padding:"28px 24px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
-          <span style={{ ...LABEL }}>§ 05 · Profile</span>
+          <span style={{ ...LABEL }}>Profile</span>
           <button onClick={()=>setShowPicker(true)} style={{ ...LABEL, border:"none", background:"transparent", cursor:"pointer", padding:0, color:C.sage }}>Edit</button>
         </div>
 
