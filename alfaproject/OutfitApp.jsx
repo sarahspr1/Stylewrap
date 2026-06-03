@@ -865,7 +865,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
               const defaultCats=['TOP','BOTTOM','SHOES'];
               return(
                 <div key={i} style={{minWidth:0}}>
-                  <div style={{position:'relative',aspectRatio:'1/1',background:C.surface,border:`1px solid ${C.border}`,overflow:'hidden'}}>
+                  <div style={{position:'relative',aspectRatio:'1/1',background:C.surface,border:`1px solid ${C.border}`,overflow:'hidden',borderRadius:12}}>
                     {item.itemPhoto
                       ?<img src={item.itemPhoto} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain'}}/>
                       :<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Shirt size={20} color={C.sub} strokeWidth={1}/></div>
