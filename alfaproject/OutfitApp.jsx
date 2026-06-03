@@ -1100,7 +1100,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
           ) : (
             <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
               {sortedItems.map((item,idx)=>(
-                <button key={idx} onClick={()=>setSelectedWearItem({...item,_idx:idx+1})} style={{ background:C.white,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",padding:0,display:"flex",flexDirection:"column",overflow:"hidden" }}>
+                <button key={idx} onClick={()=>setSelectedWearItem({...item,_idx:idx+1})} style={{ background:C.white,border:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit",padding:0,display:"flex",flexDirection:"column",overflow:"hidden",borderRadius:12 }}>
                   {/* Photo / silhouette tile */}
                   <div style={{ width:"100%",aspectRatio:"1/1",background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0 }}>
                     <ItemPhoto src={item.itemCropPhoto} fallback={item.outfitPhoto} category={item.category} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
