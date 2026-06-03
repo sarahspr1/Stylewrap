@@ -1433,7 +1433,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             {label:"Utilization",val:pUtil>0?`${pUtil}%`:"—",sub:`${pWornNames.size} of ${wearArr.length} worn`,onClick:null},
             {label:"New · Unworn",val:(pNewItems>0||pLowUse>0)?`${pNewItems} · ${pLowUse}`:"—",sub:"new items · low-use",onClick:null},
           ].map((s,i)=>(
-            <div key={i} onClick={s.onClick||undefined} style={{background:C.white,border:`1px solid ${C.border}`,padding:"12px 10px 10px",cursor:s.onClick?"pointer":"default",minWidth:0}}>
+            <div key={i} onClick={s.onClick||undefined} style={{background:C.white,border:`1px solid ${C.border}`,padding:"12px 10px 10px",cursor:s.onClick?"pointer":"default",minWidth:0,borderRadius:12}}>
               <div style={{...ML,marginBottom:6,fontSize:8}}>{s.label}</div>
               <div style={{fontSize:18,fontWeight:700,color:C.ink,letterSpacing:"-0.02em",lineHeight:1,fontFamily:F.mono,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.val}</div>
               <div style={{fontSize:9,color:C.sub,marginTop:5,lineHeight:1.3}}>{s.sub}</div>
@@ -1451,7 +1451,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
           <>
             {/* § 02 / VOLUME — cumulative line chart */}
             {linePoints.length>1&&(
-              <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+              <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden"}}>
                 <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
                   <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Wears across the period</div>
                 </div>
@@ -1487,7 +1487,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                 return {d:`M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${rMid} ${rMid} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`,hex:c.hex,name:c.name,stroke:strokeW};
               });
               return (
-                <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+                <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden"}}>
                   <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
                     <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Color distribution</div>
                   </div>
@@ -1515,7 +1515,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             })()}
 
             {/* § 04 / TOP 5 — Most worn */}
-            <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+            <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden"}}>
               <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
                 <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Most-worn</div>
                 <div style={{fontSize:11,color:C.sub,marginTop:2}}>Your heavy lifters</div>
@@ -1549,7 +1549,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             </div>
 
             {/* § 04 / BOTTOM 5 — Least worn */}
-            <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`}}>
+            <div style={{margin:"12px 16px 0",background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden"}}>
               <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
                 <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Least-worn</div>
                 <div style={{fontSize:11,color:C.sub,marginTop:2}}>Waiting their turn</div>
@@ -1584,7 +1584,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
 
             {/* § 05 / STYLE — style distribution */}
             {pStyleData.length>0&&(
-              <div style={{margin:"12px 16px 32px",background:C.white,border:`1px solid ${C.border}`}}>
+              <div style={{margin:"12px 16px 32px",background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden"}}>
                 <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
                   <div>
                     <div style={{fontSize:15,fontWeight:700,color:C.ink,marginTop:4,letterSpacing:"-0.01em"}}>Style distribution</div>
