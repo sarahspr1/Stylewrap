@@ -1411,7 +1411,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             <span style={{...ML}}>§ 01 / Overview</span>
             <h1 style={{fontSize:34,fontWeight:800,color:C.ink,margin:"6px 0 4px",letterSpacing:"-0.03em",lineHeight:1}}>Analytics</h1>
             <p style={{fontSize:11,color:C.sub,margin:0,fontFamily:F.mono,letterSpacing:"0.03em"}}>
-              {pDays>0?`${pDays}d · `:""}{pGarments} garments tracked · <span style={{color:C.sage,cursor:"pointer"}} onClick={()=>setView("items")}>{pOutfitCount} outfits</span>
+              {pGarments} garments tracked · <span style={{color:C.sage,cursor:"pointer"}} onClick={()=>setView("items")}>{pOutfitCount} outfits</span>
             </p>
           </div>
           <button onClick={()=>setShowAnalyticsShare(true)} style={{border:"none",background:"transparent",cursor:"pointer",padding:4,display:"flex",alignItems:"center",marginTop:4}}><Share2 size={17} color={C.sub}/></button>
