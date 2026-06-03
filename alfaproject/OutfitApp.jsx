@@ -1416,9 +1416,9 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
           <button onClick={()=>setShowAnalyticsShare(true)} style={{border:"none",background:"transparent",cursor:"pointer",padding:4,display:"flex",alignItems:"center",marginTop:4}}><Share2 size={17} color={C.sub}/></button>
         </div>
         {/* Period tabs */}
-        <div style={{display:"flex",gap:0,marginTop:14,borderBottom:`1px solid ${C.border}`}}>
+        <div style={{display:"flex",gap:4,marginTop:14}}>
           {[{k:"q1",l:"Q1"},{k:"q2",l:"Q2"},{k:"q3",l:"Q3"},{k:"ytd",l:"YTD"},{k:"all",l:"All"}].map(t=>(
-            <button key={t.k} onClick={()=>setPeriodTab(t.k)} style={{flex:1,height:32,border:"none",borderBottom:periodTab===t.k?`2px solid ${C.ink}`:"2px solid transparent",background:periodTab===t.k?C.ink:"transparent",fontFamily:F.mono,fontSize:9,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",color:periodTab===t.k?"#fff":C.sub,cursor:"pointer",padding:0,marginBottom:-1,transition:"background .15s"}}>
+            <button key={t.k} onClick={()=>setPeriodTab(t.k)} style={{flex:1,height:32,border:`1px solid ${periodTab===t.k?C.ink:C.border}`,borderRadius:8,background:periodTab===t.k?C.ink:"transparent",fontFamily:F.mono,fontSize:9,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",color:periodTab===t.k?"#fff":C.sub,cursor:"pointer",padding:0,transition:"background .15s"}}>
               {t.l}
             </button>
           ))}
