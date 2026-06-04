@@ -3642,7 +3642,7 @@ export default function App() {
   return (
     <>
       <style>{`*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;height:100dvh;font-family:${F.sans};background:${C.surface};-webkit-font-smoothing:antialiased;overflow:hidden}#root{height:100%;height:100dvh;display:flex;flex-direction:column;overflow:hidden}@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::-webkit-scrollbar{display:none}`}</style>
-      <div style={{ position:"fixed",top:0,bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,display:"flex",flexDirection:"column",background:C.surface,overflow:"hidden",paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
+      <div style={{ position:"fixed",top:0,bottom:0,left:0,right:0,margin:"0 auto",width:"100%",maxWidth:430,display:"flex",flexDirection:"column",background:C.surface,overflow:"hidden",paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
         {needsPasswordReset
           ? (() => {
               const doReset = async () => {
@@ -3685,7 +3685,7 @@ export default function App() {
                 <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
                 {!subScreen&&<TabBar active={tab} onChange={t=>{ if(t!=="wardrobe") setWardrobeInitialView("main"); setTab(t); setSubScreen(null); }}/>}
                 {showNotifPrompt&&Notification.permission==="default"&&(
-                  <div style={{position:"fixed",bottom:72,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:390,background:C.ink,color:"#fff",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,zIndex:200,boxShadow:"0 4px 24px rgba(0,0,0,0.18)"}}>
+                  <div style={{position:"fixed",bottom:72,left:0,right:0,margin:"0 auto",width:"calc(100% - 32px)",maxWidth:390,background:C.ink,color:"#fff",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,zIndex:200,boxShadow:"0 4px 24px rgba(0,0,0,0.18)"}}>
                     <div style={{flex:1}}>
                       <div style={{fontFamily:F.mono,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.55)",marginBottom:3}}>Daily Reminder</div>
                       <div style={{fontSize:13,fontWeight:500,lineHeight:1.35}}>Get a nudge to log your outfit each morning</div>
