@@ -276,6 +276,7 @@ function CameraCapture({ onCapture, onClose }) {
   const [facing,setFacing]=useState("environment");
   const [error,setError]=useState("");
   const [ready,setReady]=useState(false);
+  const [countdown,setCountdown]=useState(null);
   const CAM_LABEL={ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub };
 
   useEffect(()=>{
@@ -287,15 +288,28 @@ function CameraCapture({ onCapture, onClose }) {
     return ()=>{ s?.getTracks().forEach(t=>t.stop()); };
   },[facing]);
 
+  useEffect(()=>{
+    if(countdown===null) return;
+    if(countdown===0){
+      const video=videoRef.current;
+      if(video&&ready){
+        const canvas=document.createElement("canvas");
+        canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+        canvas.getContext("2d").drawImage(video,0,0);
+        const dataUrl=canvas.toDataURL("image/jpeg",0.92);
+        stream?.getTracks().forEach(t=>t.stop());
+        setCountdown(null);
+        onCapture(dataUrl);
+      }
+      return;
+    }
+    const t=setTimeout(()=>setCountdown(c=>c-1),1000);
+    return ()=>clearTimeout(t);
+  },[countdown]);
+
   const handleCapture=()=>{
-    const video=videoRef.current;
-    if(!video||!ready) return;
-    const canvas=document.createElement("canvas");
-    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
-    canvas.getContext("2d").drawImage(video,0,0);
-    const dataUrl=canvas.toDataURL("image/jpeg",0.92);
-    stream?.getTracks().forEach(t=>t.stop());
-    onCapture(dataUrl);
+    if(!ready||countdown!==null) return;
+    setCountdown(5);
   };
 
   return (
@@ -334,16 +348,22 @@ function CameraCapture({ onCapture, onClose }) {
             <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none" }}>
               <div style={{ width:"68%",height:"74%",border:"1px solid rgba(255,255,255,0.38)" }}/>
             </div>
+            {/* Countdown overlay */}
+            {countdown!==null&&(
+              <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none" }}>
+                <span style={{ fontFamily:F.sans,fontSize:120,fontWeight:700,color:"#fff",lineHeight:1,textShadow:"0 4px 24px rgba(0,0,0,0.5)",opacity:0.95 }}>{countdown}</span>
+              </div>
+            )}
           </>
         )}
       </div>
       {/* Controls */}
       <div style={{ background:C.surface,padding:"18px 32px 44px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
         <button onClick={onClose} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:56 }}>Cancel</button>
-        <button onClick={handleCapture} disabled={!ready} style={{ width:68,height:68,borderRadius:"50%",background:"transparent",border:`3px solid ${ready?C.ink:C.border}`,cursor:ready?"pointer":"default",padding:4,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-          <div style={{ width:"100%",height:"100%",borderRadius:"50%",background:ready?C.ink:C.border }}/>
+        <button onClick={handleCapture} disabled={!ready||countdown!==null} style={{ width:68,height:68,borderRadius:"50%",background:"transparent",border:`3px solid ${ready&&countdown===null?C.ink:C.border}`,cursor:ready&&countdown===null?"pointer":"default",padding:4,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+          <div style={{ width:"100%",height:"100%",borderRadius:"50%",background:ready&&countdown===null?C.ink:C.border }}/>
         </button>
-        <button onClick={()=>{ stream?.getTracks().forEach(t=>t.stop()); setStream(null); setFacing(f=>f==="environment"?"user":"environment"); }} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",minWidth:56,textAlign:"right" }}>Flip</button>
+        <button onClick={()=>{ if(countdown!==null) return; stream?.getTracks().forEach(t=>t.stop()); setStream(null); setFacing(f=>f==="environment"?"user":"environment"); }} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:countdown!==null?"default":"pointer",padding:"8px 0",minWidth:56,textAlign:"right",opacity:countdown!==null?0.4:1 }}>Flip</button>
       </div>
     </div>
   );
