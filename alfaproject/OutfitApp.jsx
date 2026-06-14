@@ -216,7 +216,7 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, ChevronDown, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag, Wind, Gem, Waves, AtSign, BarChart2, Share2, Download } from "lucide-react";
+import { Home, Shirt, Calendar, CalendarDays, Heart, User, ChevronLeft, ChevronRight, ChevronDown, Camera, Plus, Trash2, Pencil, Search, TrendingUp, Palette, Layers, X, Bell, Shield, Phone, LogOut, Check, DollarSign, Tag, Wind, Gem, Waves, AtSign, BarChart2, Share2, Download, Timer } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 function CatIcon({ cat, size=12, color="rgba(58,68,56,0.4)" }){
@@ -277,6 +277,7 @@ function CameraCapture({ onCapture, onClose }) {
   const [error,setError]=useState("");
   const [ready,setReady]=useState(false);
   const [countdown,setCountdown]=useState(null);
+  const [timerEnabled,setTimerEnabled]=useState(false);
   const CAM_LABEL={ fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.14em",textTransform:"uppercase",color:C.sub };
 
   useEffect(()=>{
@@ -288,28 +289,27 @@ function CameraCapture({ onCapture, onClose }) {
     return ()=>{ s?.getTracks().forEach(t=>t.stop()); };
   },[facing]);
 
+  const doCapture=()=>{
+    const video=videoRef.current;
+    if(!video||!ready) return;
+    const canvas=document.createElement("canvas");
+    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+    canvas.getContext("2d").drawImage(video,0,0);
+    const dataUrl=canvas.toDataURL("image/jpeg",0.92);
+    stream?.getTracks().forEach(t=>t.stop());
+    onCapture(dataUrl);
+  };
+
   useEffect(()=>{
     if(countdown===null) return;
-    if(countdown===0){
-      const video=videoRef.current;
-      if(video&&ready){
-        const canvas=document.createElement("canvas");
-        canvas.width=video.videoWidth; canvas.height=video.videoHeight;
-        canvas.getContext("2d").drawImage(video,0,0);
-        const dataUrl=canvas.toDataURL("image/jpeg",0.92);
-        stream?.getTracks().forEach(t=>t.stop());
-        setCountdown(null);
-        onCapture(dataUrl);
-      }
-      return;
-    }
+    if(countdown===0){ setCountdown(null); doCapture(); return; }
     const t=setTimeout(()=>setCountdown(c=>c-1),1000);
     return ()=>clearTimeout(t);
   },[countdown]);
 
   const handleCapture=()=>{
     if(!ready||countdown!==null) return;
-    setCountdown(5);
+    if(timerEnabled){ setCountdown(5); } else { doCapture(); }
   };
 
   return (
@@ -317,7 +317,12 @@ function CameraCapture({ onCapture, onClose }) {
       {/* Section header */}
       <div style={{ padding:"28px 24px 0",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
         <span style={{ ...CAM_LABEL }}>Camera</span>
-        <button onClick={onClose} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:"pointer",padding:0 }}>Cancel</button>
+        <div style={{ display:"flex",alignItems:"center",gap:16 }}>
+          <button onClick={()=>{ if(countdown!==null) return; setTimerEnabled(v=>!v); }} style={{ ...CAM_LABEL,border:`1px solid ${timerEnabled?C.ink:C.border}`,background:timerEnabled?C.ink:"transparent",color:timerEnabled?"#fff":C.sub,cursor:"pointer",padding:"4px 10px",display:"flex",alignItems:"center",gap:5 }}>
+            <Timer size={11}/> 5s
+          </button>
+          <button onClick={onClose} style={{ ...CAM_LABEL,border:"none",background:"transparent",cursor:"pointer",padding:0 }}>Cancel</button>
+        </div>
       </div>
       {/* Title */}
       <div style={{ padding:"12px 24px 14px",flexShrink:0 }}>
