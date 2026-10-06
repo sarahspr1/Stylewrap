@@ -53,6 +53,16 @@ function parseResponse(rawText) {
   };
 }
 
+// ── Timeout helper ────────────────────────────────────────────────────────────
+
+function makeTimeoutSignal(ms) {
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
+const TIMEOUT_MS = 30000;
+
 // ── Groq ──────────────────────────────────────────────────────────────────────
 
 async function analyseWithGroq(base64, mediaType, knownItems) {
@@ -61,6 +71,7 @@ async function analyseWithGroq(base64, mediaType, knownItems) {
 
   const res = await fetch(GROQ_URL, {
     method: "POST",
+    signal: makeTimeoutSignal(TIMEOUT_MS),
     headers: {
       "Content-Type":  "application/json",
       "Authorization": `Bearer ${key}`,
@@ -94,6 +105,7 @@ async function analyseWithOpenRouter(base64, mediaType, knownItems) {
 
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
+    signal: makeTimeoutSignal(TIMEOUT_MS),
     headers: {
       "Content-Type":  "application/json",
       "Authorization": `Bearer ${key}`,
@@ -129,6 +141,7 @@ async function analyseWithGemini(base64, mediaType, knownItems) {
     `${GEMINI_URL}/${PROMPTS.gemini.model}:generateContent?key=${key}`,
     {
       method:  "POST",
+      signal:  makeTimeoutSignal(TIMEOUT_MS),
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{

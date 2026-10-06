@@ -961,7 +961,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
 const initialCPWPrices = {};
 
-function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", onAddItem, currency="USD", favourites=[], onGoToWardrobe }) {
+function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", onAddItem, currency="USD", favourites=[], onGoToWardrobe, onGoToCalendar }) {
   const analyticsShareRef=useRef(null);
   const [showAnalyticsShare,setShowAnalyticsShare]=useState(false);
   const [view,setView]=useState(initialView);
@@ -1115,7 +1115,8 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
             <div style={{ textAlign:"center",padding:"48px 24px" }}>
               <Shirt size={36} color={C.sub} strokeWidth={1.5} style={{ margin:"0 auto 16px",display:"block" }}/>
               <div style={{ fontSize:16,fontWeight:700,color:C.ink,marginBottom:6 }}>No items yet</div>
-              <div style={{ fontSize:13,color:C.sub }}>Log an outfit on the Calendar screen to see your items here.</div>
+              <div style={{ fontSize:13,color:C.sub,marginBottom:16 }}>Log an outfit on the Calendar screen to see your items here.</div>
+              {onGoToCalendar&&<button onClick={onGoToCalendar} style={{ height:40,padding:"0 20px",borderRadius:0,border:`1.5px solid ${C.sage}`,background:"transparent",color:C.sage,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Go to Calendar</button>}
             </div>
           ) : sortedItems.length===0 ? (
             <div style={{ textAlign:"center",padding:"40px 24px" }}>
@@ -1325,7 +1326,7 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
                   <div style={{ height:4,borderRadius:99,background:C.border,marginBottom:10,overflow:"hidden" }}><div style={{ height:"100%",width:`${Math.min((item.wears/maxWears)*100,100)}%`,background:C.sage,borderRadius:99 }}/></div>
                   <div style={{ display:"flex",gap:8 }}>
                     <button onClick={()=>{ setCpwEditItem(item); setCpwPriceInput(item.price.toString()); }} style={{ flex:1,height:34,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.sage,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Pencil size={13}/> Edit Price</button>
-                    <button onClick={()=>setCpwDeleteItem(item.key)} style={{ flex:1,height:34,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.red,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Trash2 size={13}/> Remove</button>
+                    <button onClick={()=>setCpwDeleteItem(item.key)} style={{ flex:1,height:34,borderRadius:0,border:`1px solid ${C.border}`,background:C.surface,color:C.red,fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit" }}><Trash2 size={13}/> Clear price</button>
                   </div>
                 </div>
               ))}
@@ -1376,9 +1377,9 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
           <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:24 }} onClick={()=>setCpwDeleteItem(null)}>
             <div onClick={e=>e.stopPropagation()} style={{ background:C.white,borderRadius:0,padding:28,width:"100%",maxWidth:340 }}>
               <div style={{ fontSize:36,textAlign:"center",marginBottom:12 }}>🗑️</div>
-              <h2 style={{ fontSize:18,fontWeight:800,color:C.ink,textAlign:"center",margin:"0 0 8px" }}>Remove price?</h2>
-              <p style={{ fontSize:14,color:C.sub,textAlign:"center",margin:"0 0 24px" }}>Item stays in wardrobe but won't be cost-tracked.</p>
-              <button onClick={()=>{ setCpwPrices(p=>{ const n={...p}; delete n[cpwDeleteItem]; return n; }); setCpwDeleteItem(null); }} style={{ width:"100%",height:50,borderRadius:0,border:"none",background:C.red,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Remove</button>
+              <h2 style={{ fontSize:18,fontWeight:800,color:C.ink,textAlign:"center",margin:"0 0 8px" }}>Clear price?</h2>
+              <p style={{ fontSize:14,color:C.sub,textAlign:"center",margin:"0 0 24px" }}>Removes the price override. The item stays in your wardrobe.</p>
+              <button onClick={()=>{ setCpwPrices(p=>{ const n={...p}; delete n[cpwDeleteItem]; return n; }); setCpwDeleteItem(null); }} style={{ width:"100%",height:50,borderRadius:0,border:"none",background:C.red,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10 }}>Clear price</button>
               <button onClick={()=>setCpwDeleteItem(null)} style={{ width:"100%",height:50,borderRadius:0,border:"none",background:C.surface,color:C.sub,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
             </div>
           </div>
@@ -1470,7 +1471,8 @@ function WardrobeScreen({ photoData, currentUser, onBack, initialView="main", on
           <div style={{textAlign:"center",padding:"48px 24px"}}>
             <Shirt size={36} color={C.sub} strokeWidth={1} style={{margin:"0 auto 16px",display:"block"}}/>
             <div style={{fontSize:16,fontWeight:700,color:C.ink,marginBottom:6}}>No outfits logged{periodTab!=="all"?" this period":""}</div>
-            <div style={{fontSize:13,color:C.sub}}>Log outfits on the Calendar tab to see your insights</div>
+            <div style={{fontSize:13,color:C.sub,marginBottom:16}}>Log outfits on the Calendar tab to see your insights</div>
+            {onGoToCalendar&&<button onClick={onGoToCalendar} style={{height:40,padding:"0 20px",borderRadius:0,border:`1.5px solid ${C.sage}`,background:"transparent",color:C.sage,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Go to Calendar</button>}
           </div>
         ):(
           <>
@@ -1804,6 +1806,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
   const [calMonth,setCalMonth]=useState(()=>new Date().getMonth());
   const [calYear,setCalYear]=useState(()=>new Date().getFullYear());
   const [detailOutfitTab,setDetailOutfitTab]=useState(0); // 0=primary, 1=outfit2
+  const [showDetailOriginal,setShowDetailOriginal]=useState(false);
   const uploadSlotRef=useRef("primary"); // "primary" | "outfit2"
   const calCameraRef=useRef(null);
 
@@ -2076,13 +2079,21 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
             {hasSecond&&(
               <div style={{ display:"flex",margin:"0 24px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
                 {["Outfit 1","Outfit 2"].map((label,i)=>(
-                  <button key={i} onClick={()=>setDetailOutfitTab(i)} style={{ flex:1,height:36,border:"none",background:"transparent",fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",color:detailOutfitTab===i?C.ink:C.sub,borderBottom:detailOutfitTab===i?`2px solid ${C.ink}`:"2px solid transparent",marginBottom:-1 }}>{label}</button>
+                  <button key={i} onClick={()=>{ setDetailOutfitTab(i); setShowDetailOriginal(false); }} style={{ flex:1,height:36,border:"none",background:"transparent",fontFamily:F.mono,fontSize:10,fontWeight:500,letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",color:detailOutfitTab===i?C.ink:C.sub,borderBottom:detailOutfitTab===i?`2px solid ${C.ink}`:"2px solid transparent",marginBottom:-1 }}>{label}</button>
                 ))}
               </div>
             )}
             <div style={{ flexShrink:0,height:200,background:"#2A3628",margin:"8px 24px 0",position:"relative",overflow:"hidden" }}>
-              {activeEntry.photo&&<img src={activeEntry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }}/>}
+              {activeEntry.photo&&<img src={showDetailOriginal&&activeEntry.originalPhoto?activeEntry.originalPhoto:activeEntry.photo} alt="Outfit" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block",transition:"opacity 150ms" }}/>}
               {!activeEntry.photo&&<div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center" }}><span style={{ fontFamily:F.mono,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.35)" }}>No photo</span></div>}
+              {activeEntry.photo&&activeEntry.originalPhoto&&(
+                <button onClick={()=>setShowDetailOriginal(v=>!v)} style={{ position:"absolute",top:10,right:10,zIndex:4,background:"rgba(255,255,255,0.9)",backdropFilter:"blur(4px)",border:`1px solid ${C.border}`,padding:"5px 10px",display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontFamily:F.mono,fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:C.ink }}>
+                  <span style={{ width:24,height:14,borderRadius:7,background:showDetailOriginal?C.ink:C.border,position:"relative",display:"inline-block",transition:"background 150ms",flexShrink:0 }}>
+                    <span style={{ position:"absolute",top:2,left:showDetailOriginal?10:2,width:10,height:10,borderRadius:5,background:"#fff",transition:"left 150ms",display:"block" }}/>
+                  </span>
+                  BG
+                </button>
+              )}
             </div>
             <div style={{ flex:1,overflowY:"auto",padding:"16px 24px 0" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
@@ -2184,7 +2195,10 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
                       <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:36,padding:"0 10px",borderRadius:0,border:`1.5px solid ${item._recognized?C.sage:C.border}`,background:C.white,fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                       <button onClick={()=>removeItem(i)} style={{ width:32,height:32,borderRadius:0,border:"none",background:"#FEF0EF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
                     </div>
-                    {item._recognized&&<div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised</span><span style={{ fontSize:11,fontWeight:600,color:C.white,background:C.sage,borderRadius:0,padding:"1px 8px" }}>worn {item._wearCount} time{item._wearCount!==1?"s":""} before</span></div>}
+                    {item._recognized
+                      ?<div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:8 }}><span style={{ fontSize:11,fontWeight:700,color:C.sage }}>✓ Recognised</span><span style={{ fontSize:11,fontWeight:600,color:C.white,background:C.sage,borderRadius:0,padding:"1px 8px" }}>worn {item._wearCount} time{item._wearCount!==1?"s":""} before</span></div>
+                      :item.name&&knownItems[item.name.trim().toLowerCase()]&&<div style={{ fontSize:11,color:C.sage,marginBottom:8 }}>Previously worn — details will auto-fill</div>
+                    }
                     <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:8 }}>
                       {CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:24,padding:"0 8px",borderRadius:0,border:"none",background:item.category===c?C.sage+"28":"transparent",color:item.category===c?C.sage:C.sub,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4 }}><CatIcon cat={c} size={11} color={item.category===c?C.sage:C.sub}/>{c}</button>)}
                     </div>
@@ -3375,7 +3389,10 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
                     <input value={item.name} onChange={e=>updateItem(i,"name",e.target.value)} onBlur={e=>applyKnown(i,e.target.value)} placeholder="Item name" style={{ flex:1,height:38,padding:"0 12px",borderRadius:0,border:`1px solid ${item._recognized?C.sage:C.border}`,background:"#fff",fontSize:13,color:C.ink,outline:"none",fontFamily:"inherit" }}/>
                     <button onClick={()=>removeItem(i)} style={{ width:34,height:34,borderRadius:0,border:`1px solid ${C.border}`,background:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}><Trash2 size={14} color={C.red}/></button>
                   </div>
-                  {item._recognized&&<p style={{ fontSize:11,fontWeight:600,color:C.sage,margin:"0 0 8px" }}>✓ Recognised — details filled from previous log</p>}
+                  {item._recognized
+                    ?<p style={{ fontSize:11,fontWeight:600,color:C.sage,margin:"0 0 8px" }}>✓ Recognised — details filled from previous log</p>
+                    :item.name&&knownItems[item.name.trim().toLowerCase()]&&<p style={{ fontSize:11,color:C.sage,margin:"0 0 8px" }}>Previously worn — details will auto-fill</p>
+                  }
                   <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginBottom:10 }}>
                     {CATS.map(c=><button key={c} onClick={()=>updateItem(i,"category",c)} style={{ height:26,padding:"0 10px",borderRadius:0,border:`1px solid ${item.category===c?C.sage:C.border}`,background:item.category===c?C.sage:"transparent",color:item.category===c?"#fff":C.sub,fontSize:11,fontWeight:500,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4 }}><CatIcon cat={c} size={11} color={item.category===c?"#fff":C.sub}/>{c}</button>)}
                   </div>
@@ -3655,8 +3672,8 @@ export default function App() {
     if(subScreen==="privacy") return <PrivacyScreen onBack={goBack} cameraEnabled={cameraEnabled} onCameraToggle={async(val)=>{ setCameraEnabled(val); await supabase.auth.updateUser({data:{camera_enabled:val}}); }}/>;
     switch(tab){
       case "home":      return <HomeScreen photoData={photoData} favourites={favourites} userEmail={currentEmail} username={currentDisplayName||currentUsername} currency={currency} onShowAllItems={()=>navigateTo("wardrobe")} onGoToFavorites={()=>navigateTo("wardrobe")} onAddItem={()=>setSubScreen("addItem")}/>;
-      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} favourites={favourites} onBack={canGoBack?goBack:null} initialView="items" onAddItem={()=>setSubScreen("addItem")} onGoToWardrobe={()=>navigateTo("wardrobe")}/>;
-      case "analytics": return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} favourites={favourites} onBack={canGoBack?goBack:null} initialView="main" onAddItem={()=>setSubScreen("addItem")} onGoToWardrobe={()=>navigateTo("wardrobe")}/>;
+      case "wardrobe":  return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} favourites={favourites} onBack={canGoBack?goBack:null} initialView="items" onAddItem={()=>setSubScreen("addItem")} onGoToWardrobe={()=>navigateTo("wardrobe")} onGoToCalendar={()=>navigateTo("calendar")}/>;
+      case "analytics": return <WardrobeScreen photoData={photoData} currentUser={currentUser} currency={currency} favourites={favourites} onBack={canGoBack?goBack:null} initialView="main" onAddItem={()=>setSubScreen("addItem")} onGoToWardrobe={()=>navigateTo("wardrobe")} onGoToCalendar={()=>navigateTo("calendar")}/>;
       case "calendar":  return <CalendarScreen photoData={photoData} setPhotoData={setPhotoData} favourites={favourites} currency={currency} onToggleFavourite={toggleFavourite} onBack={canGoBack?goBack:null} initialDate={calendarOpenDate} onClearInitialDate={()=>setCalendarOpenDate(null)} cameraEnabled={cameraEnabled}/>;
       case "favorites": return <FavoritesScreen favourites={favourites} setFavourites={setFavourites} photoData={photoData} currency={currency} onGoToDate={dateKey=>{ setCalendarOpenDate(dateKey); navigateTo("calendar"); }} onBack={canGoBack?goBack:null}/>;
       case "profile":   return <ProfileScreen onSettings={()=>setSubScreen("settings")} onNotifications={()=>setSubScreen("notifications")} onPrivacy={()=>setSubScreen("privacy")} userEmail={currentEmail} username={currentUsername} displayName={currentDisplayName} photoData={photoData} favourites={favourites} memberSince={memberSince} currency={currency} onCurrencyChange={code=>{setCurrency(code);localStorage.setItem("preferredCurrency",code);}} onBack={canGoBack?goBack:null} onSignOut={async()=>{ await supabase.auth.signOut(); dataSyncReady.current=false; setIsSignedIn(false); setCurrentUser(null); setCurrentEmail(""); setCurrentUsername(""); setCurrentDisplayName(""); setMemberSince(""); setPhotoData({}); setFavourites([]); setTab("home"); setSubScreen(null); setTabHistory([]); }}/>;
