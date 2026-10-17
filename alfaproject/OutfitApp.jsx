@@ -245,6 +245,7 @@ const F = {
   sans: '"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif',
   mono: '"JetBrains Mono","SF Mono",ui-monospace,monospace',
   serif: '"Cormorant Garamond",Georgia,serif',
+  display: '"Bebas Neue",Impact,"Arial Narrow",sans-serif',
 };
 
 const colorKeywords = { "Black":["black","dark","charcoal"],"White":["white","off-white","optic white"],"Cream":["cream","ivory","butter","ecru","eggshell","off white"],"Beige":["beige","khaki","sand","stone","oat","nude","taupe","camel","tan"],"Navy":["navy","dark blue","midnight blue"],"Blue":["blue","denim","teal","cobalt","sky blue","light blue"],"Gray":["gray","grey","slate","silver"],"Brown":["brown","chocolate","cognac","rust","terracotta"],"Green":["green","olive","sage","khaki green","forest","emerald"],"Red":["red","burgundy","wine","crimson","scarlet"],"Yellow":["yellow","gold","mustard","lemon","amber"],"Pink":["pink","blush","salmon","rose","hot pink","mauve"],"Purple":["purple","violet","lavender","lilac"] };
@@ -807,7 +808,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       {/* Top bar */}
       <div style={{height:46,padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}><strong style={{color:C.ink,fontWeight:500}}>OUTFIT</strong></span>
-        <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:22,color:C.ink,lineHeight:1}}>Insyte Studio</span>
+        <span style={{fontFamily:F.display,fontSize:26,color:C.ink,lineHeight:1,letterSpacing:'0.04em'}}>Insyte Studio</span>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{shortDate} · {dayLabel}</span>
       </div>
 
@@ -851,7 +852,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
           <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:3,background:'rgba(255,255,255,0.9)',padding:'12px 14px 14px',backdropFilter:'blur(6px)',display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:12}}>
             <div style={{minWidth:0}}>
               <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.16em',color:C.sage,textTransform:'uppercase',marginBottom:4}}>§ MOOD</div>
-              <div style={{fontFamily:F.serif,fontStyle:'italic',fontSize:16,color:C.ink,lineHeight:1.3}}>{displayEntry.notes}</div>
+              <div style={{fontFamily:F.display,fontSize:18,color:C.ink,lineHeight:1.2,letterSpacing:'0.03em'}}>{displayEntry.notes}</div>
             </div>
             <div style={{fontFamily:F.mono,fontSize:9,letterSpacing:'0.12em',color:C.sage,textTransform:'uppercase',textAlign:'right',flexShrink:0,lineHeight:1.5}}>
               OUTFIT<br/><strong style={{color:C.ink,fontWeight:500,fontSize:13}}>N° {outfitNum}</strong>
@@ -869,9 +870,9 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
         <h1 style={{fontFamily:F.sans,fontSize:24,lineHeight:1.08,letterSpacing:'-0.02em',fontWeight:500,margin:'0 0 14px',color:C.ink,textWrap:'pretty'}}>
           {headlineSegs
             ?headlineSegs.map((seg,i)=>seg.serif
-              ?<em key={i} style={{fontFamily:F.serif,fontStyle:'italic',color:C.sage,fontWeight:400}}>{seg.t}</em>
+              ?<span key={i} style={{fontFamily:F.display,color:C.sage,letterSpacing:'0.03em'}}>{seg.t}</span>
               :<span key={i}>{seg.t}</span>)
-            :<em style={{fontFamily:F.serif,fontStyle:'italic',color:C.sub,fontWeight:400}}>No outfit logged yet.</em>
+            :<span style={{fontFamily:F.display,color:C.sub,letterSpacing:'0.03em'}}>No outfit logged yet.</span>
           }
         </h1>
       </div>
@@ -881,7 +882,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       {items.length>0&&(
         <div style={{padding:'20px 20px 0',boxSizing:'border-box',width:'100%'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
-            <span style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:500,fontSize:20,color:C.ink}}>The <em>pieces.</em></span>
+            <span style={{fontFamily:F.display,fontSize:22,color:C.ink,letterSpacing:'0.03em'}}>The pieces.</span>
             <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{String(items.length).padStart(2,'0')} ITEMS{newItemCount>0?` · ${newItemCount} NEW`:''}</span>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}}>
@@ -937,7 +938,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
           <div style={{fontFamily:F.sans,fontSize:22,fontWeight:500,letterSpacing:'-0.025em',color:C.ink,lineHeight:1}}>
             {lastWornDays!=null
               ?<>{lastWornDays}<span style={{fontSize:14,color:C.sage,fontWeight:500}}>d</span></>
-              :<em style={{fontFamily:F.serif,fontStyle:'italic',fontWeight:400,fontSize:20}}>first</em>
+              :<span style={{fontFamily:F.display,fontSize:22,letterSpacing:'0.03em'}}>first</span>
             }
           </div>
           <div style={{fontFamily:F.mono,fontSize:9,color:C.sage,marginTop:6,letterSpacing:'0.05em'}}>this combo</div>
