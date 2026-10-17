@@ -2,11 +2,11 @@
   "_instructions": "Edit the prompts and models below to customise how outfit photos are analysed. The placeholders {schema} and {knownList} are filled in automatically at runtime — do not remove them.",
 
   "groq": {
-    "model": "meta-llama/llama-4-maverick-17b-128e-instruct"
+    "model": "qwen/qwen3.8-27b"
   },
 
   "gemini": {
-    "model": "gemini-2.5-flash"
+    "model": "gemini-3.6-flash"
   },
 
   "prompt": {
