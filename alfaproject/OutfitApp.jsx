@@ -3502,7 +3502,11 @@ export default function App() {
         setCameraEnabled(!!session.user.user_metadata?.camera_enabled);
         const _d=session.user.created_at?new Date(session.user.created_at):null;
         if(_d) setMemberSince(`${String(_d.getMonth()+1).padStart(2,"0")}\u00B7${_d.getFullYear()}`);
-        setPhotoData(profile?.photo_data||{});
+        let _pd=profile?.photo_data;
+        if(!_pd&&profileErr){
+          try{_pd=JSON.parse(localStorage.getItem(`sw_pd_${session.user.id}`)||"null");}catch(e){}
+        }
+        setPhotoData(_pd||{});
         setFavourites(profile?.favourites||[]);
         setIsSignedIn(true);
         dataSyncReady.current=true;
@@ -3547,6 +3551,7 @@ export default function App() {
     if(!currentUser||!dataSyncReady.current) return;
     const isAnyAnalysing=Object.values(photoData).some(v=>v?.analysing);
     if(isAnyAnalysing) return;
+    try{localStorage.setItem(`sw_pd_${currentUser}`,JSON.stringify(photoData));}catch(e){}
     supabase.from("users").update({photo_data:photoData}).eq("id",currentUser)
       .then(({error})=>{ if(error) console.error("[save photoData]",error); });
   },[photoData,currentUser]);
