@@ -835,11 +835,6 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
             BG
           </button>
         )}
-        {/* Overlay TL */}
-        <div style={{...ovly,top:14,left:14}}>
-          N°<strong style={{color:C.ink,fontWeight:500}}>{outfitNum}</strong><br/>
-          {comboCount<=1?'FIRST WEAR':`${ordinal(comboCount)} WEAR`}
-        </div>
         {/* Overlay TR */}
         {displayEntry?.style&&(
           <div style={{...ovly,top:14,right:14,textAlign:'right'}}>
