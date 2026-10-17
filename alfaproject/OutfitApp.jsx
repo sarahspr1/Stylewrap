@@ -860,7 +860,6 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       <div style={{padding:'18px 20px 0'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
           <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ THE LOOK</span>
-          <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sub}}>{String(items.length).padStart(2,'0')} PIECES</span>
         </div>
         <h1 style={{fontFamily:F.sans,fontSize:24,lineHeight:1.08,letterSpacing:'-0.02em',fontWeight:500,margin:'0 0 14px',color:C.ink,textWrap:'pretty'}}>
           {headlineSegs
