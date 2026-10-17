@@ -807,7 +807,7 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
       {/* Top bar */}
       <div style={{height:46,padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
-        <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}><strong style={{color:C.ink,fontWeight:500}}>OUTFIT</strong></span>
+        <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}><strong style={{color:C.ink,fontWeight:500}}>OOTD</strong></span>
         <span style={{fontFamily:F.display,fontSize:26,color:C.ink,lineHeight:1,letterSpacing:'0.04em'}}>Insyte Studio</span>
         <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>{shortDate} · {dayLabel}</span>
       </div>
@@ -859,7 +859,6 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
       {/* § THE LOOK */}
       <div style={{padding:'18px 20px 0'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-          <span style={{fontFamily:F.mono,fontSize:10,letterSpacing:'0.14em',color:C.sage}}>§ THE LOOK</span>
         </div>
         <h1 style={{fontFamily:F.sans,fontSize:24,lineHeight:1.08,letterSpacing:'-0.02em',fontWeight:500,margin:'0 0 14px',color:C.ink,textWrap:'pretty'}}>
           {headlineSegs
