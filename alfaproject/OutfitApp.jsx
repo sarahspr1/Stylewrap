@@ -3556,6 +3556,23 @@ export default function App() {
       .then(({error})=>{ if(error) console.error("[save photoData]",error); });
   },[photoData,currentUser]);
 
+  // Re-sync from Supabase when tab/app comes back into focus (cross-device sync)
+  useEffect(()=>{
+    if(!currentUser) return;
+    const handleVisibility=async()=>{
+      if(document.visibilityState!=="visible") return;
+      const {data:profile,error}=await supabase.from("users").select("photo_data,favourites").eq("id",currentUser).single();
+      if(!error&&profile?.photo_data){
+        dataSyncReady.current=false;
+        setPhotoData(profile.photo_data);
+        setFavourites(profile.favourites||[]);
+        setTimeout(()=>{ dataSyncReady.current=true; },0);
+      }
+    };
+    document.addEventListener("visibilitychange",handleVisibility);
+    return()=>document.removeEventListener("visibilitychange",handleVisibility);
+  },[currentUser]);
+
   // Auto-save favourites → Supabase
   useEffect(()=>{
     if(!currentUser||!dataSyncReady.current) return;
