@@ -3503,7 +3503,7 @@ export default function App() {
         const _d=session.user.created_at?new Date(session.user.created_at):null;
         if(_d) setMemberSince(`${String(_d.getMonth()+1).padStart(2,"0")}\u00B7${_d.getFullYear()}`);
         let _pd=profile?.photo_data;
-        if(!_pd&&profileErr){
+        if(!_pd){
           try{_pd=JSON.parse(localStorage.getItem(`sw_pd_${session.user.id}`)||"null");}catch(e){}
         }
         setPhotoData(_pd||{});
