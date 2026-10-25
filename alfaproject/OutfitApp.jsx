@@ -3565,8 +3565,8 @@ export default function App() {
     if(!currentUser) return;
     const handleVisibility=async()=>{
       if(document.visibilityState!=="visible") return;
-      const {data:profile,error}=await supabase.from("profiles").select("photo_data,favourites").eq("id",currentUser).single();
-      if(!error&&profile?.photo_data){
+      const {data:profile,error}=await supabase.from("profiles").select("photo_data,favourites").eq("id",currentUser).maybeSingle();
+      if(!error&&profile?.photo_data&&Object.keys(profile.photo_data).length>0){
         dataSyncReady.current=false;
         setPhotoData(profile.photo_data);
         setFavourites(profile.favourites||[]);
@@ -3742,7 +3742,7 @@ export default function App() {
               <div style={{ width:32,height:32,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }}/>
             </div>
           : !isSignedIn
-            ? <AuthScreen initialView={authGoToSignIn?"signin":"landing"} onAuth={(email,data,favs,userId,uname)=>{ setCurrentUser(userId); setCurrentEmail(email||""); setCurrentUsername(uname||""); setPhotoData(data||{}); setFavourites(favs||[]); setIsSignedIn(true); setAuthGoToSignIn(false); dataSyncReady.current=true; }}/>
+            ? <AuthScreen initialView={authGoToSignIn?"signin":"landing"} onAuth={(email,data,favs,userId,uname)=>{ setCurrentUser(userId); setCurrentEmail(email||""); setCurrentUsername(uname||""); let _pd=data&&Object.keys(data).length>0?data:null; if(!_pd){try{_pd=JSON.parse(localStorage.getItem(`sw_pd_${userId}`)||"null");}catch(e){}} setPhotoData(_pd||{}); setFavourites(favs||[]); setIsSignedIn(true); setAuthGoToSignIn(false); dataSyncReady.current=true; }}/>
             : <>
                 <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
                 {!subScreen&&<TabBar active={tab} onChange={t=>{ if(t!=="wardrobe") setWardrobeInitialView("main"); setTab(t); setSubScreen(null); }}/>}
