@@ -2456,11 +2456,11 @@ function AuthScreen({ onAuth, initialView="landing" }) {
       setError(friendlyAuthError(authError.message));
       return;
     }
-    const { data: profile } = await supabase.from("users").select("photo_data,favourites,username").eq("id", data.user.id).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("photo_data,favourites,username").eq("id", data.user.id).maybeSingle();
     if (!profile) {
       // First sign-in after email confirmation — create profile using username stored in metadata
       const uname = data.user.user_metadata?.username || "";
-      await supabase.from("users").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username: uname });
+      await supabase.from("profiles").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username: uname });
       setLoading(false);
       onAuth(data.user.email, {}, [], data.user.id, uname);
       return;
@@ -2477,12 +2477,12 @@ function AuthScreen({ onAuth, initialView="landing" }) {
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    const { data: taken } = await supabase.from("users").select("id").eq("username", username).maybeSingle();
+    const { data: taken } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
     if (taken) { setLoading(false); setError("That username is already taken. Please choose another."); return; }
     const { data, error: authError } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: window.location.origin, data:{ username } } });
     if (authError) { setLoading(false); setError(friendlyAuthError(authError.message)); return; }
     if (!data.session) { setLoading(false); setView("confirm-email"); return; }
-    await supabase.from("users").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username });
+    await supabase.from("profiles").insert({ id: data.user.id, email: data.user.email, photo_data:{}, favourites:[], username });
     await track("user_signed_up", { username });
     setLoading(false);
     onAuth(data.user.email, {}, [], data.user.id, username);
@@ -2845,7 +2845,7 @@ function SettingsScreen({ onBack, username="", displayName="", onDisplayNameChan
       if(!user) return;
       if(user?.user_metadata?.date_of_birth) setDob(user.user_metadata.date_of_birth);
       const metaUsername=user.user_metadata?.username||"";
-      const {data:row}=await supabase.from("users").select("username").eq("id",user.id).single();
+      const {data:row}=await supabase.from("profiles").select("username").eq("id",user.id).single();
       const dbUsername=row?.username||"";
       // Valid username = lowercase, alphanumeric + underscore, 3-20 chars (matches signup rule)
       const validMeta=isValidUsernameFormat(metaUsername)?metaUsername:"";
@@ -2862,11 +2862,11 @@ function SettingsScreen({ onBack, username="", displayName="", onDisplayNameChan
     const {data:{user:authUser}}=await supabase.auth.getUser();
     if(!authUser) return;
     // Check not taken by someone else
-    const {data:taken}=await supabase.from("users").select("id").eq("username",recoveryUsername).maybeSingle();
+    const {data:taken}=await supabase.from("profiles").select("id").eq("username",recoveryUsername).maybeSingle();
     if(taken&&taken.id!==authUser.id){ setRecoveryErr("That username is already taken."); return; }
     // Write to both DB and auth metadata (spread existing metadata to preserve everything else)
     const [dbRes,authRes]=await Promise.all([
-      supabase.from("users").update({username:recoveryUsername}).eq("id",authUser.id),
+      supabase.from("profiles").update({username:recoveryUsername}).eq("id",authUser.id),
       supabase.auth.updateUser({data:{...authUser.user_metadata,username:recoveryUsername}})
     ]);
     if(dbRes.error||authRes.error){ setRecoveryErr((dbRes.error||authRes.error).message); return; }
@@ -3485,7 +3485,7 @@ export default function App() {
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
         console.log("[session restore] user id:", session.user.id);
-        const {data:profile,error:profileErr}=await supabase.from("users").select("photo_data,favourites,username").eq("id",session.user.id).single();
+        const {data:profile,error:profileErr}=await supabase.from("profiles").select("photo_data,favourites,username").eq("id",session.user.id).single();
         if(profileErr) console.error("[session restore] profile load error:", profileErr);
         console.log("[session restore] profile loaded:", profile ? `photo_data keys: ${Object.keys(profile.photo_data||{}).length}` : "null");
         // Auth metadata username is set at signup and never modified — use as authoritative source
@@ -3493,7 +3493,7 @@ export default function App() {
         const dbUsername=profile?.username||"";
         // Auto-repair DB if a previous bug overwrote username with display name
         if(authUsername&&dbUsername!==authUsername){
-          await supabase.from("users").update({username:authUsername}).eq("id",session.user.id);
+          await supabase.from("profiles").update({username:authUsername}).eq("id",session.user.id);
         }
         setCurrentUser(session.user.id);
         setCurrentEmail(session.user.email||"");
@@ -3552,7 +3552,7 @@ export default function App() {
     const isAnyAnalysing=Object.values(photoData).some(v=>v?.analysing);
     if(isAnyAnalysing) return;
     try{localStorage.setItem(`sw_pd_${currentUser}`,JSON.stringify(photoData));}catch(e){}
-    supabase.from("users").update({photo_data:photoData}).eq("id",currentUser)
+    supabase.from("profiles").update({photo_data:photoData}).eq("id",currentUser)
       .then(({error})=>{ if(error) console.error("[save photoData]",error); });
   },[photoData,currentUser]);
 
@@ -3561,7 +3561,7 @@ export default function App() {
     if(!currentUser) return;
     const handleVisibility=async()=>{
       if(document.visibilityState!=="visible") return;
-      const {data:profile,error}=await supabase.from("users").select("photo_data,favourites").eq("id",currentUser).single();
+      const {data:profile,error}=await supabase.from("profiles").select("photo_data,favourites").eq("id",currentUser).single();
       if(!error&&profile?.photo_data){
         dataSyncReady.current=false;
         setPhotoData(profile.photo_data);
@@ -3576,7 +3576,7 @@ export default function App() {
   // Auto-save favourites → Supabase
   useEffect(()=>{
     if(!currentUser||!dataSyncReady.current) return;
-    supabase.from("users").update({favourites}).eq("id",currentUser)
+    supabase.from("profiles").update({favourites}).eq("id",currentUser)
       .then(({error})=>{ if(error) console.error("[save favourites]",error); });
   },[favourites,currentUser]);
 
