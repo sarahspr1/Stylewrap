@@ -3485,8 +3485,12 @@ export default function App() {
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session){
         console.log("[session restore] user id:", session.user.id);
-        const {data:profile,error:profileErr}=await supabase.from("profiles").select("photo_data,favourites,username").eq("id",session.user.id).single();
+        const {data:profile,error:profileErr}=await supabase.from("profiles").select("photo_data,favourites,username").eq("id",session.user.id).maybeSingle();
         if(profileErr) console.error("[session restore] profile load error:", profileErr);
+        // Create profile row if it doesn't exist (e.g. signup happened when table name was wrong)
+        if(!profile&&!profileErr){
+          await supabase.from("profiles").insert({id:session.user.id,email:session.user.email,photo_data:{},favourites:[],username:session.user.user_metadata?.username||""});
+        }
         console.log("[session restore] profile loaded:", profile ? `photo_data keys: ${Object.keys(profile.photo_data||{}).length}` : "null");
         // Auth metadata username is set at signup and never modified — use as authoritative source
         const authUsername=session.user.user_metadata?.username||"";
@@ -3552,7 +3556,7 @@ export default function App() {
     const isAnyAnalysing=Object.values(photoData).some(v=>v?.analysing);
     if(isAnyAnalysing) return;
     try{localStorage.setItem(`sw_pd_${currentUser}`,JSON.stringify(photoData));}catch(e){}
-    supabase.from("profiles").update({photo_data:photoData}).eq("id",currentUser)
+    supabase.from("profiles").upsert({id:currentUser,photo_data:photoData},{onConflict:"id",ignoreDuplicates:false})
       .then(({error})=>{ if(error) console.error("[save photoData]",error); });
   },[photoData,currentUser]);
 
