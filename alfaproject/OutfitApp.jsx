@@ -3507,7 +3507,7 @@ export default function App() {
         const _d=session.user.created_at?new Date(session.user.created_at):null;
         if(_d) setMemberSince(`${String(_d.getMonth()+1).padStart(2,"0")}\u00B7${_d.getFullYear()}`);
         let _pd=profile?.photo_data;
-        if(!_pd){
+        if(!_pd||Object.keys(_pd).length===0){
           try{_pd=JSON.parse(localStorage.getItem(`sw_pd_${session.user.id}`)||"null");}catch(e){}
         }
         setPhotoData(_pd||{});
@@ -3742,7 +3742,7 @@ export default function App() {
               <div style={{ width:32,height:32,borderRadius:"50%",border:`3px solid ${C.sage}`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }}/>
             </div>
           : !isSignedIn
-            ? <AuthScreen initialView={authGoToSignIn?"signin":"landing"} onAuth={(email,data,favs,userId,uname)=>{ setCurrentUser(userId); setCurrentEmail(email||""); setCurrentUsername(uname||""); let _pd=data&&Object.keys(data).length>0?data:null; if(!_pd){try{_pd=JSON.parse(localStorage.getItem(`sw_pd_${userId}`)||"null");}catch(e){}} setPhotoData(_pd||{}); setFavourites(favs||[]); setIsSignedIn(true); setAuthGoToSignIn(false); dataSyncReady.current=true; }}/>
+            ? <AuthScreen initialView={authGoToSignIn?"signin":"landing"} onAuth={(email,data,favs,userId,uname)=>{ setCurrentUser(userId); setCurrentEmail(email||""); setCurrentUsername(uname||""); let _pd=data&&Object.keys(data).length>0?data:null; if(!_pd){try{_pd=JSON.parse(localStorage.getItem(`sw_pd_${userId}`)||"null");}catch(e){}} setPhotoData(_pd||{}); setFavourites(favs||[]); setIsSignedIn(true); setAuthGoToSignIn(false); dataSyncReady.current=true; if(_pd&&Object.keys(_pd).length>0){supabase.from("profiles").upsert({id:userId,photo_data:_pd},{onConflict:"id",ignoreDuplicates:false}).then(({error})=>{if(error)console.error("[onAuth save]",error);else console.log("[onAuth save] pushed localStorage data to Supabase");});} }}/>
             : <>
                 <div style={{ flex:1,overflow:"hidden",display:"flex",flexDirection:"column" }}><ErrorBoundary>{renderContent()}</ErrorBoundary></div>
                 {!subScreen&&<TabBar active={tab} onChange={t=>{ if(t!=="wardrobe") setWardrobeInitialView("main"); setTab(t); setSubScreen(null); }}/>}
