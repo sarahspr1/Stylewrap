@@ -3236,7 +3236,9 @@ function PrivacyScreen({ onBack, cameraEnabled, onCameraToggle }) {
 function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false, currency="USD" }) {
   const [step,setStep]=useState("pick"); // pick | analysing | edit | done
   const [photo,setPhoto]=useState(null);
+  const [originalPhoto,setOriginalPhoto]=useState(null);
   const [photoUrl,setPhotoUrl]=useState(null); // Supabase Storage URL once uploaded
+  const [originalPhotoUrl,setOriginalPhotoUrl]=useState(null);
   const [editEntry,setEditEntry]=useState({style:null,formalityLevel:null,season:null,items:[]});
   const [toast,setToast]=useState(null);
   const addItemCameraRef=useRef(null);
@@ -3264,16 +3266,20 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
       catch(e){ setToast("BG removal: "+(e.message||String(e))); setTimeout(()=>setToast(null),15000); }
       const base64=finalCompressed.split(",")[1];
       setPhoto(finalCompressed);
+      setOriginalPhoto(compressed);
       setStep("analysing");
       const knownItemsList=Object.entries(knownItems).map(([name,v])=>({name,category:v.category,color:v.color,price:v.price?parseFloat(v.price):null}));
       const blob=await fetch(finalCompressed).then(r=>r.blob());
+      const origBlob=await fetch(compressed).then(r=>r.blob());
       let _aiErr=null;
-      const [url,parsed]=await Promise.all([
+      const [url,origUrl,parsed]=await Promise.all([
         uploadPhoto(blob,todayKey),
+        uploadOriginalPhoto(origBlob,todayKey),
         analyseOutfit(base64,"image/jpeg",knownItemsList).catch(e=>{ _aiErr=e; return null; }),
       ]);
       if(_aiErr){ setToast("AI error: "+(_aiErr.message||String(_aiErr))); setTimeout(()=>setToast(null),30000); }
       if(url) setPhotoUrl(url+"?t="+Date.now());
+      if(origUrl) setOriginalPhotoUrl(origUrl+"?t="+Date.now());
       if(parsed){
         const rawItems=parsed.clothing_items||[];
         const items=rawItems.map(item=>{ const key=(item.name||"").trim().toLowerCase(); const known=knownItems[key]; const normColor=normalizeAiColor(item.color); const normBrand=toCanonicalBrand(item.brand||null); const base={...item,color:normColor,brand:normBrand}; if(known){return {...base,price:known.price??item.price,_recognized:true,_wearCount:known.count};} return base; });
@@ -3302,7 +3308,7 @@ function AddItemScreen({ onBack, photoData={}, setPhotoData, cameraEnabled=false
   const removeItem=(i)=>setEditEntry(e=>({...e,items:e.items.filter((_,idx)=>idx!==i)}));
   const addItem=()=>setEditEntry(e=>({...e,items:[...e.items,{category:"Top",name:"",color:"Black",_isNew:true}]}));
   const applyKnown=(i,nameVal)=>{ const key=nameVal.trim().toLowerCase(); if(!key||!knownItems[key]) return; setEditEntry(prev=>{ const items=[...prev.items]; const cur=items[i]; if(!cur._isNew) return prev; const known=knownItems[key]; items[i]={...cur,category:known.category,color:known.color,price:known.price!=null?known.price:cur.price,_isNew:false,_recognized:true,_wearCount:known.count}; return {...prev,items}; }); };
-  const handleSave=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); setPhotoData(p=>({...p,[todayKey]:{logged:true,photo:photoUrl||photo,items:cleanItems,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season}})); setStep("done"); };
+  const handleSave=()=>{ const cleanItems=editEntry.items.map(({_isNew,_recognized,_wearCount,_showColorPicker,...rest})=>rest); setPhotoData(p=>({...p,[todayKey]:{logged:true,photo:photoUrl||photo,originalPhoto:originalPhotoUrl||originalPhoto||undefined,items:cleanItems,style:editEntry.style,formalityLevel:editEntry.formalityLevel,season:editEntry.season}})); setStep("done"); };
 
   const D = `1px solid ${C.border}`;
 
