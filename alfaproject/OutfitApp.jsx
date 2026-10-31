@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, Component } from "react";
 import { analyseOutfit } from "./analyseOutfit.js";
+import ShareOutfit, { toShareOutfit } from "./ShareOutfit.jsx";
 import { createClient } from "@supabase/supabase-js";
 
 const _sbUrl = import.meta.env.VITE_SUPABASE_URL || "";
@@ -803,7 +804,9 @@ function HomeScreen({ photoData={}, favourites=[], onShowAllItems, onGoToFavorit
 
   return (
     <div ref={shareRef} style={{flex:1,overflowY:'auto',overflowX:'hidden',background:C.surface}}>
-      {showShare&&<ShareSheet onClose={()=>setShowShare(false)} targetRef={cardRef}/>}
+      {showShare&&(displayEntry?.photo
+        ?<ShareOutfit outfit={toShareOutfit(displayEntry,displayKey)} onClose={()=>setShowShare(false)}/>
+        :<ShareSheet onClose={()=>setShowShare(false)} targetRef={cardRef}/>)}
 
       {/* Top bar */}
       <div style={{height:46,padding:'0 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`}}>
@@ -1844,8 +1847,10 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       const base64=finalCompressed.split(",")[1];
       const dateKey=toKey(selectedDate);
       const slot=uploadSlotRef.current;
+      // Outfit 2 gets its own storage paths so it never overwrites outfit 1's files
+      const storageKey=slot==="outfit2"?`${dateKey}_2`:dateKey;
       if(slot==="outfit2"){
-        setPhotoData(p=>({...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalCompressed,items:[],style:null,analysing:true}}}));
+        setPhotoData(p=>({...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalCompressed,originalPhoto:compressed,items:[],style:null,analysing:true}}}));
       } else {
         setPhotoData(p=>({...p,[dateKey]:{ logged:true,photo:finalCompressed,originalPhoto:compressed,items:[],style:null,analysing:true }}));
       }
@@ -1857,8 +1862,8 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
       // Upload both photos and run AI analysis in parallel
       let _analysisErr=null;
       const [photoUrl,originalUrl,parsed]=await Promise.all([
-        uploadPhoto(blob,dateKey),
-        uploadOriginalPhoto(originalBlob,dateKey),
+        uploadPhoto(blob,storageKey),
+        uploadOriginalPhoto(originalBlob,storageKey),
         analyseOutfit(base64,"image/jpeg",knownItemsList).catch(e=>{ _analysisErr=e; return null; }),
       ]);
       if(_analysisErr){ setToast("AI error: "+(_analysisErr.message||String(_analysisErr))); setTimeout(()=>setToast(null),30000); track("ai_analysis_failed", { error: _analysisErr.message||String(_analysisErr), date_key: dateKey }); }
@@ -1884,11 +1889,11 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           if(rawCrop){ try{ cleanCrop=await removeBackground(rawCrop.split(",")[1])||fallbackCrop; }catch(e){} }
           const source=cleanCrop||fallbackCrop;
           if(!source){ itemsWithPhotos.push(itemData); continue; }
-          const itemPhotoUrl=await uploadItemPhoto(source,dateKey,idx);
+          const itemPhotoUrl=await uploadItemPhoto(source,storageKey,idx);
           itemsWithPhotos.push({...itemData,itemPhoto:itemPhotoUrl||source});
         }
         if(slot==="outfit2"){
-          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}}; });
+          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{photo:finalPhoto,originalPhoto:finalOriginalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}}; });
         } else {
           setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{logged:true,photo:finalPhoto,originalPhoto:finalOriginalPhoto,items:itemsWithPhotos,style,formalityLevel,season,colorPalette,analysing:false}}; });
         }
@@ -1902,7 +1907,7 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
         setTimeout(()=>setToast(null),3000);
       }else{
         if(slot==="outfit2"){
-          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{...p[dateKey].outfit2,photo:finalPhoto,analysing:false}}}; });
+          setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],outfit2:{...p[dateKey].outfit2,photo:finalPhoto,originalPhoto:finalOriginalPhoto,analysing:false}}}; });
         } else {
           setPhotoData(p=>{ if(!p[dateKey]) return p; return {...p,[dateKey]:{...p[dateKey],photo:finalPhoto,originalPhoto:finalOriginalPhoto,analysing:false}}; });
         }
@@ -2131,7 +2136,9 @@ function CalendarScreen({ photoData, setPhotoData, favourites=[], onToggleFavour
           </div>
         );
       })()}
-      {showOutfitShare&&<ShareSheet onClose={()=>setShowOutfitShare(false)} targetRef={outfitModalRef}/>}
+      {showOutfitShare&&(selectedDate&&photoData[toKey(selectedDate)]?.photo
+        ?<ShareOutfit outfit={toShareOutfit(photoData[toKey(selectedDate)],toKey(selectedDate))} onClose={()=>setShowOutfitShare(false)}/>
+        :<ShareSheet onClose={()=>setShowOutfitShare(false)} targetRef={outfitModalRef}/>)}
       <Modal isOpen={showModal&&!!selectedDate} onClose={()=>{ setShowModal(false); setShowSourcePicker(false); setEditMode(false); setEditEntry(null); setSelectedItemIdxs(new Set()); uploadSlotRef.current="primary"; }} title={selectedDate?selectedDate.toLocaleDateString("en-US",{ weekday:"long",month:"long",day:"numeric" }):""} onShare={()=>setShowOutfitShare(true)} contentRef={outfitModalRef}>
         {selectedDate&&(()=>{
           const entry=photoData[toKey(selectedDate)];
